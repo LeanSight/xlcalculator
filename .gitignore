@@ -6,3 +6,4 @@ ve
 .coverage
 .tox
 coverage.xml
+interactive_xlcalc.py
