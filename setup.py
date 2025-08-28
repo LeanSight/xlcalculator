@@ -72,6 +72,8 @@ setuptools.setup(
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: 3.11",
+        "Programming Language :: Python :: 3.12",
+        "Programming Language :: Python :: 3.13",
         "Topic :: Office/Business :: Financial :: Spreadsheet",
         "Topic :: Scientific/Engineering",
         "Topic :: Scientific/Engineering :: Information Analysis",
@@ -84,18 +86,20 @@ setuptools.setup(
     ],
     install_requires=[
         'jsonpickle',
-        'numpy',
-        'pandas>=2.0.0',
+        'numpy>=2.1.0',
+        'pandas>=2.3.0',
         'openpyxl',
         'numpy-financial',
-        'yearfrac>=0.4.8',
         'mock',
-        'scipy'
+        'scipy>=1.14.1'
     ],
     extras_require=dict(
         test=TESTS_REQUIRE,
         build=[
             'pip-tools',
+        ],
+        excel_functions=[
+            'yearfrac>=0.4.8',  # Para función YEARFRAC de Excel
         ],
     ),
     python_requires='>=3.9',
