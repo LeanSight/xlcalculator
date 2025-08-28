@@ -2,6 +2,41 @@
 CHANGES
 =======
 
+0.5.1+numpy2.python313 (2025-08-28) [LEANSIGHT FORK]
+------------------------------------------------------
+
+**UNOFFICIAL FORK** - NumPy 2.0 and Python 3.13 Compatibility Update
+
+**Fork Repository:** https://github.com/LeanSight/xlcalculator
+**Original Repository:** https://github.com/bradbase/xlcalculator
+
+**Major Changes:**
+
+- **BREAKING:** Requires Python 3.13+ (was >=3.9)
+- **BREAKING:** Requires NumPy 2.1.0+ (was restricted to <2.0)
+- Updated all dependencies to modern versions:
+  * pandas>=2.3.0 (was >=2.0.0)
+  * scipy>=1.14.1 (was no version specified)
+  * numpy>=2.1.0 (was no version constraint, now explicit)
+- Added LeanSight yearfrac fork for YEARFRAC Excel function support
+- All tests validated on Python 3.13 + NumPy 2.3.2 stack
+- Updated package metadata to clearly identify as unofficial fork
+
+**Dependencies Added:**
+- git+https://github.com/LeanSight/yearfrac.git (NumPy 2.0 compatible fork)
+
+**Validation:**
+- ✅ All existing unit tests pass
+- ✅ YEARFRAC function tests pass with yearfrac fork
+- ✅ No breaking changes to existing API
+- ✅ Full compatibility with modern scientific Python stack
+
+---
+
+=======
+CHANGES
+=======
+
 0.5.1 (unreleased)
 ------------------
 

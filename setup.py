@@ -16,17 +16,28 @@ TESTS_REQUIRE = [
 
 
 setuptools.setup(
-    name="xlcalculator",
-    version='0.5.1.dev0',
-    author="Bradley van Ree",
+    name="xlcalculator-numpy2",
+    version='0.5.1.numpy2.dev1',
+    author="Bradley van Ree (Original), LeanSight (numpy 2.0 fork)",
     author_email="brads@bradbase.net",
-    description="Converts MS Excel formulas to Python and evaluates them.",
+    description="Converts MS Excel formulas to Python and evaluates them. [numpy 2.0 compatible fork]",
     long_description=(
-        read('README.rst')
+        "# xlcalculator (numpy 2.0 compatible fork)\n\n"
+        "This is an unofficial fork of xlcalculator that adds compatibility with numpy 2.0+ and Python 3.13.\n\n"
+        "## Changes from Original:\n"
+        "- ✅ Compatible with numpy 2.0+ (was restricted to <2.0)\n"
+        "- ✅ Requires Python 3.13 (validated platform)\n"
+        "- ✅ Uses numpy 2.0 compatible yearfrac fork\n"
+        "- ✅ All tests pass with numpy 2.3.2\n\n"
+        "Original repository: https://github.com/bradbase/xlcalculator\n"
+        "This fork: https://github.com/LeanSight/xlcalculator\n\n"
+        "---\n\n"
+        + read('README.rst')
         + '\n\n' +
         read('CHANGES.rst')
         ),
-    url="https://github.com/bradbase/xlcalculator",
+    long_description_content_type='text/markdown',
+    url="https://github.com/LeanSight/xlcalculator",
     packages=setuptools.find_packages(),
     license="MIT",
     keywords=['xls',
@@ -57,10 +68,12 @@ setuptools.setup(
         'calculation',
         'evaluation',
         'data science',
-        'openpyxl'
+        'openpyxl',
+        'numpy2',
+        'fork'
     ],
     classifiers=[
-        "Development Status :: 5 - Production/Stable",
+        "Development Status :: 4 - Beta",  # Changed from Production/Stable as this is a fork
         "Intended Audience :: Developers",
         "Intended Audience :: Science/Research",
         "Intended Audience :: Information Technology",
@@ -69,10 +82,6 @@ setuptools.setup(
         "Natural Language :: English",
         "Operating System :: OS Independent",
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.9",
-        "Programming Language :: Python :: 3.10",
-        "Programming Language :: Python :: 3.11",
-        "Programming Language :: Python :: 3.12",
         "Programming Language :: Python :: 3.13",
         "Topic :: Office/Business :: Financial :: Spreadsheet",
         "Topic :: Scientific/Engineering",
@@ -99,10 +108,10 @@ setuptools.setup(
             'pip-tools',
         ],
         excel_functions=[
-            'yearfrac>=0.4.8',  # Para función YEARFRAC de Excel
+            'git+https://github.com/LeanSight/yearfrac.git',  # LeanSight numpy 2.0 compatible fork
         ],
     ),
-    python_requires='>=3.9',
+    python_requires='>=3.13',  # Only validated on Python 3.13
     tests_require=TESTS_REQUIRE,
     include_package_data=True,
     zip_safe=False,

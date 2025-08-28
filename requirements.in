@@ -1,1 +1,3 @@
--e file:.[test,build]
+# xlcalculator LeanSight Fork - Python 3.13 + NumPy 2.0 Compatible
+# Updated: 2025-08-28
+-e file:.[test,build,excel_functions]
