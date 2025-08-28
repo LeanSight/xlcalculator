@@ -17,7 +17,7 @@ TESTS_REQUIRE = [
 
 setuptools.setup(
     name="xlcalculator-numpy2",
-    version='0.5.1.numpy2.dev1',
+    version='0.5.1.post1+numpy2.python313',
     author="Bradley van Ree (Original), LeanSight (numpy 2.0 fork)",
     author_email="brads@bradbase.net",
     description="Converts MS Excel formulas to Python and evaluates them. [numpy 2.0 compatible fork]",
@@ -108,7 +108,7 @@ setuptools.setup(
             'pip-tools',
         ],
         excel_functions=[
-            'git+https://github.com/LeanSight/yearfrac.git',  # LeanSight numpy 2.0 compatible fork
+            'yearfrac @ git+https://github.com/LeanSight/yearfrac.git',
         ],
     ),
     python_requires='>=3.13',  # Only validated on Python 3.13
