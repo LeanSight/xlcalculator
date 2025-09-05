@@ -31,9 +31,6 @@ class ReaderTest(unittest.TestCase):
 
         self.assertEqual(sorted(self.cells.keys()), sorted(cells.keys()))
 
-    @unittest.skip(
-        "Need to re-create reader.json as some elements of dynamic arrays "
-        "are not being read correctly")
     def test_read_formulae(self):
         archive = reader.Reader(testing.get_resource("reader.xlsm"))
         archive.read()
@@ -47,8 +44,8 @@ class ReaderTest(unittest.TestCase):
         archive.read()
         defined_names = archive.read_defined_names()
 
-        its_a_blank = (
-            set(sorted(defined_names.keys()))
-            - set(sorted(self.defined_names.keys()))
+        # Test that defined names match exactly
+        self.assertEqual(
+            sorted(defined_names.keys()),
+            sorted(self.defined_names.keys())
         )
-        self.assertEqual(list(its_a_blank), ['Its_a_blank'])
