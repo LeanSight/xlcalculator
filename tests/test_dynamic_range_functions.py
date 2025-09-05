@@ -51,6 +51,28 @@ class TestDynamicRangeFunctions(unittest.TestCase):
                 row.append(f"R{r+1}C{c+1}")
             array.values.append(row)
         return array
+    
+    def _convert_result_to_list(self, result):
+        """
+        Convert INDEX function result to list for test comparison.
+        
+        Args:
+            result: Result from INDEX function (could be array-like or single value)
+            
+        Returns:
+            List representation of the result for comparison
+        """
+        if hasattr(result, 'tolist'):
+            return result.tolist()
+        elif hasattr(result, 'values') and hasattr(result.values, '__iter__'):
+            return list(result.values)
+        elif isinstance(result, list):
+            return result
+        else:
+            try:
+                return [str(item) for item in result]
+            except:
+                return [str(result)]
 
 
 class TestOFFSETFunction(TestDynamicRangeFunctions):
@@ -177,19 +199,7 @@ class TestINDEXFunction(TestDynamicRangeFunctions):
         for row, col, expected in test_cases:
             with self.subTest(row=row, col=col):
                 result = INDEX(array, row, col)
-                # Convert result to list if it's an array-like object
-                if hasattr(result, 'tolist'):
-                    result_list = result.tolist()
-                elif hasattr(result, 'values') and hasattr(result.values, '__iter__'):
-                    result_list = list(result.values)
-                elif isinstance(result, list):
-                    result_list = result
-                else:
-                    # For array-like objects, try to extract the values
-                    try:
-                        result_list = [str(item) for item in result]
-                    except:
-                        result_list = [str(result)]
+                result_list = self._convert_result_to_list(result)
                 self.assertListEqual(result_list, expected)
     
     def test_index_entire_column(self):
@@ -205,19 +215,7 @@ class TestINDEXFunction(TestDynamicRangeFunctions):
         for row, col, expected in test_cases:
             with self.subTest(row=row, col=col):
                 result = INDEX(array, row, col)
-                # Convert result to list if it's an array-like object
-                if hasattr(result, 'tolist'):
-                    result_list = result.tolist()
-                elif hasattr(result, 'values') and hasattr(result.values, '__iter__'):
-                    result_list = list(result.values)
-                elif isinstance(result, list):
-                    result_list = result
-                else:
-                    # For array-like objects, try to extract the values
-                    try:
-                        result_list = [str(item) for item in result]
-                    except:
-                        result_list = [str(result)]
+                result_list = self._convert_result_to_list(result)
                 self.assertListEqual(result_list, expected)
     
     def test_index_default_column(self):

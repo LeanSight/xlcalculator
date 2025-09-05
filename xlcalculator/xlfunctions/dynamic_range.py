@@ -10,13 +10,195 @@ Functions implemented:
 - INDIRECT: Returns reference from text string
 """
 
-from typing import Union, Optional
+from typing import Union, Optional, Any, Dict, Tuple
+from functools import wraps
 from . import xl, xlerrors, func_xltypes
 from .reference_utils import ReferenceResolver
 
 
+# Constants
+ERROR_MESSAGES = {
+    'EMPTY_REFERENCE': 'Reference text cannot be empty',
+    'NEGATIVE_PARAMS': 'Row and column numbers must be non-negative',
+    'BOTH_ZERO': 'Both row_num and col_num cannot be 0',
+    'EMPTY_ARRAY': 'Array is empty or invalid',
+    'R1C1_NOT_SUPPORTED': 'R1C1 reference style is not yet supported',
+    'INVALID_REFERENCE': 'Invalid reference: \'{ref}\'',
+    'ROW_OUT_OF_RANGE': 'Row {row} is out of range (1-{max_row})',
+    'COL_OUT_OF_RANGE': 'Column {col} is out of range (1-{max_col})'
+}
+
+DEFAULT_COL_NUM = 1
+
+
+# Utility Functions
+
+def _convert_function_parameters(**params) -> Dict[str, Any]:
+    """
+    Centralized parameter conversion for dynamic range functions.
+    
+    Args:
+        **params: Dictionary where each key maps to a tuple of:
+                 (value, target_type, default, allow_none)
+    
+    Returns:
+        Dictionary of converted parameters
+    """
+    converted = {}
+    for name, config in params.items():
+        value, target_type, default, allow_none = config
+        if allow_none and (value is None or value == ""):
+            converted[name] = default
+        elif target_type == int:
+            converted[name] = int(value)
+        elif target_type == str:
+            converted[name] = str(value).strip()
+        else:
+            converted[name] = value
+    return converted
+
+
+def _handle_function_errors(func_name: str):
+    """
+    Decorator for consistent error handling across dynamic range functions.
+    
+    Args:
+        func_name: Name of the function for error messages
+    
+    Returns:
+        Decorated function with consistent error handling
+    """
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            try:
+                return func(*args, **kwargs)
+            except (xlerrors.RefExcelError, xlerrors.ValueExcelError, xlerrors.NameExcelError):
+                # Re-raise Excel errors as-is
+                raise
+            except Exception as e:
+                # Convert unexpected errors to Excel errors
+                return xlerrors.ValueExcelError(f"{func_name} error: {str(e)}")
+        return wrapper
+    return decorator
+
+
+def _get_array_data(array) -> Optional[list]:
+    """
+    Extract array data from various input types.
+    
+    Args:
+        array: Array-like object (Mock, list, tuple, or object with .values)
+    
+    Returns:
+        List representation of array data, or None if invalid
+    """
+    if hasattr(array, 'values') and array.values:
+        return array.values
+    elif isinstance(array, (list, tuple)):
+        return list(array)
+    else:
+        return None
+
+
+def _validate_and_get_array_info(array, function_name: str) -> Tuple[Optional[Tuple], Optional[xlerrors.ExcelError]]:
+    """
+    Validate array and return data with dimensions.
+    
+    Args:
+        array: Array-like object to validate
+        function_name: Name of calling function for error messages
+    
+    Returns:
+        Tuple of ((array_data, num_rows, num_cols), error) where error is None if valid
+    """
+    array_data = _get_array_data(array)
+    if not array_data:
+        return None, xlerrors.ValueExcelError(ERROR_MESSAGES['EMPTY_ARRAY'])
+    
+    num_rows = len(array_data)
+    num_cols = len(array_data[0]) if num_rows > 0 else 0
+    return (array_data, num_rows, num_cols), None
+
+
+def _validate_array_bounds(row_num: int, col_num: int, num_rows: int, num_cols: int) -> Optional[xlerrors.ExcelError]:
+    """
+    Validate array access bounds and return error if invalid.
+    
+    Args:
+        row_num: Row number to validate (1-based, 0 for entire column)
+        col_num: Column number to validate (1-based, 0 for entire row)
+        num_rows: Total number of rows in array
+        num_cols: Total number of columns in array
+    
+    Returns:
+        Excel error if bounds are invalid, None if valid
+    """
+    if row_num < 0 or col_num < 0:
+        return xlerrors.ValueExcelError(ERROR_MESSAGES['NEGATIVE_PARAMS'])
+    
+    if row_num == 0 and col_num == 0:
+        return xlerrors.ValueExcelError(ERROR_MESSAGES['BOTH_ZERO'])
+    
+    if row_num > 0 and (row_num < 1 or row_num > num_rows):
+        return xlerrors.RefExcelError(ERROR_MESSAGES['ROW_OUT_OF_RANGE'].format(
+            row=row_num, max_row=num_rows))
+    
+    if col_num > 0 and (col_num < 1 or col_num > num_cols):
+        return xlerrors.RefExcelError(ERROR_MESSAGES['COL_OUT_OF_RANGE'].format(
+            col=col_num, max_col=num_cols))
+    
+    return None  # No error
+
+
+def _is_special_range_reference(ref_str: str) -> bool:
+    """
+    Check if reference is special format like A:A or 1:1.
+    
+    Args:
+        ref_str: Reference string to check
+    
+    Returns:
+        True if reference is special range format
+    """
+    if ref_str.count(':') == 1:
+        left, right = ref_str.split(':')
+        return left == right and (left.isalpha() or left.isdigit())
+    return False
+
+
+def _validate_reference_format(ref_str: str) -> Optional[xlerrors.ExcelError]:
+    """
+    Validate reference format and return error if invalid.
+    
+    Args:
+        ref_str: Reference string to validate
+    
+    Returns:
+        Excel error if invalid, None if valid
+    """
+    try:
+        if ':' in ref_str:
+            # Check for special range types (A:A, 1:1, etc.)
+            if _is_special_range_reference(ref_str):
+                left, _ = ref_str.split(':')
+                if not ((left.isalpha() and left.isupper()) or left.isdigit()):
+                    return xlerrors.NameExcelError(ERROR_MESSAGES['INVALID_REFERENCE'].format(ref=ref_str))
+            else:
+                # Regular range reference
+                ReferenceResolver.parse_range_reference(ref_str)
+        else:
+            # Single cell reference
+            ReferenceResolver.parse_cell_reference(ref_str)
+    except (xlerrors.ValueExcelError, xlerrors.RefExcelError):
+        return xlerrors.NameExcelError(ERROR_MESSAGES['INVALID_REFERENCE'].format(ref=ref_str))
+    
+    return None  # No error
+
+
 @xl.register()
 @xl.validate_args
+@_handle_function_errors("OFFSET")
 def OFFSET(
     reference: func_xltypes.XlAnything,
     rows: func_xltypes.XlNumber,
@@ -52,31 +234,27 @@ def OFFSET(
     Excel Documentation:
         https://support.microsoft.com/en-us/office/offset-function-c8de19ae-dd79-4b9b-a14e-b4d906d11b66
     """
-    try:
-        # Convert parameters to appropriate types
-        ref_str = str(reference)
-        rows_int = int(rows)
-        cols_int = int(cols)
-        height_int = int(height) if height is not None and height != "" else None
-        width_int = int(width) if width is not None and width != "" else None
-        
-        # Use reference utilities to calculate offset
-        result_ref = ReferenceResolver.offset_reference(
-            ref_str, rows_int, cols_int, height_int, width_int
-        )
-        
-        return result_ref
-        
-    except (xlerrors.RefExcelError, xlerrors.ValueExcelError):
-        # Re-raise Excel errors as-is
-        raise
-    except Exception as e:
-        # Convert unexpected errors to Excel errors
-        raise xlerrors.ValueExcelError(f"OFFSET error: {str(e)}")
+    # Convert parameters using utility function
+    params = _convert_function_parameters(
+        reference=(reference, str, None, False),
+        rows=(rows, int, None, False),
+        cols=(cols, int, None, False),
+        height=(height, int, None, True),
+        width=(width, int, None, True)
+    )
+    
+    # Use reference utilities to calculate offset
+    result_ref = ReferenceResolver.offset_reference(
+        params['reference'], params['rows'], params['cols'], 
+        params['height'], params['width']
+    )
+    
+    return result_ref
 
 
 @xl.register()
 @xl.validate_args
+@_handle_function_errors("INDEX")
 def INDEX(
     array,
     row_num: func_xltypes.XlNumber,
@@ -108,62 +286,40 @@ def INDEX(
     Excel Documentation:
         https://support.microsoft.com/en-us/office/index-function-a5dcf0dd-996d-40a4-a822-b56b061328bd
     """
-    try:
-        # Convert parameters
-        row_num_int = int(row_num)
-        col_num_int = int(col_num) if col_num is not None else 1
-        
-        # Validate parameters
-        if row_num_int < 0 or col_num_int < 0:
-            return xlerrors.ValueExcelError("Row and column numbers must be non-negative")
-        
-        # Get array data - handle different array types
-        if hasattr(array, 'values') and array.values:
-            array_values = array.values
-        elif isinstance(array, (list, tuple)):
-            array_values = array
-        else:
-            return xlerrors.ValueExcelError("Array is empty or invalid")
-        
-        if not array_values:
-            return xlerrors.ValueExcelError("Array is empty")
-        num_rows = len(array_values)
-        num_cols = len(array_values[0]) if num_rows > 0 else 0
-        
-        # Handle special cases for 0 (entire row/column)
-        if row_num_int == 0 and col_num_int == 0:
-            return xlerrors.ValueExcelError("Both row_num and col_num cannot be 0")
-        
-        if row_num_int == 0:
-            # Return entire column
-            if col_num_int < 1 or col_num_int > num_cols:
-                return xlerrors.RefExcelError(f"Column {col_num_int} is out of range (1-{num_cols})")
-            return [row[col_num_int - 1] for row in array_values]
-        
-        if col_num_int == 0:
-            # Return entire row
-            if row_num_int < 1 or row_num_int > num_rows:
-                return xlerrors.RefExcelError(f"Row {row_num_int} is out of range (1-{num_rows})")
-            return array_values[row_num_int - 1]
-        
-        # Return single value
-        if row_num_int < 1 or row_num_int > num_rows:
-            return xlerrors.RefExcelError(f"Row {row_num_int} is out of range (1-{num_rows})")
-        if col_num_int < 1 or col_num_int > num_cols:
-            return xlerrors.RefExcelError(f"Column {col_num_int} is out of range (1-{num_cols})")
-        
-        return array_values[row_num_int - 1][col_num_int - 1]
-        
-    except (xlerrors.RefExcelError, xlerrors.ValueExcelError):
-        # Re-raise Excel errors as-is
-        raise
-    except Exception as e:
-        # Convert unexpected errors to Excel errors
-        return xlerrors.ValueExcelError(f"INDEX error: {str(e)}")
+    # Convert parameters using utility function
+    params = _convert_function_parameters(
+        row_num=(row_num, int, None, False),
+        col_num=(col_num, int, DEFAULT_COL_NUM, True)
+    )
+    
+    # Validate and get array information
+    array_info, error = _validate_and_get_array_info(array, "INDEX")
+    if error:
+        return error
+    
+    array_values, num_rows, num_cols = array_info
+    
+    # Validate array bounds
+    bounds_error = _validate_array_bounds(params['row_num'], params['col_num'], num_rows, num_cols)
+    if bounds_error:
+        return bounds_error
+    
+    # Handle special cases for 0 (entire row/column)
+    if params['row_num'] == 0:
+        # Return entire column
+        return [row[params['col_num'] - 1] for row in array_values]
+    
+    if params['col_num'] == 0:
+        # Return entire row
+        return array_values[params['row_num'] - 1]
+    
+    # Return single value
+    return array_values[params['row_num'] - 1][params['col_num'] - 1]
 
 
 @xl.register()
 @xl.validate_args
+@_handle_function_errors("INDIRECT")
 def INDIRECT(
     ref_text: func_xltypes.XlText,
     a1: func_xltypes.XlBoolean = True
@@ -197,105 +353,54 @@ def INDIRECT(
     Excel Documentation:
         https://support.microsoft.com/en-us/office/indirect-function-474b3a3a-8a26-4f44-b491-92b6306fa261
     """
-    try:
-        # Convert parameter
-        ref_str = str(ref_text).strip()
-        
-        if not ref_str:
-            return xlerrors.NameExcelError("Reference text cannot be empty")
-        
-        # Check reference style
-        if not a1:
-            return xlerrors.ValueExcelError("R1C1 reference style is not yet supported")
-        
-        # Validate the reference format by attempting to parse it
-        try:
-            if ':' in ref_str:
-                # Check for special range types (A:A, 1:1, etc.)
-                if ref_str.count(':') == 1:
-                    left, right = ref_str.split(':')
-                    # Handle entire column (A:A) or entire row (1:1) references
-                    if left == right and (left.isalpha() or left.isdigit()):
-                        # Valid entire column/row reference - don't parse, just validate format
-                        if not (left.isalpha() and left.isupper()) and not left.isdigit():
-                            return xlerrors.NameExcelError(f"Invalid reference: '{ref_str}'")
-                    else:
-                        # Regular range reference
-                        ReferenceResolver.parse_range_reference(ref_str)
-                else:
-                    # Invalid range format
-                    return xlerrors.NameExcelError(f"Invalid reference: '{ref_str}'")
-            else:
-                # Single cell reference
-                ReferenceResolver.parse_cell_reference(ref_str)
-        except (xlerrors.ValueExcelError, xlerrors.RefExcelError):
-            # Invalid reference format
-            return xlerrors.NameExcelError(f"Invalid reference: '{ref_str}'")
-        
-        # Return the normalized reference string
-        # The evaluator will resolve this to the actual cell/range value
-        # Handle special cases that normalize_reference doesn't support
-        if ':' in ref_str and ref_str.count(':') == 1:
-            left, right = ref_str.split(':')
-            if left == right and (left.isalpha() or left.isdigit()):
-                # Special range like A:A or 1:1 - return as-is
-                return ref_str
-        
-        return ReferenceResolver.normalize_reference(ref_str)
-        
-    except xlerrors.NameExcelError:
-        # Re-raise name errors as-is
-        raise
-    except Exception as e:
-        # Convert unexpected errors to name errors
-        return xlerrors.NameExcelError(f"INDIRECT error: {str(e)}")
+    # Convert parameters using utility function
+    params = _convert_function_parameters(
+        ref_text=(ref_text, str, None, False)
+    )
+    
+    ref_str = params['ref_text']
+    
+    if not ref_str:
+        return xlerrors.NameExcelError(ERROR_MESSAGES['EMPTY_REFERENCE'])
+    
+    # Check reference style
+    if not a1:
+        return xlerrors.ValueExcelError(ERROR_MESSAGES['R1C1_NOT_SUPPORTED'])
+    
+    # Validate the reference format
+    validation_error = _validate_reference_format(ref_str)
+    if validation_error:
+        return validation_error
+    
+    # Return the normalized reference string
+    # Handle special cases that normalize_reference doesn't support
+    if _is_special_range_reference(ref_str):
+        return ref_str
+    
+    return ReferenceResolver.normalize_reference(ref_str)
 
 
 # Additional helper functions for advanced features
 
-def _validate_array_parameter(array, function_name: str):
+def _validate_array_consistency(array_data: list, function_name: str) -> Optional[xlerrors.ExcelError]:
     """
-    Validate that array parameter is properly formatted.
+    Validate that array rows have consistent lengths.
     
     Args:
-        array: Array parameter to validate
+        array_data: Array data to validate
         function_name: Name of calling function for error messages
         
-    Raises:
-        ValueExcelError: If array is invalid
+    Returns:
+        Excel error if inconsistent, None if valid
     """
-    if not hasattr(array, 'values'):
-        raise xlerrors.ValueExcelError(f"{function_name}: Array parameter is invalid")
-    
-    if not array.values:
-        raise xlerrors.ValueExcelError(f"{function_name}: Array is empty")
-    
-    # Ensure all rows have the same length
-    if len(array.values) > 1:
-        first_row_len = len(array.values[0])
-        for i, row in enumerate(array.values[1:], 1):
+    if len(array_data) > 1:
+        first_row_len = len(array_data[0])
+        for i, row in enumerate(array_data[1:], 1):
             if len(row) != first_row_len:
-                raise xlerrors.ValueExcelError(
+                return xlerrors.ValueExcelError(
                     f"{function_name}: Array rows have inconsistent lengths"
                 )
-
-
-def _get_array_dimensions(array) -> tuple[int, int]:
-    """
-    Get the dimensions of an array.
-    
-    Args:
-        array: Array to measure
-        
-    Returns:
-        Tuple of (num_rows, num_cols)
-    """
-    if not array.values:
-        return 0, 0
-    
-    num_rows = len(array.values)
-    num_cols = len(array.values[0]) if num_rows > 0 else 0
-    return num_rows, num_cols
+    return None
 
 
 # Future functions to implement:
