@@ -187,6 +187,6 @@ class DynamicRangeTest(testing.FunctionalTestCase):
     def test_nested_indirect_offset(self):
         """Test nested INDIRECT with OFFSET result."""
         value = self.evaluator.evaluate('Sheet1!O2')
-        # INDIRECT(OFFSET("K1", 1, 0)) -> returns reference string "K2"
-        expected = "K2"
+        # INDIRECT(OFFSET("K1", 1, 0)) -> OFFSET returns reference to K2, INDIRECT returns value at K2
+        expected = "C3"  # Value at K2 (correct Excel behavior)
         self.assertEqual(expected, value)
