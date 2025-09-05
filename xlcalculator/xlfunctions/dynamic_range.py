@@ -21,8 +21,8 @@ def OFFSET(
     reference: func_xltypes.XlAnything,
     rows: func_xltypes.XlNumber,
     cols: func_xltypes.XlNumber,
-    height: func_xltypes.XlNumber = None,
-    width: func_xltypes.XlNumber = None
+    height=None,
+    width=None
 ) -> func_xltypes.XlAnything:
     """
     Returns a reference to a range that is offset from a starting reference.
@@ -57,8 +57,8 @@ def OFFSET(
         ref_str = str(reference)
         rows_int = int(rows)
         cols_int = int(cols)
-        height_int = int(height) if height is not None else None
-        width_int = int(width) if width is not None else None
+        height_int = int(height) if height is not None and height != "" else None
+        width_int = int(width) if width is not None and width != "" else None
         
         # Use reference utilities to calculate offset
         result_ref = ReferenceResolver.offset_reference(
