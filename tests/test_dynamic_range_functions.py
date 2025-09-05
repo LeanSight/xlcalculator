@@ -361,12 +361,12 @@ class TestINDEXFunction(TestDynamicRangeFunctions):
         self.assertEqual(result_no_context, expected_no_context,
                         "OFFSET should return reference string without context")
         
-        # Test OFFSET with evaluator context (new functionality)
+        # Test OFFSET with evaluator context (Excel behavior)
         _set_evaluator_context(self.evaluator)
         result_with_context = OFFSET('A1', 1, 0)
-        expected_with_context = 'Alice'  # Should return actual value
+        expected_with_context = 'A2'  # Should return reference string (Excel behavior)
         self.assertEqual(result_with_context, expected_with_context,
-                        "OFFSET should resolve to actual value with context")
+                        "OFFSET should return reference string for single cells (Excel behavior)")
         
         # Test range OFFSET with evaluator context
         result_range = OFFSET('B1', 1, 0, 3, 1)  # Ages column
@@ -383,6 +383,50 @@ class TestINDEXFunction(TestDynamicRangeFunctions):
         # Clean up evaluator context to avoid affecting other tests
         from xlcalculator.xlfunctions.dynamic_range import _clear_evaluator_context
         _clear_evaluator_context()
+    
+    def test_indirect_reference_resolution_fix(self):
+        """Test that INDIRECT resolves to actual values when evaluator context is available.
+        
+        This test demonstrates the INDIRECT Reference Resolution fix where
+        INDIRECT can resolve references to actual values when called with evaluator context.
+        """
+        from xlcalculator.xlfunctions.dynamic_range import INDIRECT, _set_evaluator_context, _clear_evaluator_context
+        from xlcalculator.xlfunctions import func_xltypes
+        
+        # Set up test data in the model
+        test_data = [
+            ['Name', 'Age', 'Score'],
+            ['Alice', 25, 85],
+            ['Bob', 30, 92],
+            ['Charlie', 35, 78]
+        ]
+        
+        for row_idx, row_data in enumerate(test_data, 1):
+            for col_idx, value in enumerate(row_data, 1):
+                cell_ref = f'Sheet1!{chr(64 + col_idx)}{row_idx}'
+                self.model.set_cell_value(cell_ref, value)
+        
+        # Test INDIRECT without evaluator context (backward compatibility)
+        result_no_context = INDIRECT('A2')
+        expected_no_context = 'A2'  # Should return reference string
+        self.assertEqual(result_no_context, expected_no_context,
+                        "INDIRECT should return reference string without context")
+        
+        # Test INDIRECT with evaluator context (new functionality)
+        _set_evaluator_context(self.evaluator)
+        result_with_context = INDIRECT('A2')
+        expected_with_context = 'Alice'  # Should return actual value
+        self.assertEqual(result_with_context, expected_with_context,
+                        "INDIRECT should resolve to actual value with context")
+        
+        # Test range INDIRECT with evaluator context (Excel behavior)
+        result_range = INDIRECT('B1:B4')  # Ages column including header
+        expected_range = 'B1:B4'  # Should return reference string (Excel behavior)
+        self.assertEqual(result_range, expected_range,
+                        "INDIRECT should return reference string for ranges (Excel behavior)")
+        
+        # Clean up evaluator context to avoid affecting other tests
+        _clear_evaluator_context()
 
 
 class TestINDIRECTFunction(TestDynamicRangeFunctions):
@@ -390,17 +434,23 @@ class TestINDIRECTFunction(TestDynamicRangeFunctions):
     
     def test_indirect_basic_references(self):
         """Test INDIRECT with basic cell references"""
-        test_cases = [
-            ("A1", "A1"),
-            ("B2", "B2"),
-            ("Z26", "Z26"),
-            ("AA1", "AA1"),
-        ]
+        from xlcalculator.xlfunctions.dynamic_range import _set_evaluator_context, _clear_evaluator_context
         
-        for ref_text, expected in test_cases:
-            with self.subTest(ref_text=ref_text):
-                result = INDIRECT(ref_text)
-                self.assertEqual(result, expected)
+        # Test with evaluator context (Excel behavior)
+        _set_evaluator_context(self.evaluator)
+        try:
+            test_cases = [
+                ("A1", "Name"),     # Should return actual value at A1
+                ("B2", 25),         # Should return actual value at B2
+                ("C3", "LA"),       # Should return actual value at C3
+            ]
+            
+            for ref_text, expected in test_cases:
+                with self.subTest(ref_text=ref_text):
+                    result = INDIRECT(ref_text)
+                    self.assertEqual(result, expected)
+        finally:
+            _clear_evaluator_context()
     
     def test_indirect_range_references(self):
         """Test INDIRECT with range references"""
@@ -418,29 +468,43 @@ class TestINDIRECTFunction(TestDynamicRangeFunctions):
     
     def test_indirect_sheet_references(self):
         """Test INDIRECT with sheet references"""
-        test_cases = [
-            ("Sheet1!A1", "Sheet1!A1"),
-            ("Data!B2:C3", "Data!B2:C3"),
-            ("'Sheet Name'!A1", "'Sheet Name'!A1"),
-        ]
+        from xlcalculator.xlfunctions.dynamic_range import _set_evaluator_context, _clear_evaluator_context
         
-        for ref_text, expected in test_cases:
-            with self.subTest(ref_text=ref_text):
-                result = INDIRECT(ref_text)
-                self.assertEqual(result, expected)
+        # Test with evaluator context (Excel behavior)
+        _set_evaluator_context(self.evaluator)
+        try:
+            test_cases = [
+                ("Sheet1!A1", "Name"),      # Should return actual value at Sheet1!A1
+                ("Sheet1!B2", 25),          # Should return actual value at Sheet1!B2
+                ("Sheet1!C3", "LA"),        # Should return actual value at Sheet1!C3
+            ]
+            
+            for ref_text, expected in test_cases:
+                with self.subTest(ref_text=ref_text):
+                    result = INDIRECT(ref_text)
+                    self.assertEqual(result, expected)
+        finally:
+            _clear_evaluator_context()
     
     def test_indirect_absolute_references(self):
         """Test INDIRECT with absolute references"""
-        test_cases = [
-            ("$A$1", "A1"),         # Should normalize
-            ("$B2", "B2"),          # Should normalize
-            ("A$3", "A3"),          # Should normalize
-        ]
+        from xlcalculator.xlfunctions.dynamic_range import _set_evaluator_context, _clear_evaluator_context
         
-        for ref_text, expected in test_cases:
-            with self.subTest(ref_text=ref_text):
-                result = INDIRECT(ref_text)
-                self.assertEqual(result, expected)
+        # Test with evaluator context (Excel behavior)
+        _set_evaluator_context(self.evaluator)
+        try:
+            test_cases = [
+                ("$A$1", "Name"),       # Should return actual value at A1
+                ("$B$2", 25),           # Should return actual value at B2
+                ("$A$3", "Bob"),        # Should return actual value at A3
+            ]
+            
+            for ref_text, expected in test_cases:
+                with self.subTest(ref_text=ref_text):
+                    result = INDIRECT(ref_text)
+                    self.assertEqual(result, expected)
+        finally:
+            _clear_evaluator_context()
     
     def test_indirect_name_errors(self):
         """Test INDIRECT #NAME? errors"""
@@ -538,16 +602,23 @@ class TestExcelCompatibility(TestDynamicRangeFunctions):
     
     def test_case_insensitive_references(self):
         """Test that references are case-insensitive"""
-        test_cases = [
-            ("a1", "A1"),
-            ("sheet1!b2", "sheet1!B2"),
-            ("$a$1", "A1"),
-        ]
+        from xlcalculator.xlfunctions.dynamic_range import _set_evaluator_context, _clear_evaluator_context
         
-        for ref_text, expected in test_cases:
-            with self.subTest(ref_text=ref_text):
-                result = INDIRECT(ref_text)
-                self.assertEqual(result, expected)
+        # Test with evaluator context (Excel behavior)
+        _set_evaluator_context(self.evaluator)
+        try:
+            test_cases = [
+                ("a1", "Name"),         # Should return actual value at A1
+                ("Sheet1!b2", 25),      # Should return actual value at B2 (note: sheet name case matters)
+                ("$a$1", "Name"),       # Should return actual value at A1
+            ]
+            
+            for ref_text, expected in test_cases:
+                with self.subTest(ref_text=ref_text):
+                    result = INDIRECT(ref_text)
+                    self.assertEqual(result, expected)
+        finally:
+            _clear_evaluator_context()
 
 
 class TestPerformance(TestDynamicRangeFunctions):

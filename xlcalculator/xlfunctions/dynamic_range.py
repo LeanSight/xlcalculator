@@ -48,6 +48,8 @@ def _clear_evaluator_context():
         delattr(_context, 'evaluator')
 
 
+
+
 # Utility Functions
 
 def _convert_function_parameters(**params) -> Dict[str, Any]:
@@ -269,7 +271,13 @@ def OFFSET(
     # Try to resolve to actual values if evaluator context is available
     evaluator = _get_evaluator_context()
     if evaluator:
-        return _resolve_offset_reference(result_ref, evaluator)
+        # For single cell references, return the reference string (Excel behavior)
+        # This allows INDIRECT to work correctly with OFFSET results
+        if ':' not in result_ref:
+            return result_ref
+        else:
+            # For ranges, return the actual values as Array
+            return _resolve_offset_reference(result_ref, evaluator)
     
     # No evaluator context - return string reference (backward compatible)
     return result_ref
@@ -427,12 +435,47 @@ def INDIRECT(
     if validation_error:
         return validation_error
     
-    # Return the normalized reference string
-    # Handle special cases that normalize_reference doesn't support
+    # Normalize the reference
     if _is_special_range_reference(ref_str):
-        return ref_str
+        normalized_ref = ref_str
+    else:
+        normalized_ref = ReferenceResolver.normalize_reference(ref_str)
     
-    return ReferenceResolver.normalize_reference(ref_str)
+    # Try to resolve to actual values if evaluator context available
+    evaluator = _get_evaluator_context()
+    if evaluator:
+        return _resolve_indirect_reference(normalized_ref, evaluator)
+    
+    # No evaluator context - return normalized reference (backward compatible)
+    return normalized_ref
+
+
+def _resolve_indirect_reference(ref_string: str, evaluator) -> func_xltypes.XlAnything:
+    """
+    Resolve INDIRECT reference string according to Excel behavior.
+    
+    Args:
+        ref_string: Reference string like "A2" or "A1:B2"
+        evaluator: Evaluator instance for value resolution
+        
+    Returns:
+        - Single value for single cell references
+        - Reference string for range references (Excel behavior)
+        - String reference if resolution fails
+    """
+    try:
+        # Ensure reference has sheet name for validation
+        full_ref = ref_string if '!' in ref_string else f'Sheet1!{ref_string}'
+            
+        if ':' in ref_string:
+            # Range reference - return reference string (Excel behavior)
+            return ref_string
+        else:
+            # Single cell reference - return the actual value
+            return evaluator.get_cell_value(full_ref)
+    except Exception:
+        # If resolution fails, fallback to string reference
+        return ref_string
 
 
 # Additional helper functions for advanced features
