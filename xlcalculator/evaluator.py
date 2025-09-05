@@ -83,6 +83,11 @@ class Evaluator:
         #    (Note: Range nodes will automatically evaluate all their
         #           dependencies.)
         context = context if context is not None else self._get_context(addr)
+        
+        # Set evaluator context for dynamic range functions
+        from xlcalculator.xlfunctions.dynamic_range import _set_evaluator_context
+        _set_evaluator_context(self)
+        
         try:
             value = cell.formula.ast.eval(context)
         except Exception as err:
@@ -106,3 +111,45 @@ class Evaluator:
     def get_cell_value(self, address):
         """Gets the value of a cell in the model."""
         return self.model.get_cell_value(address)
+    
+    def get_range_values(self, range_ref):
+        """Gets the values of a range in the model."""
+        # Parse range reference like "Sheet1!B2:C3" or "B2:C3"
+        if ':' not in range_ref:
+            # Single cell
+            return [[self.get_cell_value(range_ref)]]
+        
+        # Handle sheet prefix
+        sheet_prefix = ""
+        if '!' in range_ref:
+            sheet_prefix, range_part = range_ref.split('!', 1)
+            sheet_prefix += '!'
+        else:
+            range_part = range_ref
+            sheet_prefix = 'Sheet1!'
+        
+        # Parse range part
+        start_ref, end_ref = range_part.split(':')
+        
+        # Simple parsing for basic ranges (A1:B2 format)
+        # Extract column and row from start reference
+        start_col_letter = ''.join(c for c in start_ref if c.isalpha())
+        start_row = int(''.join(c for c in start_ref if c.isdigit()))
+        start_col = ord(start_col_letter) - ord('A') + 1
+        
+        # Extract column and row from end reference  
+        end_col_letter = ''.join(c for c in end_ref if c.isalpha())
+        end_row = int(''.join(c for c in end_ref if c.isdigit()))
+        end_col = ord(end_col_letter) - ord('A') + 1
+        
+        values = []
+        for row in range(start_row, end_row + 1):
+            row_values = []
+            for col in range(start_col, end_col + 1):
+                col_letter = chr(ord('A') + col - 1)
+                cell_ref = f'{sheet_prefix}{col_letter}{row}'
+                value = self.get_cell_value(cell_ref)
+                row_values.append(value)
+            values.append(row_values)
+        
+        return values

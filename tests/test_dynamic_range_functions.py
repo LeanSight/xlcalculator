@@ -62,9 +62,27 @@ class TestDynamicRangeFunctions(unittest.TestCase):
         Returns:
             List representation of the result for comparison
         """
-        if hasattr(result, 'tolist'):
+        from xlcalculator.xlfunctions import func_xltypes
+        
+        if isinstance(result, func_xltypes.Array):
+            # Handle func_xltypes.Array objects
+            if hasattr(result, 'values') and result.values is not None:
+                if hasattr(result.values, 'tolist'):
+                    # Numpy array
+                    array_data = result.values.tolist()
+                else:
+                    # Regular list
+                    array_data = result.values
+                # Flatten if it's a single row/column wrapped in a list
+                if len(array_data) == 1 and isinstance(array_data[0], list):
+                    return [str(item) for item in array_data[0]]
+                else:
+                    return [str(item) for item in array_data]
+            else:
+                return []
+        elif hasattr(result, 'tolist'):
             return result.tolist()
-        elif hasattr(result, 'values') and hasattr(result.values, '__iter__'):
+        elif hasattr(result, 'values') and result.values is not None:
             return list(result.values)
         elif isinstance(result, list):
             return result
@@ -263,6 +281,108 @@ class TestINDEXFunction(TestDynamicRangeFunctions):
         
         result = INDEX(empty_array, 1, 1)
         self.assertIsInstance(result, xlerrors.ValueExcelError)
+    
+    def test_index_array_boolean_evaluation_fix(self):
+        """Test that INDEX works with func_xltypes.Array (Priority 0 fix).
+        
+        This test demonstrates the Array Boolean Bug where numpy arrays
+        cause ValueError when evaluated as boolean in _get_array_data().
+        """
+        # Import func_xltypes to create a proper Array object
+        from xlcalculator.xlfunctions import func_xltypes
+        
+        # Create a func_xltypes.Array with numpy-like behavior
+        # This simulates the real scenario where INDEX receives Array objects
+        test_data = [
+            ['Name', 'Age', 'City'],
+            ['Alice', 25, 'NYC'],
+            ['Bob', 30, 'LA']
+        ]
+        array = func_xltypes.Array(test_data)
+        
+        # This should work without ValueError
+        # Before fix: ValueError: The truth value of an array with more than one element is ambiguous
+        # After fix: Should return 25 (Alice's age)
+        result = INDEX(array, 2, 2)
+        expected = 25
+        self.assertEqual(result, expected)
+    
+    def test_index_array_return_integration_fix(self):
+        """Test that INDEX returns proper array types (Priority 1 fix).
+        
+        This test demonstrates the Array Return Type Integration issue where
+        INDEX returns Python lists instead of func_xltypes.Array objects.
+        """
+        from xlcalculator.xlfunctions import func_xltypes
+        
+        # Create test data
+        test_data = [
+            ['Name', 'Age', 'City'],
+            ['Alice', 25, 'NYC'],
+            ['Bob', 30, 'LA']
+        ]
+        array = func_xltypes.Array(test_data)
+        
+        # Test column array return (row_num=0)
+        result = INDEX(array, 0, 2)  # Should return Age column
+        self.assertIsInstance(result, func_xltypes.Array, 
+                            "INDEX should return func_xltypes.Array for column access")
+        
+        # Test row array return (col_num=0)  
+        result = INDEX(array, 2, 0)  # Should return Alice row
+        self.assertIsInstance(result, func_xltypes.Array,
+                            "INDEX should return func_xltypes.Array for row access")
+    
+    def test_offset_range_resolution_integration_fix(self):
+        """Test that OFFSET resolves to actual values when evaluator context is available.
+        
+        This test demonstrates the OFFSET Range Resolution fix where
+        OFFSET can resolve references to actual values when called with evaluator context.
+        """
+        from xlcalculator.xlfunctions.dynamic_range import OFFSET, _set_evaluator_context
+        from xlcalculator.xlfunctions import func_xltypes
+        
+        # Set up test data in the model
+        test_data = [
+            ['Name', 'Age', 'Score'],
+            ['Alice', 25, 85],
+            ['Bob', 30, 92],
+            ['Charlie', 35, 78]
+        ]
+        
+        for row_idx, row_data in enumerate(test_data, 1):
+            for col_idx, value in enumerate(row_data, 1):
+                cell_ref = f'Sheet1!{chr(64 + col_idx)}{row_idx}'
+                self.model.set_cell_value(cell_ref, value)
+        
+        # Test OFFSET without evaluator context (backward compatibility)
+        result_no_context = OFFSET('A1', 1, 0)
+        expected_no_context = 'A2'  # Should return reference string
+        self.assertEqual(result_no_context, expected_no_context,
+                        "OFFSET should return reference string without context")
+        
+        # Test OFFSET with evaluator context (new functionality)
+        _set_evaluator_context(self.evaluator)
+        result_with_context = OFFSET('A1', 1, 0)
+        expected_with_context = 'Alice'  # Should return actual value
+        self.assertEqual(result_with_context, expected_with_context,
+                        "OFFSET should resolve to actual value with context")
+        
+        # Test range OFFSET with evaluator context
+        result_range = OFFSET('B1', 1, 0, 3, 1)  # Ages column
+        self.assertIsInstance(result_range, func_xltypes.Array,
+                            "OFFSET should return Array for range results")
+        
+        # Verify the array contains the expected values
+        # The array should contain ages: [25, 30, 35]
+        array_values = result_range.values
+        expected_ages = [[25], [30], [35]]  # Column format
+        self.assertEqual(array_values.tolist(), expected_ages,
+                        "OFFSET range should contain correct values")
+        
+        # Clean up evaluator context to avoid affecting other tests
+        from xlcalculator.xlfunctions.dynamic_range import _clear_evaluator_context
+        _clear_evaluator_context()
 
 
 class TestINDIRECTFunction(TestDynamicRangeFunctions):

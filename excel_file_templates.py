@@ -316,6 +316,124 @@ def create_text_excel():
     
     return wb
 
+def create_dynamic_range_excel():
+    """Create DYNAMIC_RANGE.xlsx with INDEX, OFFSET, and INDIRECT test scenarios."""
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Sheet1"
+    
+    # Test data grid (A1:E5) for INDEX and OFFSET tests
+    ws['A1'] = 'Name'
+    ws['B1'] = 'Age'
+    ws['C1'] = 'City'
+    ws['D1'] = 'Score'
+    ws['E1'] = 'Active'
+    
+    ws['A2'] = 'Alice'
+    ws['B2'] = 25
+    ws['C2'] = 'NYC'
+    ws['D2'] = 85
+    ws['E2'] = True
+    
+    ws['A3'] = 'Bob'
+    ws['B3'] = 30
+    ws['C3'] = 'LA'
+    ws['D3'] = 92
+    ws['E3'] = False
+    
+    ws['A4'] = 'Charlie'
+    ws['B4'] = 35
+    ws['C4'] = 'Chicago'
+    ws['D4'] = 78
+    ws['E4'] = True
+    
+    ws['A5'] = 'Diana'
+    ws['B5'] = 28
+    ws['C5'] = 'Miami'
+    ws['D5'] = 95
+    ws['E5'] = True
+    
+    # INDEX function tests
+    ws['G1'] = '=INDEX(A1:E5, 2, 2)'  # Should return 25 (Alice's age)
+    ws['G2'] = '=INDEX(A1:E5, 3, 1)'  # Should return "Bob"
+    ws['G3'] = '=INDEX(A1:E5, 1, 3)'  # Should return "City"
+    ws['G4'] = '=INDEX(A1:E5, 4, 4)'  # Should return 78 (Charlie's score)
+    ws['G5'] = '=INDEX(A1:E5, 5, 5)'  # Should return True (Diana's active status)
+    
+    # INDEX with entire row/column
+    ws['G7'] = '=INDEX(A1:E5, 0, 2)'  # Should return entire column B (ages)
+    ws['G8'] = '=INDEX(A1:E5, 2, 0)'  # Should return entire row 2 (Alice's data)
+    
+    # INDEX error cases
+    ws['G10'] = '=INDEX(A1:E5, 6, 1)'  # Should return #REF! (row out of bounds)
+    ws['G11'] = '=INDEX(A1:E5, 1, 6)'  # Should return #REF! (column out of bounds)
+    
+    # OFFSET function tests
+    ws['I1'] = '=OFFSET(A1, 1, 1)'     # Should return B2 reference (25)
+    ws['I2'] = '=OFFSET(B2, 1, 1)'     # Should return C3 reference ("LA")
+    ws['I3'] = '=OFFSET(A1, 0, 2)'     # Should return C1 reference ("City")
+    ws['I4'] = '=OFFSET(A1, 2, 3)'     # Should return D3 reference (92)
+    
+    # OFFSET with height and width
+    ws['I6'] = '=OFFSET(A1, 1, 1, 2, 2)'  # Should return B2:C3 range
+    ws['I7'] = '=OFFSET(A1, 0, 0, 3, 3)'  # Should return A1:C3 range
+    
+    # OFFSET error cases
+    ws['I9'] = '=OFFSET(A1, -1, 0)'    # Should return #REF! (out of bounds)
+    ws['I10'] = '=OFFSET(A1, 0, -1)'   # Should return #REF! (out of bounds)
+    
+    # INDIRECT function tests - reference strings
+    ws['K1'] = 'B2'
+    ws['K2'] = 'C3'
+    ws['K3'] = 'D4'
+    ws['K4'] = 'A1:C3'
+    ws['K5'] = 'InvalidRef'
+    
+    # INDIRECT formulas
+    ws['M1'] = '=INDIRECT(K1)'         # Should return value at B2 (25)
+    ws['M2'] = '=INDIRECT(K2)'         # Should return value at C3 ("LA")
+    ws['M3'] = '=INDIRECT(K3)'         # Should return value at D4 (78)
+    ws['M4'] = '=INDIRECT("B2")'       # Should return 25 (direct reference)
+    ws['M5'] = '=INDIRECT("C3")'       # Should return "LA" (direct reference)
+    
+    # INDIRECT with ranges
+    ws['M7'] = '=INDIRECT(K4)'         # Should return A1:C3 range
+    ws['M8'] = '=INDIRECT("A1:B2")'    # Should return A1:B2 range
+    
+    # INDIRECT error cases
+    ws['M10'] = '=INDIRECT(K5)'        # Should return #NAME! (invalid reference)
+    ws['M11'] = '=INDIRECT("")'        # Should return #NAME! (empty reference)
+    
+    # Complex combinations
+    ws['O1'] = '=INDEX(INDIRECT("A1:E5"), 2, 2)'  # Nested: INDEX with INDIRECT
+    ws['O2'] = '=INDIRECT(OFFSET("K1", 1, 0))'    # Nested: INDIRECT with OFFSET result
+    
+    # Store expected values for testing
+    # INDEX expected values
+    ws['G1'].value = 25
+    ws['G2'].value = "Bob"
+    ws['G3'].value = "City"
+    ws['G4'].value = 78
+    ws['G5'].value = True
+    
+    # OFFSET expected values (these would be references in real Excel)
+    ws['I1'].value = 25  # Value at B2
+    ws['I2'].value = "LA"  # Value at C3
+    ws['I3'].value = "City"  # Value at C1
+    ws['I4'].value = 92  # Value at D3
+    
+    # INDIRECT expected values
+    ws['M1'].value = 25
+    ws['M2'].value = "LA"
+    ws['M3'].value = 78
+    ws['M4'].value = 25
+    ws['M5'].value = "LA"
+    
+    # Complex combinations expected values
+    ws['O1'].value = 25
+    
+    return wb
+
 def save_excel_files():
     """Save all Excel files to the resources directory."""
     resources_dir = "tests/resources"
@@ -329,6 +447,7 @@ def save_excel_files():
         ("INFORMATION.xlsx", create_information_excel),
         ("MATH.xlsx", create_math_excel),
         ("TEXT.xlsx", create_text_excel),
+        ("DYNAMIC_RANGE.xlsx", create_dynamic_range_excel),
     ]
     
     created_files = []

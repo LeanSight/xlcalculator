@@ -12,6 +12,7 @@ Functions implemented:
 
 from typing import Union, Optional, Any, Dict, Tuple
 from functools import wraps
+import threading
 from . import xl, xlerrors, func_xltypes
 from .reference_utils import ReferenceResolver
 
@@ -29,6 +30,22 @@ ERROR_MESSAGES = {
 }
 
 DEFAULT_COL_NUM = 1
+
+# Thread-local storage for evaluator context
+_context = threading.local()
+
+def _set_evaluator_context(evaluator):
+    """Set the current evaluator context for dynamic range functions."""
+    _context.evaluator = evaluator
+
+def _get_evaluator_context():
+    """Get the current evaluator context, if available."""
+    return getattr(_context, 'evaluator', None)
+
+def _clear_evaluator_context():
+    """Clear the current evaluator context."""
+    if hasattr(_context, 'evaluator'):
+        delattr(_context, 'evaluator')
 
 
 # Utility Functions
@@ -93,7 +110,7 @@ def _get_array_data(array) -> Optional[list]:
     Returns:
         List representation of array data, or None if invalid
     """
-    if hasattr(array, 'values') and array.values:
+    if hasattr(array, 'values') and array.values is not None:
         return array.values
     elif isinstance(array, (list, tuple)):
         return list(array)
@@ -113,7 +130,7 @@ def _validate_and_get_array_info(array, function_name: str) -> Tuple[Optional[Tu
         Tuple of ((array_data, num_rows, num_cols), error) where error is None if valid
     """
     array_data = _get_array_data(array)
-    if not array_data:
+    if array_data is None or len(array_data) == 0:
         return None, xlerrors.ValueExcelError(ERROR_MESSAGES['EMPTY_ARRAY'])
     
     num_rows = len(array_data)
@@ -249,7 +266,43 @@ def OFFSET(
         params['height'], params['width']
     )
     
+    # Try to resolve to actual values if evaluator context is available
+    evaluator = _get_evaluator_context()
+    if evaluator:
+        return _resolve_offset_reference(result_ref, evaluator)
+    
+    # No evaluator context - return string reference (backward compatible)
     return result_ref
+
+
+def _resolve_offset_reference(result_ref: str, evaluator) -> func_xltypes.XlAnything:
+    """
+    Resolve OFFSET reference string to actual values using evaluator.
+    
+    Args:
+        result_ref: Reference string like "B2" or "B2:C3"
+        evaluator: Evaluator instance for value resolution
+        
+    Returns:
+        - Single value for single cell references
+        - Array object for range references
+        - String reference if resolution fails
+    """
+    try:
+        # Ensure reference has sheet name
+        if '!' not in result_ref:
+            result_ref = f'Sheet1!{result_ref}'
+            
+        if ':' in result_ref:
+            # Range reference - get all values and return as Array
+            values = evaluator.get_range_values(result_ref)
+            return func_xltypes.Array(values)
+        else:
+            # Single cell reference - return the value
+            return evaluator.get_cell_value(result_ref)
+    except Exception:
+        # If resolution fails, fallback to string reference
+        return result_ref
 
 
 @xl.register()
@@ -307,11 +360,13 @@ def INDEX(
     # Handle special cases for 0 (entire row/column)
     if params['row_num'] == 0:
         # Return entire column
-        return [row[params['col_num'] - 1] for row in array_values]
+        result = [row[params['col_num'] - 1] for row in array_values]
+        return func_xltypes.Array([result])
     
     if params['col_num'] == 0:
         # Return entire row
-        return array_values[params['row_num'] - 1]
+        result = array_values[params['row_num'] - 1]
+        return func_xltypes.Array([result])
     
     # Return single value
     return array_values[params['row_num'] - 1][params['col_num'] - 1]
