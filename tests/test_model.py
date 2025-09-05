@@ -102,7 +102,7 @@ class ModelCompilerTest(unittest.TestCase):
     maxDiff = None
 
     def setUp(self):
-        infile = open(testing.get_resource("reader.json"), "rb")
+        infile = open(testing.get_resource("model.json"), "rb")
         json_bytes = infile.read()
         infile.close()
         data = decode(
