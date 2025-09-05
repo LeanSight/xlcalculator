@@ -41,6 +41,12 @@ class TestDynamicRangeFunctions(unittest.TestCase):
         
         self.evaluator = Evaluator(self.model)
     
+    def tearDown(self):
+        """Clean up test environment"""
+        # Ensure evaluator context is cleared to prevent test interference
+        from xlcalculator.xlfunctions.dynamic_range import _clear_evaluator_context
+        _clear_evaluator_context()
+    
     def create_test_array(self, rows: int, cols: int):
         """Create a mock array for testing"""
         array = Mock()
