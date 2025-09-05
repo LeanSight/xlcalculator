@@ -63,7 +63,7 @@ class FormulaParserTest(unittest.TestCase):
         self.assertEqual(str(self.parse("A:A")), "A:A")
 
     @unittest.skip(
-        'Not properly supported during shunting. Does not remove func node.')
+        'OFFSET function not implemented. Parser creates RangeNode instead of evaluating OFFSET.')
     def test_parse_with_offser(self):
         self.assertEqual(str(self.parse(':OFFSET(A1, 1, 1)')), ':B2')
 

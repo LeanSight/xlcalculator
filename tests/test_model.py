@@ -157,25 +157,7 @@ class ModelCompilerTest(unittest.TestCase):
 
         self.assertEqual(self.model.cells, model_compiler.model.cells)
 
-    @unittest.skip(
-        'The ranges do not line up anymore until reader.json get regenerated. '
-        'Shared formulas do not produce ranges anymore as they are resolved '
-        'by the reader automatically.'
-    )
-    def test_build_ranges(self):
-        model_compiler = ModelCompiler()
-        archive = model_compiler.read_excel_file(
-            testing.get_resource("reader.xlsm"))
-        (
-            model_compiler.model.cells,
-            model_compiler.model.formulae,
-            model_compiler.model.ranges
-        ) = archive.read_cells(ignore_sheets=['Eleventh'])
-        model_compiler.defined_names = archive.read_defined_names()
-        model_compiler.build_defined_names()
-        model_compiler.build_ranges()
 
-        self.assertEqual(self.model.ranges, model_compiler.model.ranges)
 
     def test_extract_cells(self):
         model_compiler = ModelCompiler()
