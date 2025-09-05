@@ -1,4 +1,5 @@
 from . import xl, xlerrors, func_xltypes
+import re
 
 
 @xl.register()
@@ -91,3 +92,181 @@ def MATCH(
                 "No greater value found."
             )
     return xlerrors.NaExcelError("No match found.")
+
+
+@xl.register()
+@xl.validate_args
+def XLOOKUP(
+        lookup_value: func_xltypes.XlAnything,
+        lookup_array: func_xltypes.XlArray,
+        return_array: func_xltypes.XlArray,
+        if_not_found=None,
+        match_mode: func_xltypes.XlNumber = 0,
+        search_mode: func_xltypes.XlNumber = 1
+) -> func_xltypes.XlAnything:
+    """Modern lookup function that replaces VLOOKUP, HLOOKUP, and INDEX/MATCH.
+    
+    XLOOKUP(lookup_value, lookup_array, return_array, [if_not_found], [match_mode], [search_mode])
+    
+    Args:
+        lookup_value: Value to search for
+        lookup_array: Array to search in  
+        return_array: Array to return values from
+        if_not_found: Value to return if no match found (default: #N/A error)
+        match_mode: 0=exact, -1=exact or next smallest, 1=exact or next largest, 2=wildcard
+        search_mode: 1=first to last, -1=last to first, 2=binary ascending, -2=binary descending
+        
+    Returns:
+        Matching value from return_array or if_not_found value
+        
+    Examples:
+        XLOOKUP("Apple", A1:A10, B1:B10) → Find "Apple" in A1:A10, return corresponding B value
+        XLOOKUP(100, A1:A10, B1:B10, "Not Found") → With custom not found message
+        
+    Excel Documentation:
+        https://support.microsoft.com/en-us/office/xlookup-function-b7fd680e-6d10-43e6-84f9-88eae8bf5929
+    """
+    
+    # Convert parameters to proper types (reused pattern from dynamic_range)
+    match_mode = int(match_mode) if match_mode is not None else 0
+    search_mode = int(search_mode) if search_mode is not None else 1
+    
+    # Validate arrays have compatible dimensions (reused from VLOOKUP validation)
+    if len(lookup_array.values) != len(return_array.values):
+        return xlerrors.ValueExcelError("Lookup and return arrays must have same number of rows")
+    
+    # Flatten arrays for searching (reused from MATCH logic)
+    if len(lookup_array.values[0]) == 1:
+        # Single column array
+        lookup_flat = [row[0] for row in lookup_array.values]
+    elif len(lookup_array.values) == 1:
+        # Single row array
+        lookup_flat = lookup_array.values[0]
+    else:
+        return xlerrors.ValueExcelError("Lookup array must be a single row or column")
+    
+    if len(return_array.values[0]) == 1:
+        # Single column array
+        return_flat = [row[0] for row in return_array.values]
+    elif len(return_array.values) == 1:
+        # Single row array
+        return_flat = return_array.values[0]
+    else:
+        return xlerrors.ValueExcelError("Return array must be a single row or column")
+    
+    # Enhanced search logic combining MATCH functionality with XLOOKUP features
+    found_index = _xlookup_search(lookup_value, lookup_flat, match_mode, search_mode)
+    
+    if found_index is None:
+        # Enhanced: Custom if_not_found handling (new feature)
+        if if_not_found is not None:
+            return if_not_found
+        else:
+            # Reused from VLOOKUP: Standard not found error
+            return xlerrors.NaExcelError("Lookup value not found")
+    
+    # Reused from INDEX: Result extraction
+    return return_flat[found_index]
+
+
+def _xlookup_search(lookup_value, lookup_array, match_mode, search_mode):
+    """Enhanced search logic combining MATCH functionality with XLOOKUP features.
+    
+    Reuses: Core MATCH search patterns
+    Enhances: Adds wildcard matching and binary search
+    """
+    
+    # Determine search direction (new feature)
+    if search_mode < 0:
+        # Reverse search
+        search_range = range(len(lookup_array) - 1, -1, -1)
+    else:
+        # Forward search (reused from MATCH)
+        search_range = range(len(lookup_array))
+    
+    # Binary search optimization (new feature)
+    if abs(search_mode) == 2:
+        return _binary_search(lookup_value, lookup_array, match_mode, search_mode > 0)
+    
+    # Linear search (reused and enhanced from MATCH)
+    if match_mode == 0:
+        # Exact match (reused from MATCH)
+        for i in search_range:
+            if lookup_array[i] == lookup_value:
+                return i
+                
+    elif match_mode == -1:
+        # Exact or next smallest - find largest value <= lookup_value
+        best_match = None
+        for i in range(len(lookup_array)):
+            val = lookup_array[i]
+            if val == lookup_value:
+                return i  # Exact match
+            elif val < lookup_value:
+                if best_match is None or lookup_array[best_match] < val:
+                    best_match = i
+        return best_match
+                
+    elif match_mode == 1:
+        # Exact or next largest - find smallest value >= lookup_value
+        best_match = None
+        for i in range(len(lookup_array)):
+            val = lookup_array[i]
+            if val == lookup_value:
+                return i  # Exact match
+            elif val > lookup_value:
+                if best_match is None or lookup_array[best_match] > val:
+                    best_match = i
+        return best_match
+                
+    elif match_mode == 2:
+        # Wildcard match (new feature)
+        for i in search_range:
+            if _wildcard_match(str(lookup_value), str(lookup_array[i])):
+                return i
+    
+    return None
+
+
+def _binary_search(lookup_value, lookup_array, match_mode, ascending=True):
+    """Binary search implementation for sorted arrays (new feature).
+    
+    Enhances: MATCH functionality with O(log n) performance
+    """
+    # Validate array is sorted (reused from MATCH validation logic)
+    if ascending and lookup_array != sorted(lookup_array):
+        return None  # Array not sorted ascending
+    elif not ascending and lookup_array != sorted(lookup_array, reverse=True):
+        return None  # Array not sorted descending
+    
+    left, right = 0, len(lookup_array) - 1
+    
+    while left <= right:
+        mid = (left + right) // 2
+        mid_val = lookup_array[mid]
+        
+        if mid_val == lookup_value:
+            return mid
+        elif (mid_val < lookup_value) == ascending:
+            left = mid + 1
+        else:
+            right = mid - 1
+    
+    # Handle approximate matches (enhanced from MATCH)
+    if match_mode == -1:  # Next smallest
+        return right if right >= 0 else None
+    elif match_mode == 1:  # Next largest
+        return left if left < len(lookup_array) else None
+    
+    return None
+
+
+def _wildcard_match(pattern, text):
+    """Wildcard matching for XLOOKUP match_mode=2 (new feature).
+    
+    Supports ? (single character) and * (multiple characters)
+    """
+    # Convert Excel wildcards to regex
+    regex_pattern = pattern.replace('?', '.').replace('*', '.*')
+    regex_pattern = f'^{regex_pattern}$'
+    return bool(re.match(regex_pattern, text, re.IGNORECASE))
