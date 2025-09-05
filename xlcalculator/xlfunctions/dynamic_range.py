@@ -78,9 +78,9 @@ def OFFSET(
 @xl.register()
 @xl.validate_args
 def INDEX(
-    array: func_xltypes.XlArray,
+    array,
     row_num: func_xltypes.XlNumber,
-    col_num: func_xltypes.XlNumber = None
+    col_num=None
 ) -> func_xltypes.XlAnything:
     """
     Returns the value of an element in a table or array, selected by row and column.
@@ -115,37 +115,42 @@ def INDEX(
         
         # Validate parameters
         if row_num_int < 0 or col_num_int < 0:
-            raise xlerrors.ValueExcelError("Row and column numbers must be non-negative")
+            return xlerrors.ValueExcelError("Row and column numbers must be non-negative")
         
-        # Get array data
-        if not hasattr(array, 'values') or not array.values:
-            raise xlerrors.ValueExcelError("Array is empty or invalid")
+        # Get array data - handle different array types
+        if hasattr(array, 'values') and array.values:
+            array_values = array.values
+        elif isinstance(array, (list, tuple)):
+            array_values = array
+        else:
+            return xlerrors.ValueExcelError("Array is empty or invalid")
         
-        array_values = array.values
+        if not array_values:
+            return xlerrors.ValueExcelError("Array is empty")
         num_rows = len(array_values)
         num_cols = len(array_values[0]) if num_rows > 0 else 0
         
         # Handle special cases for 0 (entire row/column)
         if row_num_int == 0 and col_num_int == 0:
-            raise xlerrors.ValueExcelError("Both row_num and col_num cannot be 0")
+            return xlerrors.ValueExcelError("Both row_num and col_num cannot be 0")
         
         if row_num_int == 0:
             # Return entire column
             if col_num_int < 1 or col_num_int > num_cols:
-                raise xlerrors.RefExcelError(f"Column {col_num_int} is out of range (1-{num_cols})")
+                return xlerrors.RefExcelError(f"Column {col_num_int} is out of range (1-{num_cols})")
             return [row[col_num_int - 1] for row in array_values]
         
         if col_num_int == 0:
             # Return entire row
             if row_num_int < 1 or row_num_int > num_rows:
-                raise xlerrors.RefExcelError(f"Row {row_num_int} is out of range (1-{num_rows})")
+                return xlerrors.RefExcelError(f"Row {row_num_int} is out of range (1-{num_rows})")
             return array_values[row_num_int - 1]
         
         # Return single value
         if row_num_int < 1 or row_num_int > num_rows:
-            raise xlerrors.RefExcelError(f"Row {row_num_int} is out of range (1-{num_rows})")
+            return xlerrors.RefExcelError(f"Row {row_num_int} is out of range (1-{num_rows})")
         if col_num_int < 1 or col_num_int > num_cols:
-            raise xlerrors.RefExcelError(f"Column {col_num_int} is out of range (1-{num_cols})")
+            return xlerrors.RefExcelError(f"Column {col_num_int} is out of range (1-{num_cols})")
         
         return array_values[row_num_int - 1][col_num_int - 1]
         
@@ -154,7 +159,7 @@ def INDEX(
         raise
     except Exception as e:
         # Convert unexpected errors to Excel errors
-        raise xlerrors.ValueExcelError(f"INDEX error: {str(e)}")
+        return xlerrors.ValueExcelError(f"INDEX error: {str(e)}")
 
 
 @xl.register()
@@ -197,26 +202,45 @@ def INDIRECT(
         ref_str = str(ref_text).strip()
         
         if not ref_str:
-            raise xlerrors.NameExcelError("Reference text cannot be empty")
+            return xlerrors.NameExcelError("Reference text cannot be empty")
         
         # Check reference style
         if not a1:
-            raise NotImplementedError("R1C1 reference style is not yet supported")
+            return xlerrors.ValueExcelError("R1C1 reference style is not yet supported")
         
         # Validate the reference format by attempting to parse it
         try:
             if ':' in ref_str:
-                # Range reference
-                ReferenceResolver.parse_range_reference(ref_str)
+                # Check for special range types (A:A, 1:1, etc.)
+                if ref_str.count(':') == 1:
+                    left, right = ref_str.split(':')
+                    # Handle entire column (A:A) or entire row (1:1) references
+                    if left == right and (left.isalpha() or left.isdigit()):
+                        # Valid entire column/row reference - don't parse, just validate format
+                        if not (left.isalpha() and left.isupper()) and not left.isdigit():
+                            return xlerrors.NameExcelError(f"Invalid reference: '{ref_str}'")
+                    else:
+                        # Regular range reference
+                        ReferenceResolver.parse_range_reference(ref_str)
+                else:
+                    # Invalid range format
+                    return xlerrors.NameExcelError(f"Invalid reference: '{ref_str}'")
             else:
                 # Single cell reference
                 ReferenceResolver.parse_cell_reference(ref_str)
         except (xlerrors.ValueExcelError, xlerrors.RefExcelError):
             # Invalid reference format
-            raise xlerrors.NameExcelError(f"Invalid reference: '{ref_str}'")
+            return xlerrors.NameExcelError(f"Invalid reference: '{ref_str}'")
         
         # Return the normalized reference string
         # The evaluator will resolve this to the actual cell/range value
+        # Handle special cases that normalize_reference doesn't support
+        if ':' in ref_str and ref_str.count(':') == 1:
+            left, right = ref_str.split(':')
+            if left == right and (left.isalpha() or left.isdigit()):
+                # Special range like A:A or 1:1 - return as-is
+                return ref_str
+        
         return ReferenceResolver.normalize_reference(ref_str)
         
     except xlerrors.NameExcelError:
@@ -224,7 +248,7 @@ def INDIRECT(
         raise
     except Exception as e:
         # Convert unexpected errors to name errors
-        raise xlerrors.NameExcelError(f"INDIRECT error: {str(e)}")
+        return xlerrors.NameExcelError(f"INDIRECT error: {str(e)}")
 
 
 # Additional helper functions for advanced features
