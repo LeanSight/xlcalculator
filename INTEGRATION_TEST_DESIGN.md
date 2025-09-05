@@ -205,7 +205,7 @@ A5: =FUNCTION(large_number)    → Boundary testing
 7. **Error cases**: Dimension mismatch, invalid arrays
 
 ### Logical Functions Test
-**File**: `LOGICAL.xlsx`
+**File**: `logical.xlsx`
 **Scenarios**:
 1. **AND function**: `=AND(TRUE, TRUE)`, `=AND(TRUE, FALSE)`, `=AND(A1>0, B1<10)`
 2. **OR function**: `=OR(TRUE, FALSE)`, `=OR(FALSE, FALSE)`, `=OR(A1>0, B1<10)`

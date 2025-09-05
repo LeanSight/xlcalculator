@@ -2,7 +2,7 @@ from .. import testing
 
 
 class LogicalTest(testing.FunctionalTestCase):
-    filename = "LOGICAL.xlsx"
+    filename = "logical.xlsx"
 
     def test_and_true_true(self):
         """Test AND with two TRUE values."""

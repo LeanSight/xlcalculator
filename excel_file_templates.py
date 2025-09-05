@@ -118,7 +118,7 @@ def create_xlookup_excel():
     return wb
 
 def create_logical_excel():
-    """Create LOGICAL.xlsx with AND, OR, TRUE, FALSE tests."""
+    """Create logical.xlsx with AND, OR, TRUE, FALSE tests."""
     wb = Workbook()
     ws = wb.active
     ws.title = "Sheet1"
@@ -443,7 +443,7 @@ def save_excel_files():
     
     files_to_create = [
         ("XLOOKUP.xlsx", create_xlookup_excel),
-        ("LOGICAL.xlsx", create_logical_excel),
+        ("logical.xlsx", create_logical_excel),
         ("INFORMATION.xlsx", create_information_excel),
         ("MATH.xlsx", create_math_excel),
         ("TEXT.xlsx", create_text_excel),
