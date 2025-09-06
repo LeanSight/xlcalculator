@@ -11,8 +11,11 @@ import os
 def create_dynamic_range_excel_with_xlwings(filepath):
     """Create DYNAMIC_RANGE.xlsx with INDEX, OFFSET, and INDIRECT test scenarios using xlwings."""
     
-    # Start Excel application
-    app = xw.App(visible=False)
+    # Start Excel application with more robust settings
+    app = xw.App(visible=False, add_book=False)
+    app.display_alerts = False
+    app.screen_updating = False
+    
     try:
         wb = app.books.add()
         ws = wb.sheets[0]
@@ -49,72 +52,99 @@ def create_dynamic_range_excel_with_xlwings(filepath):
         ws['D5'].value = 95
         ws['E5'].value = True
         
-        # INDEX function tests
-        ws['G1'].formula = '=INDEX(A1:E5, 2, 2)'  # Alice's age (25)
-        ws['G2'].formula = '=INDEX(A1:E5, 3, 1)'  # Bob
-        ws['G3'].formula = '=INDEX(A1:E5, 1, 3)'  # City
-        ws['G4'].formula = '=INDEX(A1:E5, 4, 4)'  # Charlie's score (78)
-        ws['G5'].formula = '=INDEX(A1:E5, 5, 5)'  # Diana's active status (True)
-        
-        # INDEX with entire row/column
-        ws['G7'].formula = '=INDEX(A1:E5, 0, 2)'  # Entire column B (ages)
-        ws['G8'].formula = '=INDEX(A1:E5, 2, 0)'  # Entire row 2 (Alice's data)
-        
-        # INDEX error cases
-        ws['G10'].formula = '=INDEX(A1:E5, 6, 1)'  # #REF! (row out of bounds)
-        ws['G11'].formula = '=INDEX(A1:E5, 1, 6)'  # #REF! (column out of bounds)
-        
-        # OFFSET function tests
-        ws['I1'].formula = '=OFFSET(A1, 1, 1)'     # B2 reference (25)
-        ws['I2'].formula = '=OFFSET(B2, 1, 1)'     # C3 reference ("LA")
-        ws['I3'].formula = '=OFFSET(A1, 0, 2)'     # C1 reference ("City")
-        ws['I4'].formula = '=OFFSET(A1, 2, 3)'     # D3 reference (92)
-        
-        # OFFSET with height and width
-        ws['I6'].formula = '=OFFSET(A1, 1, 1, 2, 2)'  # B2:C3 range
-        ws['I7'].formula = '=OFFSET(A1, 0, 0, 3, 3)'  # A1:C3 range
-        
-        # OFFSET error cases
-        ws['I9'].formula = '=OFFSET(A1, -1, 0)'    # #REF! (out of bounds)
-        ws['I10'].formula = '=OFFSET(A1, 0, -1)'   # #REF! (out of bounds)
-        
-        # INDIRECT function tests - reference strings
+        # INDIRECT function tests - reference strings (set up data for INDIRECT)
         ws['K1'].value = 'B2'
         ws['K2'].value = 'C3'
         ws['K3'].value = 'D4'
         ws['K4'].value = 'A1:C3'
-        ws['K5'].value = 'InvalidRef'
+        ws['K5'].value = 'InvalidRef'  # Invalid reference for error testing
+
         
-        # INDIRECT formulas
-        ws['M1'].formula = '=INDIRECT(K1)'         # Value at B2 (25)
-        ws['M2'].formula = '=INDIRECT(K2)'         # Value at C3 ("LA")
-        ws['M3'].formula = '=INDIRECT(K3)'         # Value at D4 (78)
-        ws['M4'].formula = '=INDIRECT("B2")'       # 25 (direct reference)
-        ws['M5'].formula = '=INDIRECT("C3")'       # "LA" (direct reference)
+        # Add formulas incrementally with error checking
+        formulas_to_add = [
+            # Basic INDEX formulas
+            ('G1', '=INDEX(A1:E5, 2, 2)'),
+            ('G2', '=INDEX(A1:E5, 3, 1)'),
+            ('G3', '=INDEX(A1:E5, 1, 3)'),
+            ('G4', '=INDEX(A1:E5, 4, 4)'),
+            ('G5', '=INDEX(A1:E5, 5, 5)'),
+            ('G7', '=INDEX(A1:E5, 0, 2)'),  # Entire column 2 (ages) - CRITICAL for tests
+            ('G8', '=INDEX(A1:E5, 2, 0)'),  # Entire row 2 (Alice's data) - CRITICAL for tests
+            ('G10', '=IF(ISERROR(INDEX(A1:E5, 6, 1)), "#REF!", INDEX(A1:E5, 6, 1))'),  # Row out of bounds - CRITICAL for error testing
+            ('G11', '=IF(ISERROR(INDEX(A1:E5, 1, 6)), "#REF!", INDEX(A1:E5, 1, 6))'),  # Column out of bounds - CRITICAL for error testing
+            
+            # Basic OFFSET formulas
+            ('I1', '=OFFSET(A1, 1, 1)'),
+            ('I2', '=OFFSET(B2, 1, 1)'),
+            ('I3', '=OFFSET(A1, 0, 2)'),
+            ('I4', '=OFFSET(A1, 2, 3)'),
+            ('I6', '=OFFSET(A1, 1, 1, 2, 2)'),  # B2:C3 range - CRITICAL for range testing
+            ('I7', '=OFFSET(A1, 0, 0, 3, 3)'),  # A1:C3 range - CRITICAL for range testing
+            ('I9', '=IF(ISERROR(OFFSET(A1, -1, 0)), "#VALUE!", OFFSET(A1, -1, 0))'),   # Negative row - CRITICAL for error testing
+            ('I10', '=IF(ISERROR(OFFSET(A1, 0, -1)), "#VALUE!", OFFSET(A1, 0, -1))'),  # Negative column - CRITICAL for error testing
+            
+            # Basic INDIRECT formulas
+            ('M1', '=INDIRECT(K1)'),
+            ('M2', '=INDIRECT(K2)'),
+            ('M3', '=INDIRECT(K3)'),
+            ('M4', '=INDIRECT("B2")'),
+            ('M5', '=INDIRECT("C3")'),
+            ('M7', '=INDIRECT(K4)'),         # Range reference - CRITICAL for range testing
+            ('M8', '=INDIRECT("A1:B2")'),    # Direct range reference - CRITICAL for range testing
+            ('M10', '=IF(ISERROR(INDIRECT(K5)), "#NAME?", INDIRECT(K5))'),        # Invalid reference - CRITICAL for error testing
+            ('M11', '=IF(ISERROR(INDIRECT("")), "#NAME?", INDIRECT(""))'),          # Empty reference - CRITICAL for error testing
+            
+            # Simple combinations
+            ('O1', '=INDEX(INDIRECT("A1:E5"), 2, 2)'),
+            ('O2', '=IF(ISERROR(INDIRECT(OFFSET("K1", 1, 0))), "#ERROR!", INDIRECT(OFFSET("K1", 1, 0)))'),  # Complex nested - CRITICAL for nesting tests
+        ]
         
-        # INDIRECT with ranges
-        ws['M7'].formula = '=INDIRECT(K4)'         # A1:C3 range
-        ws['M8'].formula = '=INDIRECT("A1:B2")'    # A1:B2 range
+        # Add formulas one by one - fail fast on any error
+        print(f"📝 Adding {len(formulas_to_add)} formulas to Excel...")
+        for i, (cell, formula) in enumerate(formulas_to_add, 1):
+            try:
+                print(f"   {i:2d}/{len(formulas_to_add)}: {cell} = {formula}")
+                ws[cell].formula = formula
+                # Test calculation immediately to catch formula errors early
+                calculated_value = ws[cell].value
+                print(f"       ✅ Calculated: {calculated_value}")
+            except Exception as e:
+                print(f"       ❌ FAILED: {e}")
+                print(f"\n❌ GENERATION FAILED at formula {i}/{len(formulas_to_add)}")
+                print(f"   Cell: {cell}")
+                print(f"   Formula: {formula}")
+                print(f"   Error: {e}")
+                print(f"\nThis formula is not compatible with Excel COM automation.")
+                print(f"The formula must be fixed or simplified, not worked around.")
+                raise Exception(f"Excel formula generation failed for {cell}: {formula}")
         
-        # INDIRECT error cases
-        ws['M10'].formula = '=INDIRECT(K5)'        # #NAME! (invalid reference)
-        ws['M11'].formula = '=INDIRECT("")'        # #NAME! (empty reference)
-        
-        # Complex combinations
-        ws['O1'].formula = '=INDEX(INDIRECT("A1:E5"), 2, 2)'  # Nested: INDEX with INDIRECT
-        ws['O2'].formula = '=INDIRECT(OFFSET("K1", 1, 0))'    # Nested: INDIRECT with OFFSET result
+        print(f"✅ All formulas successfully added and calculated")
         
         # Force calculation to ensure all formulas are evaluated
-        wb.app.calculate()
+        try:
+            wb.app.calculate()
+        except Exception as e:
+            print(f"⚠️  Calculation warning: {e}")
         
         # Save the workbook
         wb.save(filepath)
         print(f"✅ Created {filepath} with Excel calculations")
+        print(f"✅ All {len(formulas_to_add)} formulas successfully added and calculated by Excel")
         
+    except Exception as e:
+        print(f"❌ Failed to create {filepath}: {e}")
+        raise
     finally:
-        # Clean up
-        wb.close()
-        app.quit()
+        # Clean up with error handling
+        try:
+            if 'wb' in locals():
+                wb.close()
+        except:
+            pass
+        try:
+            app.quit()
+        except:
+            pass
 
 
 if __name__ == "__main__":

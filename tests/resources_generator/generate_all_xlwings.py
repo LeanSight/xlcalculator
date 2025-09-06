@@ -12,11 +12,7 @@ import sys
 import argparse
 from pathlib import Path
 
-# Import all xlwings generators
-from xlwings_information import create_information_excel_with_xlwings
-from xlwings_logical import create_logical_excel_with_xlwings
-from xlwings_math import create_math_excel_with_xlwings
-from xlwings_text import create_text_excel_with_xlwings
+# Import xlwings generators for dynamic range and xlookup only
 from xlwings_xlookup import create_xlookup_excel_with_xlwings
 from xlwings_dynamic_range import create_dynamic_range_excel_with_xlwings
 
@@ -27,19 +23,16 @@ def generate_all_excel_files(output_dir):
     # Create output directory
     os.makedirs(output_dir, exist_ok=True)
     
-    # List of files to generate
+    # List of files to generate - only dynamic range and xlookup
     generators = [
-        ("INFORMATION.xlsx", create_information_excel_with_xlwings),
-        ("logical.xlsx", create_logical_excel_with_xlwings),
-        ("MATH.xlsx", create_math_excel_with_xlwings),
-        ("TEXT.xlsx", create_text_excel_with_xlwings),
         ("XLOOKUP.xlsx", create_xlookup_excel_with_xlwings),
         ("DYNAMIC_RANGE.xlsx", create_dynamic_range_excel_with_xlwings),
     ]
     
     print("🚀 Starting Excel file generation with xlwings...")
-    print("📋 This will create 6 Excel files with calculated formula values")
+    print("📋 This will create 2 Excel files with calculated formula values")
     print("⚠️  Requires Windows with Microsoft Excel installed")
+    print("🔧 Using improved DYNAMIC_RANGE generation with robust error handling")
     print()
     
     created_files = []
@@ -81,10 +74,6 @@ def generate_all_excel_files(output_dir):
         print(f"   copy {output_dir}\\*.xlsx ..\\resources\\")
         print("   python -m pytest tests/xlfunctions_vs_excel/ -v")
         print("\n📊 Files generated:")
-        print("   - INFORMATION.xlsx: IS* functions (ISNUMBER, ISTEXT, ISBLANK, etc.)")
-        print("   - logical.xlsx: Logical functions (AND, OR, TRUE, FALSE)")
-        print("   - MATH.xlsx: Math functions (FLOOR, TRUNC, SIGN, LOG, EXP)")
-        print("   - TEXT.xlsx: Text functions (LEFT, UPPER, LOWER, TRIM, REPLACE)")
         print("   - XLOOKUP.xlsx: XLOOKUP function with all match modes")
         print("   - DYNAMIC_RANGE.xlsx: INDEX, OFFSET, INDIRECT functions")
     
@@ -129,10 +118,6 @@ Requirements:
             OR pip install xlcalculator[excel_generation]
 
 Generated files:
-  - INFORMATION.xlsx: IS* functions (ISNUMBER, ISTEXT, ISBLANK, etc.)
-  - logical.xlsx: Logical functions (AND, OR, TRUE, FALSE)
-  - MATH.xlsx: Math functions (FLOOR, TRUNC, SIGN, LOG, EXP)
-  - TEXT.xlsx: Text functions (LEFT, UPPER, LOWER, TRIM, REPLACE)
   - XLOOKUP.xlsx: XLOOKUP function with all match modes
   - DYNAMIC_RANGE.xlsx: INDEX, OFFSET, INDIRECT functions
         """
