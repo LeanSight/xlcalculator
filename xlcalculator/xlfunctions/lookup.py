@@ -102,8 +102,8 @@ def XLOOKUP(
         lookup_array: func_xltypes.XlArray,
         return_array: func_xltypes.XlArray,
         if_not_found=None,
-        match_mode: func_xltypes.XlNumber = 0,
-        search_mode: func_xltypes.XlNumber = 1
+        match_mode=0,
+        search_mode=1
 ) -> func_xltypes.XlAnything:
     """Modern lookup function that replaces VLOOKUP, HLOOKUP, and INDEX/MATCH.
     
@@ -128,7 +128,25 @@ def XLOOKUP(
         https://support.microsoft.com/en-us/office/xlookup-function-b7fd680e-6d10-43e6-84f9-88eae8bf5929
     """
     
-    # Convert parameters to proper types (reused pattern from dynamic_range)
+    # Handle parameter type conversion and empty parameter detection
+    # Excel formulas with empty parameters like =XLOOKUP(val, arr1, arr2, , mode) get parsed incorrectly
+    # We need to detect and fix parameter shifting caused by empty parameter parsing
+    
+    if isinstance(if_not_found, (int, float, func_xltypes.Number)):
+        if_not_found_val = int(if_not_found)
+        
+        # Case 1: 5 parameters with empty if_not_found: =XLOOKUP(val, arr1, arr2, , match_mode)
+        if if_not_found_val in [-1, 1, 2] and match_mode == 0 and search_mode == 1:
+            match_mode = if_not_found_val
+            if_not_found = None
+            
+        # Case 2: 6 parameters with empty if_not_found: =XLOOKUP(val, arr1, arr2, , match_mode, search_mode)  
+        elif if_not_found_val == 0 and isinstance(match_mode, (int, float, func_xltypes.Number)):
+            search_mode = int(match_mode)
+            match_mode = if_not_found_val
+            if_not_found = None
+    
+    # Convert parameters to proper types
     match_mode = int(match_mode) if match_mode is not None else 0
     search_mode = int(search_mode) if search_mode is not None else 1
     
