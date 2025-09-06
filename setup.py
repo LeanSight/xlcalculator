@@ -14,6 +14,11 @@ TESTS_REQUIRE = [
     'pytest-cov',
 ]
 
+# Optional dependencies for Excel file generation
+EXCEL_GENERATION_REQUIRE = [
+    'xlwings; platform_system=="Windows"',  # Windows-only for Excel integration
+]
+
 
 setuptools.setup(
     name="xlcalculator-numpy2",
@@ -110,6 +115,7 @@ setuptools.setup(
         excel_functions=[
             'yearfrac @ git+https://github.com/LeanSight/yearfrac.git',
         ],
+        excel_generation=EXCEL_GENERATION_REQUIRE,
     ),
     python_requires='>=3.13',  # Only validated on Python 3.13
     tests_require=TESTS_REQUIRE,

@@ -32,7 +32,19 @@ These generators create ALL Excel files needed for xlcalculator integration test
 
 **Windows Environment:**
 - Microsoft Excel installed
-- Python with xlwings: `pip install xlwings`
+- Python with xlwings
+
+**Installation:**
+```bash
+# Option 1: Install xlwings directly
+pip install xlwings
+
+# Option 2: Install as optional dependency
+pip install xlcalculator[excel_generation]
+
+# Option 3: Install from this project with excel generation support
+pip install -e .[excel_generation]
+```
 
 ## Usage
 

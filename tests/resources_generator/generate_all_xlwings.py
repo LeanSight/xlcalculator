@@ -126,6 +126,7 @@ Examples:
 Requirements:
   - Windows with Microsoft Excel installed
   - xlwings: pip install xlwings
+            OR pip install xlcalculator[excel_generation]
 
 Generated files:
   - INFORMATION.xlsx: IS* functions (ISNUMBER, ISTEXT, ISBLANK, etc.)
