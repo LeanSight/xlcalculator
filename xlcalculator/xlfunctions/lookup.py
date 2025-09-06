@@ -95,6 +95,7 @@ def MATCH(
 
 
 @xl.register()
+@xl.register('_xlfn.XLOOKUP')  # Register Excel's _xlfn prefix variant
 @xl.validate_args
 def XLOOKUP(
         lookup_value: func_xltypes.XlAnything,
