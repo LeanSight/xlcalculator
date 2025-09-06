@@ -128,20 +128,33 @@ def XLOOKUP(
         https://support.microsoft.com/en-us/office/xlookup-function-b7fd680e-6d10-43e6-84f9-88eae8bf5929
     """
     
-    # Handle parameter type conversion and empty parameter detection
-    # Excel formulas with empty parameters like =XLOOKUP(val, arr1, arr2, , mode) get parsed incorrectly
-    # We need to detect and fix parameter shifting caused by empty parameter parsing
+    # Handle Excel empty parameter parsing correction
+    # 
+    # Problem: Excel formulas with empty parameters are parsed incorrectly by xlcalculator
+    # Example: =XLOOKUP(val, arr1, arr2, , -1) should have if_not_found=None, match_mode=-1
+    # But gets parsed as: if_not_found=-1, match_mode=0 (parameter shift)
+    #
+    # Solution: Detect specific patterns that indicate parameter shifting and correct them
     
     if isinstance(if_not_found, (int, float, func_xltypes.Number)):
         if_not_found_val = int(if_not_found)
         
+        # Only apply parameter correction if we detect the specific pattern of Excel empty parameter parsing
+        # This happens when match_mode and search_mode are still at their defaults, suggesting parameter shift
+        
         # Case 1: 5 parameters with empty if_not_found: =XLOOKUP(val, arr1, arr2, , match_mode)
-        if if_not_found_val in [-1, 1, 2] and match_mode == 0 and search_mode == 1:
+        # Pattern: if_not_found is a match_mode value (-1, 1, 2) and other params are defaults
+        if (if_not_found_val in [-1, 1, 2] and 
+            match_mode == 0 and search_mode == 1):
             match_mode = if_not_found_val
             if_not_found = None
             
         # Case 2: 6 parameters with empty if_not_found: =XLOOKUP(val, arr1, arr2, , match_mode, search_mode)  
-        elif if_not_found_val == 0 and isinstance(match_mode, (int, float, func_xltypes.Number)):
+        # Pattern: if_not_found=0, match_mode is a search_mode value (-1, 1, 2), search_mode is default
+        elif (if_not_found_val == 0 and 
+              isinstance(match_mode, (int, float, func_xltypes.Number)) and
+              int(match_mode) in [-1, 1, 2] and
+              search_mode == 1):
             search_mode = int(match_mode)
             match_mode = if_not_found_val
             if_not_found = None
