@@ -161,9 +161,8 @@ class TestOFFSETFunction(TestDynamicRangeFunctions):
     
     def test_offset_ref_errors(self):
         """Test OFFSET #REF! errors"""
+        # Only large values should return RefExcelError
         error_cases = [
-            ("A1", -1, 0, None, None),    # Negative row result
-            ("A1", 0, -1, None, None),    # Negative column result
             ("A1", 1048576, 0, None, None),  # Row too large
             ("A1", 0, 16384, None, None),    # Column too large
         ]
@@ -172,6 +171,17 @@ class TestOFFSETFunction(TestDynamicRangeFunctions):
             with self.subTest(ref=ref, rows=rows, cols=cols):
                 result = OFFSET(ref, rows, cols, height, width)
                 self.assertIsInstance(result, xlerrors.RefExcelError)
+                
+        # Negative values should return ValueExcelError (Excel behavior)
+        negative_cases = [
+            ("A1", -1, 0, None, None),    # Negative row result
+            ("A1", 0, -1, None, None),    # Negative column result
+        ]
+        
+        for ref, rows, cols, height, width in negative_cases:
+            with self.subTest(ref=ref, rows=rows, cols=cols):
+                result = OFFSET(ref, rows, cols, height, width)
+                self.assertIsInstance(result, xlerrors.ValueExcelError)
     
     def test_offset_value_errors(self):
         """Test OFFSET #VALUE! errors"""
@@ -578,7 +588,7 @@ class TestExcelCompatibility(TestDynamicRangeFunctions):
         # These test cases are derived from actual Excel behavior
         excel_error_cases = [
             # OFFSET errors
-            (lambda: OFFSET("A1", -1, 0), xlerrors.RefExcelError),
+            (lambda: OFFSET("A1", -1, 0), xlerrors.ValueExcelError),
             (lambda: OFFSET("InvalidRef", 1, 1), xlerrors.ValueExcelError),
             
             # INDEX errors  

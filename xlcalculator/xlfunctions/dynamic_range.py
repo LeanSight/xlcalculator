@@ -263,10 +263,22 @@ def OFFSET(
     )
     
     # Use reference utilities to calculate offset
-    result_ref = ReferenceResolver.offset_reference(
-        params['reference'], params['rows'], params['cols'], 
-        params['height'], params['width']
-    )
+    # Convert RefExcelError to ValueExcelError for negative offset results (Excel behavior)
+    try:
+        result_ref = ReferenceResolver.offset_reference(
+            params['reference'], params['rows'], params['cols'], 
+            params['height'], params['width']
+        )
+    except xlerrors.RefExcelError as e:
+        # Check if this is due to negative offset resulting in invalid reference
+        new_start_row = 1 + params['rows']  # A1 is row 1
+        new_start_col = 1 + params['cols']  # A1 is col 1
+        if new_start_row < 1 or new_start_col < 1:
+            # Excel returns #VALUE! for negative offset results
+            raise xlerrors.ValueExcelError(f"OFFSET result out of bounds: {e}")
+        else:
+            # Other out of bounds cases remain as #REF!
+            raise
     
     # Try to resolve to actual values if evaluator context is available
     evaluator = _get_evaluator_context()
