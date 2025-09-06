@@ -70,8 +70,8 @@ def create_dynamic_range_excel_with_xlwings(filepath):
             ('G5', '=INDEX(A1:E5, 5, 5)'),
             ('G7', '=INDEX(A1:E5, 0, 2)'),  # Entire column 2 (ages) - CRITICAL for tests
             ('G8', '=INDEX(A1:E5, 2, 0)'),  # Entire row 2 (Alice's data) - CRITICAL for tests
-            ('G10', '=IF(ISERROR(INDEX(A1:E5, 6, 1)), "#REF!", INDEX(A1:E5, 6, 1))'),  # Row out of bounds - CRITICAL for error testing
-            ('G11', '=IF(ISERROR(INDEX(A1:E5, 1, 6)), "#REF!", INDEX(A1:E5, 1, 6))'),  # Column out of bounds - CRITICAL for error testing
+            ('G10', '=INDEX(A1:E5, 6, 1)'),  # Row out of bounds - CRITICAL for error testing
+            ('G11', '=INDEX(A1:E5, 1, 6)'),  # Column out of bounds - CRITICAL for error testing
             
             # Basic OFFSET formulas
             ('I1', '=OFFSET(A1, 1, 1)'),
@@ -80,8 +80,8 @@ def create_dynamic_range_excel_with_xlwings(filepath):
             ('I4', '=OFFSET(A1, 2, 3)'),
             ('I6', '=OFFSET(A1, 1, 1, 2, 2)'),  # B2:C3 range - CRITICAL for range testing
             ('I7', '=OFFSET(A1, 0, 0, 3, 3)'),  # A1:C3 range - CRITICAL for range testing
-            ('I9', '=IF(ISERROR(OFFSET(A1, -1, 0)), "#VALUE!", OFFSET(A1, -1, 0))'),   # Negative row - CRITICAL for error testing
-            ('I10', '=IF(ISERROR(OFFSET(A1, 0, -1)), "#VALUE!", OFFSET(A1, 0, -1))'),  # Negative column - CRITICAL for error testing
+            ('I9', '=OFFSET(A1, -1, 0)'),   # Negative row - CRITICAL for error testing
+            ('I10', '=OFFSET(A1, 0, -1)'),  # Negative column - CRITICAL for error testing
             
             # Basic INDIRECT formulas
             ('M1', '=INDIRECT(K1)'),
@@ -91,8 +91,8 @@ def create_dynamic_range_excel_with_xlwings(filepath):
             ('M5', '=INDIRECT("C3")'),
             ('M7', '=INDIRECT(K4)'),         # Range reference - CRITICAL for range testing
             ('M8', '=INDIRECT("A1:B2")'),    # Direct range reference - CRITICAL for range testing
-            ('M10', '=IF(ISERROR(INDIRECT(K5)), "#NAME?", INDIRECT(K5))'),        # Invalid reference - CRITICAL for error testing
-            ('M11', '=IF(ISERROR(INDIRECT("")), "#NAME?", INDIRECT(""))'),          # Empty reference - CRITICAL for error testing
+            ('M10', '=INDIRECT(K5)'),        # Invalid reference - CRITICAL for error testing
+            ('M11', '=INDIRECT("")'),          # Empty reference - CRITICAL for error testing
             
             # Simple combinations
             ('O1', '=INDEX(INDIRECT("A1:E5"), 2, 2)'),
