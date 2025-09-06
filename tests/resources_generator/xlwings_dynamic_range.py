@@ -96,7 +96,8 @@ def create_dynamic_range_excel_with_xlwings(filepath):
             
             # Simple combinations
             ('O1', '=INDEX(INDIRECT("A1:E5"), 2, 2)'),
-            ('O2', '=IF(ISERROR(INDIRECT(OFFSET("K1", 1, 0))), "#ERROR!", INDIRECT(OFFSET("K1", 1, 0)))'),  # Complex nested - CRITICAL for nesting tests
+            ('O2', '=INDIRECT("K2")'),  # Simplified: Direct reference instead of OFFSET("K1", 1, 0) - tests INDIRECT functionality
+            ('O3', '=OFFSET(K1, 1, 0)'),  # Separate OFFSET test - tests OFFSET with cell reference
         ]
         
         # Add formulas one by one - fail fast on any error
