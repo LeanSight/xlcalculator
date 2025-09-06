@@ -9,6 +9,7 @@ Run this script on Windows with Excel installed.
 
 import os
 import sys
+import argparse
 from pathlib import Path
 
 # Import all xlwings generators
@@ -16,9 +17,11 @@ from xlwings_information import create_information_excel_with_xlwings
 from xlwings_logical import create_logical_excel_with_xlwings
 from xlwings_math import create_math_excel_with_xlwings
 from xlwings_text import create_text_excel_with_xlwings
+from xlwings_xlookup import create_xlookup_excel_with_xlwings
+from xlwings_dynamic_range import create_dynamic_range_excel_with_xlwings
 
 
-def generate_all_excel_files(output_dir="generated_excel_files"):
+def generate_all_excel_files(output_dir):
     """Generate all Excel files with xlwings calculations."""
     
     # Create output directory
@@ -30,10 +33,12 @@ def generate_all_excel_files(output_dir="generated_excel_files"):
         ("logical.xlsx", create_logical_excel_with_xlwings),
         ("MATH.xlsx", create_math_excel_with_xlwings),
         ("TEXT.xlsx", create_text_excel_with_xlwings),
+        ("XLOOKUP.xlsx", create_xlookup_excel_with_xlwings),
+        ("DYNAMIC_RANGE.xlsx", create_dynamic_range_excel_with_xlwings),
     ]
     
     print("🚀 Starting Excel file generation with xlwings...")
-    print("📋 This will create Excel files with calculated formula values")
+    print("📋 This will create 6 Excel files with calculated formula values")
     print("⚠️  Requires Windows with Microsoft Excel installed")
     print()
     
@@ -73,8 +78,15 @@ def generate_all_excel_files(output_dir="generated_excel_files"):
         print("2. Place them in: tests/resources/")
         print("3. Run the integration tests to verify Excel compatibility")
         print("\nExample commands:")
-        print(f"   copy {output_dir}\\*.xlsx path\\to\\xlcalculator\\tests\\resources\\")
+        print(f"   copy {output_dir}\\*.xlsx ..\\resources\\")
         print("   python -m pytest tests/xlfunctions_vs_excel/ -v")
+        print("\n📊 Files generated:")
+        print("   - INFORMATION.xlsx: IS* functions (ISNUMBER, ISTEXT, ISBLANK, etc.)")
+        print("   - logical.xlsx: Logical functions (AND, OR, TRUE, FALSE)")
+        print("   - MATH.xlsx: Math functions (FLOOR, TRUNC, SIGN, LOG, EXP)")
+        print("   - TEXT.xlsx: Text functions (LEFT, UPPER, LOWER, TRIM, REPLACE)")
+        print("   - XLOOKUP.xlsx: XLOOKUP function with all match modes")
+        print("   - DYNAMIC_RANGE.xlsx: INDEX, OFFSET, INDIRECT functions")
     
     return len(created_files), len(failed_files)
 
@@ -100,20 +112,71 @@ def check_requirements():
         return False
 
 
+def parse_arguments():
+    """Parse command line arguments."""
+    parser = argparse.ArgumentParser(
+        description="Generate Excel files with xlwings for xlcalculator integration testing",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  python generate_all_xlwings.py                    # Generate to 'generated_excel_files'
+  python generate_all_xlwings.py ../resources       # Generate directly to tests/resources
+  python generate_all_xlwings.py C:\\temp\\excel     # Generate to custom Windows path
+
+Requirements:
+  - Windows with Microsoft Excel installed
+  - xlwings: pip install xlwings
+
+Generated files:
+  - INFORMATION.xlsx: IS* functions (ISNUMBER, ISTEXT, ISBLANK, etc.)
+  - logical.xlsx: Logical functions (AND, OR, TRUE, FALSE)
+  - MATH.xlsx: Math functions (FLOOR, TRUNC, SIGN, LOG, EXP)
+  - TEXT.xlsx: Text functions (LEFT, UPPER, LOWER, TRIM, REPLACE)
+  - XLOOKUP.xlsx: XLOOKUP function with all match modes
+  - DYNAMIC_RANGE.xlsx: INDEX, OFFSET, INDIRECT functions
+        """
+    )
+    
+    parser.add_argument(
+        "output_dir",
+        nargs="?",
+        default="generated_excel_files",
+        help="Output directory for generated Excel files (default: generated_excel_files)"
+    )
+    
+    parser.add_argument(
+        "--check-only",
+        action="store_true",
+        help="Only check requirements without generating files"
+    )
+    
+    return parser.parse_args()
+
+
 if __name__ == "__main__":
     print("🔧 Excel File Generator with xlwings")
     print("=" * 60)
+    
+    # Parse arguments
+    args = parse_arguments()
     
     # Check requirements
     if not check_requirements():
         print("\n❌ Requirements not met. Exiting.")
         sys.exit(1)
     
+    # If only checking requirements, exit here
+    if args.check_only:
+        print("\n✅ All requirements met. Ready to generate Excel files.")
+        sys.exit(0)
+    
+    print()
+    print(f"📁 Output directory: {os.path.abspath(args.output_dir)}")
     print()
     
     # Generate files
     try:
-        created_count, failed_count = generate_all_excel_files()
+        created_count, failed_count = generate_all_excel_files(args.output_dir)
         
         if failed_count == 0:
             print(f"\n🎉 All {created_count} Excel files generated successfully!")
