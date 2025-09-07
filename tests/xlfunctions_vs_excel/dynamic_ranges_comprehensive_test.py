@@ -1,0 +1,379 @@
+"""
+Tests de integración comprehensivos para rangos dinámicos.
+Estos tests validan el comportamiento FIEL a Excel de las funciones INDEX, OFFSET e INDIRECT.
+
+Organizado de casos estructurales a incrementales para red-green-refactor.
+"""
+
+from .. import testing
+from xlcalculator.xlfunctions import dynamic_range
+from xlcalculator.xlfunctions import xlerrors
+from xlcalculator.xlfunctions.func_xltypes import Array, Number, Text, Boolean
+
+
+class DynamicRangesComprehensiveTest(testing.FunctionalTestCase):
+    filename = "DYNAMIC_RANGES_COMPREHENSIVE.xlsx"
+
+    # ========================================================================
+    # NIVEL 1: CASOS ESTRUCTURALES (Comportamiento Core)
+    # ========================================================================
+    
+    def test_level1_index_fundamentals(self):
+        """NIVEL 1A: INDEX - Casos fundamentales (más estructural)."""
+        
+        # A1: INDEX básico - valor numérico
+        value = self.evaluator.evaluate('Tests!A1')
+        expected = 25  # Data.B2
+        self.assertEqual(expected, value, "INDEX(Data.A1:E6, 2, 2) debe devolver 25")
+        self.assertIsInstance(value, (int, float, Number), "Debe ser numérico")
+        
+        # A2: INDEX básico - texto
+        value = self.evaluator.evaluate('Tests!A2')
+        expected = "Bob"  # Data.A3
+        self.assertEqual(expected, value, "INDEX(Data.A1:E6, 3, 1) debe devolver 'Bob'")
+        self.assertIsInstance(value, (str, Text), "Debe ser texto")
+        
+        # A3: INDEX básico - boolean
+        value = self.evaluator.evaluate('Tests!A3')
+        expected = True  # Data.E4
+        self.assertEqual(expected, value, "INDEX(Data.A1:E6, 4, 5) debe devolver True")
+        self.assertIsInstance(value, (bool, Boolean), "Debe ser boolean")
+        
+        # A4: INDEX básico - última fila
+        value = self.evaluator.evaluate('Tests!A4')
+        expected = "Eve"  # Data.A6
+        self.assertEqual(expected, value, "INDEX(Data.A1:E6, 6, 1) debe devolver 'Eve'")
+        
+        # A5: INDEX básico - primera fila
+        value = self.evaluator.evaluate('Tests!A5')
+        expected = "Active"  # Data.E1 (header Active)
+        self.assertEqual(expected, value, "INDEX(Data.A1:E6, 1, 5) debe devolver 'Active'")
+
+    def test_level1_index_errors(self):
+        """NIVEL 1B: INDEX - Casos de error estructurales."""
+        
+        # B1: Fila fuera de rango
+        value = self.evaluator.evaluate('Tests!B1')
+        self.assertIsInstance(value, xlerrors.RefExcelError, 
+                            "INDEX(Data.A1:E6, 7, 1) debe devolver #REF!")
+        
+        # B2: Columna fuera de rango
+        value = self.evaluator.evaluate('Tests!B2')
+        self.assertIsInstance(value, xlerrors.RefExcelError,
+                            "INDEX(Data.A1:E6, 1, 7) debe devolver #REF!")
+        
+        # B3: Ambos cero
+        value = self.evaluator.evaluate('Tests!B3')
+        self.assertIsInstance(value, xlerrors.ValueExcelError,
+                            "INDEX(Data.A1:E6, 0, 0) debe devolver #VALUE!")
+        
+        # B4: Fila negativa
+        value = self.evaluator.evaluate('Tests!B4')
+        self.assertIsInstance(value, xlerrors.ValueExcelError,
+                            "INDEX(Data.A1:E6, -1, 1) debe devolver #VALUE!")
+        
+        # B5: Columna negativa
+        value = self.evaluator.evaluate('Tests!B5')
+        self.assertIsInstance(value, xlerrors.ValueExcelError,
+                            "INDEX(Data.A1:E6, 1, -1) debe devolver #VALUE!")
+
+    def test_level1_index_arrays(self):
+        """NIVEL 1C: INDEX - Casos de fila/columna completa."""
+        
+        # C1: Columna completa (Age)
+        value = self.evaluator.evaluate('Tests!C1')
+        self.assertIsInstance(value, Array, "INDEX(Data.A1:E6, 0, 2) debe devolver Array")
+        # Verificar que contiene los valores de la columna Age
+        expected_ages = ["Age", 25, 30, 35, 28, 22]  # B1:B6
+        if hasattr(value, 'values'):
+            actual_values = [row[0] for row in value.values]  # Columna única
+            self.assertEqual(expected_ages, actual_values, "Array debe contener valores de columna Age")
+        
+        # C2: Fila completa (Alice)
+        value = self.evaluator.evaluate('Tests!C2')
+        self.assertIsInstance(value, Array, "INDEX(Data.A1:E6, 2, 0) debe devolver Array")
+        # Verificar que contiene los valores de la fila Alice
+        expected_alice = ["Alice", 25, "NYC", 85, True]  # A2:E2
+        if hasattr(value, 'values'):
+            actual_values = value.values[0]  # Fila única
+            self.assertEqual(expected_alice, actual_values, "Array debe contener valores de fila Alice")
+        
+        # C3: Primera columna (Names)
+        value = self.evaluator.evaluate('Tests!C3')
+        self.assertIsInstance(value, Array, "INDEX(Data.A1:E6, 0, 1) debe devolver Array")
+
+    # ========================================================================
+    # NIVEL 2: CASOS INTERMEDIOS (Funciones Individuales)
+    # ========================================================================
+    
+    def test_level2_offset_fundamentals(self):
+        """NIVEL 2D: OFFSET - Casos fundamentales."""
+        
+        # D1: OFFSET básico - B2
+        value = self.evaluator.evaluate('Tests!D1')
+        expected = 25  # Data.B2
+        self.assertEqual(expected, value, "OFFSET(Data.A1, 1, 1) debe devolver 25")
+        
+        # D2: OFFSET básico - desde B2
+        value = self.evaluator.evaluate('Tests!D2')
+        expected = "LA"  # Data.C3
+        self.assertEqual(expected, value, "OFFSET(Data.B2, 1, 1) debe devolver 'LA'")
+        
+        # D3: OFFSET básico - horizontal
+        value = self.evaluator.evaluate('Tests!D3')
+        expected = "City"  # Data.C1
+        self.assertEqual(expected, value, "OFFSET(Data.A1, 0, 2) debe devolver 'City'")
+        
+        # D4: OFFSET básico - esquina
+        value = self.evaluator.evaluate('Tests!D4')
+        expected = False  # Data.E6
+        self.assertEqual(expected, value, "OFFSET(Data.A1, 5, 4) debe devolver False")
+
+    def test_level2_offset_dimensions(self):
+        """NIVEL 2E: OFFSET - Casos con dimensiones."""
+        
+        # E1: OFFSET dimensiones - 1x1
+        value = self.evaluator.evaluate('Tests!E1')
+        expected = 25  # Data.B2 como valor único
+        self.assertEqual(expected, value, "OFFSET(Data.A1, 1, 1, 1, 1) debe devolver 25")
+        
+        # E2: OFFSET dimensiones - 2x2
+        value = self.evaluator.evaluate('Tests!E2')
+        self.assertIsInstance(value, Array, "OFFSET(Data.A1, 1, 1, 2, 2) debe devolver Array 2x2")
+        # Verificar dimensiones y contenido
+        if hasattr(value, 'values'):
+            self.assertEqual(2, len(value.values), "Array debe tener 2 filas")
+            self.assertEqual(2, len(value.values[0]), "Array debe tener 2 columnas")
+            # Contenido esperado: B2:C3
+            expected_content = [[25, "NYC"], [30, "LA"]]
+            self.assertEqual(expected_content, value.values, "Array debe contener valores B2:C3")
+        
+        # E3: OFFSET dimensiones - 3x3
+        value = self.evaluator.evaluate('Tests!E3')
+        self.assertIsInstance(value, Array, "OFFSET(Data.A1, 0, 0, 3, 3) debe devolver Array 3x3")
+        
+        # E4: OFFSET dimensiones - 1x3
+        value = self.evaluator.evaluate('Tests!E4')
+        self.assertIsInstance(value, Array, "OFFSET(Data.A1, 2, 1, 1, 3) debe devolver Array 1x3")
+
+    def test_level2_offset_errors(self):
+        """NIVEL 2F: OFFSET - Casos de error."""
+        
+        # F1: Fila negativa
+        value = self.evaluator.evaluate('Tests!F1')
+        self.assertIsInstance(value, xlerrors.ValueExcelError,
+                            "OFFSET(Data.A1, -1, 0) debe devolver #VALUE!")
+        
+        # F2: Columna negativa
+        value = self.evaluator.evaluate('Tests!F2')
+        self.assertIsInstance(value, xlerrors.ValueExcelError,
+                            "OFFSET(Data.A1, 0, -1) debe devolver #VALUE!")
+        
+        # F3: Fuera de hoja (fila)
+        value = self.evaluator.evaluate('Tests!F3')
+        self.assertIsInstance(value, xlerrors.RefExcelError,
+                            "OFFSET(Data.A1, 10, 0) debe devolver #REF!")
+        
+        # F4: Fuera de hoja (columna)
+        value = self.evaluator.evaluate('Tests!F4')
+        self.assertIsInstance(value, xlerrors.RefExcelError,
+                            "OFFSET(Data.A1, 0, 10) debe devolver #REF!")
+        
+        # F5: Altura cero
+        value = self.evaluator.evaluate('Tests!F5')
+        self.assertIsInstance(value, xlerrors.ValueExcelError,
+                            "OFFSET(Data.A1, 1, 1, 0, 1) debe devolver #VALUE!")
+        
+        # F6: Ancho cero
+        value = self.evaluator.evaluate('Tests!F6')
+        self.assertIsInstance(value, xlerrors.ValueExcelError,
+                            "OFFSET(Data.A1, 1, 1, 1, 0) debe devolver #VALUE!")
+
+    def test_level2_indirect_fundamentals(self):
+        """NIVEL 2G: INDIRECT - Casos fundamentales."""
+        
+        # G1: INDIRECT básico - valor numérico
+        value = self.evaluator.evaluate('Tests!G1')
+        expected = 25  # Data.B2
+        self.assertEqual(expected, value, 'INDIRECT("Data.B2") debe devolver 25')
+        
+        # G2: INDIRECT básico - texto
+        value = self.evaluator.evaluate('Tests!G2')
+        expected = "LA"  # Data.C3
+        self.assertEqual(expected, value, 'INDIRECT("Data.C3") debe devolver "LA"')
+        
+        # G3: INDIRECT básico - boolean
+        value = self.evaluator.evaluate('Tests!G3')
+        expected = True  # Data.E4
+        self.assertEqual(expected, value, 'INDIRECT("Data.E4") debe devolver True')
+
+    def test_level2_indirect_dynamic(self):
+        """NIVEL 2H: INDIRECT - Referencias dinámicas."""
+        
+        # H1: INDIRECT dinámico - concatenación
+        value = self.evaluator.evaluate('Tests!H1')
+        expected = "Alice"  # Data.A2
+        self.assertEqual(expected, value, 'INDIRECT("Data.A" & 2) debe devolver "Alice"')
+        
+        # H2: INDIRECT dinámico - CHAR
+        value = self.evaluator.evaluate('Tests!H2')
+        expected = 30  # Data.B3
+        self.assertEqual(expected, value, 'INDIRECT("Data." & CHAR(66) & "3") debe devolver 30')
+        
+        # H3: INDIRECT rango - headers
+        value = self.evaluator.evaluate('Tests!H3')
+        self.assertIsInstance(value, Array, 'INDIRECT("Data.A1:C1") debe devolver Array')
+        # Verificar contenido de headers
+        if hasattr(value, 'values'):
+            expected_headers = [["Name", "Age", "City"]]
+            self.assertEqual(expected_headers, value.values, "Array debe contener headers A1:C1")
+        
+        # H4: INDIRECT rango - columna
+        value = self.evaluator.evaluate('Tests!H4')
+        self.assertIsInstance(value, Array, 'INDIRECT("Data.A2:A6") debe devolver Array')
+
+    def test_level2_indirect_errors(self):
+        """NIVEL 2I: INDIRECT - Casos de error."""
+        
+        # I1: Hoja inexistente
+        value = self.evaluator.evaluate('Tests!I1')
+        self.assertIsInstance(value, xlerrors.RefExcelError,
+                            'INDIRECT("InvalidSheet.A1") debe devolver #REF!')
+        
+        # I2: Celda inválida
+        value = self.evaluator.evaluate('Tests!I2')
+        # Puede ser 0, None, o #REF! dependiendo de Excel
+        self.assertTrue(value == 0 or value is None or isinstance(value, xlerrors.RefExcelError),
+                       'INDIRECT("Data.Z99") debe devolver 0, None o #REF!')
+        
+        # I3: Referencia vacía
+        value = self.evaluator.evaluate('Tests!I3')
+        self.assertIsInstance(value, xlerrors.RefExcelError,
+                            'INDIRECT("") debe devolver #REF!')
+        
+        # I4: Texto inválido
+        value = self.evaluator.evaluate('Tests!I4')
+        self.assertIsInstance(value, xlerrors.RefExcelError,
+                            'INDIRECT("NotAReference") debe devolver #REF!')
+
+    # ========================================================================
+    # NIVEL 3: CASOS AVANZADOS (Combinaciones)
+    # ========================================================================
+    
+    def test_level3_index_indirect_combinations(self):
+        """NIVEL 3J: INDEX + INDIRECT - Combinaciones."""
+        
+        # J1: Combinación básica INDEX+INDIRECT
+        value = self.evaluator.evaluate('Tests!J1')
+        expected = 25  # INDEX(Data.A1:E6, 2, 2)
+        self.assertEqual(expected, value, 'INDEX(INDIRECT("Data.A1:E6"), 2, 2) debe devolver 25')
+        
+        # J2: Combinación INDEX+INDIRECT array
+        value = self.evaluator.evaluate('Tests!J2')
+        self.assertIsInstance(value, Array, 'INDEX(INDIRECT("Data.A1:E6"), 0, 2) debe devolver Array')
+        
+        # J3: Combinación INDEX+INDIRECT subrange
+        value = self.evaluator.evaluate('Tests!J3')
+        expected = "Chicago"  # INDEX(Data.A2:C4, 2, 3) -> C3 en subrange
+        self.assertEqual(expected, value, 'INDEX(INDIRECT("Data.A2:C4"), 2, 3) debe devolver "Chicago"')
+
+    def test_level3_offset_indirect_combinations(self):
+        """NIVEL 3K: OFFSET + INDIRECT - Combinaciones."""
+        
+        # K1: Combinación OFFSET+INDIRECT
+        value = self.evaluator.evaluate('Tests!K1')
+        expected = 25  # OFFSET(Data.A1, 1, 1) -> Data.B2
+        self.assertEqual(expected, value, 'OFFSET(INDIRECT("Data.A1"), 1, 1) debe devolver 25')
+        
+        # K2: Combinación OFFSET+INDIRECT desde B2
+        value = self.evaluator.evaluate('Tests!K2')
+        expected = "LA"  # OFFSET(Data.B2, 1, 1) -> Data.C3
+        self.assertEqual(expected, value, 'OFFSET(INDIRECT("Data.B2"), 1, 1) debe devolver "LA"')
+
+    def test_level3_complex_combinations(self):
+        """NIVEL 3L: Combinaciones complejas."""
+        
+        # L1: INDEX+OFFSET
+        value = self.evaluator.evaluate('Tests!L1')
+        expected = 25  # INDEX(3x3 array from A1, 2, 2) -> B2
+        self.assertEqual(expected, value, 'INDEX(OFFSET(Data.A1, 0, 0, 3, 3), 2, 2) debe devolver 25')
+
+    # ========================================================================
+    # NIVEL 4: CASOS EDGE (Comportamientos Límite)
+    # ========================================================================
+    
+    def test_level4_special_ranges(self):
+        """NIVEL 4M: Rangos especiales."""
+        
+        # M1: INDEX columna completa
+        value = self.evaluator.evaluate('Tests!M1')
+        expected = "Alice"  # Data.A2 (segunda celda de columna A)
+        self.assertEqual(expected, value, 'INDEX(Data.A:A, 2) debe devolver "Alice"')
+        
+        # M2: INDEX fila completa
+        value = self.evaluator.evaluate('Tests!M2')
+        expected = "Age"  # Data.B1 (segunda celda de fila 1)
+        self.assertEqual(expected, value, 'INDEX(Data.1:1, 1, 2) debe devolver "Age"')
+
+    def test_level4_complex_references(self):
+        """NIVEL 4N: Referencias complejas."""
+        
+        # N1: INDIRECT misma hoja
+        value = self.evaluator.evaluate('Tests!N1')
+        expected = "Test Value"  # Tests.O1
+        self.assertEqual(expected, value, 'INDIRECT("Tests.O1") debe devolver "Test Value"')
+
+    def test_level4_compatibility_cases(self):
+        """NIVEL 4O: Casos de compatibilidad."""
+        
+        # O2: Manejo errores IFERROR
+        value = self.evaluator.evaluate('Tests!O2')
+        expected = "Not Found"  # IFERROR maneja INDEX fuera de rango
+        self.assertEqual(expected, value, 'IFERROR(INDEX(...), "Not Found") debe devolver "Not Found"')
+        
+        # O3: Detección errores IF+ISERROR
+        value = self.evaluator.evaluate('Tests!O3')
+        expected = "Error"  # IF detecta error en OFFSET
+        self.assertEqual(expected, value, 'IF(ISERROR(OFFSET(...)), "Error", "OK") debe devolver "Error"')
+
+    # ========================================================================
+    # TESTS DE VALIDACIÓN CRUZADA
+    # ========================================================================
+    
+    def test_data_integrity(self):
+        """Verificar integridad de datos de prueba."""
+        
+        # Verificar datos básicos en hoja Data
+        self.assertEqual("Alice", self.evaluator.evaluate('Data!A2'))
+        self.assertEqual(25, self.evaluator.evaluate('Data!B2'))
+        self.assertEqual("NYC", self.evaluator.evaluate('Data!C2'))
+        self.assertEqual(85, self.evaluator.evaluate('Data!D2'))
+        self.assertEqual(True, self.evaluator.evaluate('Data!E2'))
+        
+        # Verificar referencias auxiliares
+        self.assertEqual("Data.B2", self.evaluator.evaluate('Tests!P1'))
+        self.assertEqual("Data.C3", self.evaluator.evaluate('Tests!P2'))
+        self.assertEqual("Data.A1:C3", self.evaluator.evaluate('Tests!P3'))
+
+    def test_type_consistency(self):
+        """Verificar consistencia de tipos de datos."""
+        
+        # Números deben ser numéricos
+        value = self.evaluator.evaluate('Tests!A1')  # INDEX -> 25
+        self.assertIsInstance(value, (int, float, Number))
+        
+        # Textos deben ser texto
+        value = self.evaluator.evaluate('Tests!A2')  # INDEX -> "Bob"
+        self.assertIsInstance(value, (str, Text))
+        
+        # Booleanos deben ser boolean
+        value = self.evaluator.evaluate('Tests!A3')  # INDEX -> True
+        self.assertIsInstance(value, (bool, Boolean))
+        
+        # Arrays deben ser Array
+        value = self.evaluator.evaluate('Tests!C1')  # INDEX -> Array
+        self.assertIsInstance(value, Array)
+        
+        # Errores deben ser ExcelError
+        value = self.evaluator.evaluate('Tests!B1')  # INDEX -> #REF!
+        self.assertIsInstance(value, xlerrors.ExcelError)
