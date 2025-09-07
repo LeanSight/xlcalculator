@@ -128,6 +128,16 @@ def _validate_position_bounds(col, row):
     return col >= 1 and row >= 1
 
 
+def _column_number_to_letter(col_num):
+    """Convert column number to letter (1=A, 2=B, etc.)."""
+    col_letter = ''
+    while col_num > 0:
+        col_num -= 1
+        col_letter = chr(ord('A') + col_num % 26) + col_letter
+        col_num //= 26
+    return col_letter
+
+
 # Placeholder functions - no implementation until acceptance tests drive development
 @xl.register()
 def INDEX(array, row_num, col_num=1):
@@ -211,9 +221,37 @@ def OFFSET(reference, rows, cols, height=None, width=None):
         if not _validate_position_bounds(new_col, new_row):
             return xlerrors.RefExcelError()
         
-        # Build new reference and get value
-        new_ref = _build_cell_reference(sheet, new_col, new_row)
-        return evaluator.get_cell_value(new_ref)
+        # If height and width are specified
+        if height is not None and width is not None:
+            height_int = _convert_to_python_int(height)
+            width_int = _convert_to_python_int(width)
+            
+            if height_int <= 0 or width_int <= 0:
+                return xlerrors.ValueExcelError()
+            
+            # Special case: 1x1 returns single value, not array
+            if height_int == 1 and width_int == 1:
+                new_ref = _build_cell_reference(sheet, new_col, new_row)
+                return evaluator.get_cell_value(new_ref)
+            
+            # Build range reference for multi-cell arrays
+            end_col = new_col + width_int - 1
+            end_row = new_row + height_int - 1
+            
+            # Convert to column letters
+            start_col_letter = _column_number_to_letter(new_col)
+            end_col_letter = _column_number_to_letter(end_col)
+            
+            # Build range in format "Sheet!A1:B2"
+            range_ref = f'{sheet}!{start_col_letter}{new_row}:{end_col_letter}{end_row}'
+            
+            # Return as array
+            array_data = evaluator.get_range_values(range_ref)
+            return func_xltypes.Array(array_data)
+        else:
+            # Build new reference and get single value
+            new_ref = _build_cell_reference(sheet, new_col, new_row)
+            return evaluator.get_cell_value(new_ref)
     
     # For unmapped cases, return error
     return xlerrors.ValueExcelError(f"OFFSET: Reference {ref_value} not mapped")
