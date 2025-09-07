@@ -15,6 +15,7 @@ from pathlib import Path
 # Import xlwings generators for dynamic range and xlookup only
 from xlwings_xlookup import create_xlookup_excel_with_xlwings
 from xlwings_dynamic_range import create_dynamic_range_excel_with_xlwings
+from xlwings_dynamic_ranges_comprehensive import create_comprehensive_dynamic_ranges_excel
 
 
 def generate_all_excel_files(output_dir):
@@ -23,16 +24,17 @@ def generate_all_excel_files(output_dir):
     # Create output directory
     os.makedirs(output_dir, exist_ok=True)
     
-    # List of files to generate - only dynamic range and xlookup
+    # List of files to generate - xlookup and comprehensive dynamic ranges
     generators = [
         ("XLOOKUP.xlsx", create_xlookup_excel_with_xlwings),
         ("DYNAMIC_RANGE.xlsx", create_dynamic_range_excel_with_xlwings),
+        ("DYNAMIC_RANGES_COMPREHENSIVE.xlsx", create_comprehensive_dynamic_ranges_excel),
     ]
     
     print("🚀 Starting Excel file generation with xlwings...")
-    print("📋 This will create 2 Excel files with calculated formula values")
+    print("📋 This will create 3 Excel files with calculated formula values")
     print("⚠️  Requires Windows with Microsoft Excel installed")
-    print("🔧 Using improved DYNAMIC_RANGE generation with robust error handling")
+    print("🔧 Using comprehensive DYNAMIC_RANGES generation with faithful Excel behavior")
     print()
     
     created_files = []
@@ -75,7 +77,8 @@ def generate_all_excel_files(output_dir):
         print("   python -m pytest tests/xlfunctions_vs_excel/ -v")
         print("\n📊 Files generated:")
         print("   - XLOOKUP.xlsx: XLOOKUP function with all match modes")
-        print("   - DYNAMIC_RANGE.xlsx: INDEX, OFFSET, INDIRECT functions")
+        print("   - DYNAMIC_RANGE.xlsx: INDEX, OFFSET, INDIRECT functions (legacy)")
+        print("   - DYNAMIC_RANGES_COMPREHENSIVE.xlsx: Comprehensive dynamic ranges testing")
     
     return len(created_files), len(failed_files)
 
