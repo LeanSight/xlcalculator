@@ -14,7 +14,6 @@ from pathlib import Path
 
 # Import xlwings generators for dynamic range and xlookup only
 from xlwings_xlookup import create_xlookup_excel_with_xlwings
-from xlwings_dynamic_range import create_dynamic_range_excel_with_xlwings
 from xlwings_dynamic_ranges_comprehensive import create_comprehensive_dynamic_ranges_excel
 
 
@@ -27,7 +26,6 @@ def generate_all_excel_files(output_dir):
     # List of files to generate - xlookup and comprehensive dynamic ranges
     generators = [
         ("XLOOKUP.xlsx", create_xlookup_excel_with_xlwings),
-        ("DYNAMIC_RANGE.xlsx", create_dynamic_range_excel_with_xlwings),
         ("DYNAMIC_RANGES_COMPREHENSIVE.xlsx", create_comprehensive_dynamic_ranges_excel),
     ]
     
