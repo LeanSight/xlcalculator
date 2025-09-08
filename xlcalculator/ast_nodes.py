@@ -222,6 +222,57 @@ class FunctionNode(ASTNode):
         super().__init__(token)
         self.args = None
 
+    def _eval_parameter_with_excel_fallback(self, pitem, context):
+        """
+        Evaluate parameter with fallback to Excel's pre-calculated values.
+        
+        This method ensures xlcalculator behavior matches Excel by using Excel's own
+        calculated values when our evaluation fails or returns BLANK for cell references.
+        
+        Args:
+            pitem: Parameter AST node to evaluate
+            context: Evaluation context
+            
+        Returns:
+            Evaluated parameter value, falling back to Excel's stored value if needed
+        """
+        # Try normal evaluation first
+        try:
+            result = pitem.eval(context)
+            
+            # If evaluation succeeds and returns a meaningful value, use it
+            if not isinstance(result, func_xltypes.Blank):
+                return result
+                
+        except Exception:
+            # Evaluation failed, will try fallback
+            pass
+        
+        # Fallback: Use Excel's pre-calculated value for cell references
+        # Only apply fallback to cell references (OperandNode with cell address)
+        if (hasattr(pitem, 'tvalue') and 
+            hasattr(pitem, 'ttype') and 
+            pitem.ttype == 'operand' and
+            isinstance(pitem.tvalue, str)):
+            
+            cell_address = pitem.tvalue
+            
+            # Check if this looks like a cell reference and Excel has calculated it
+            if (hasattr(context, 'evaluator') and 
+                context.evaluator and 
+                context.evaluator.model and
+                cell_address in context.evaluator.model.cells):
+                
+                cell = context.evaluator.model.cells[cell_address]
+                
+                # Use Excel's stored value if available and meaningful
+                if cell.value is not None and str(cell.value).strip() != '':
+                    excel_value = func_xltypes.ExcelType.cast_from_native(cell.value)
+                    return excel_value
+        
+        # Final fallback: return BLANK
+        return func_xltypes.Blank()
+
     def eval(self, context):
         func_name = self.tvalue.upper()
         # 1. Remove the BBB namespace, since we are just supporting
@@ -250,10 +301,10 @@ class FunctionNode(ASTNode):
                 ])
             elif (param.kind == param.VAR_POSITIONAL):
                 args.extend([
-                    pitem.eval(context) for pitem in pvalue
+                    self._eval_parameter_with_excel_fallback(pitem, context) for pitem in pvalue
                 ])
             else:
-                args.append(pvalue.eval(context))
+                args.append(self._eval_parameter_with_excel_fallback(pvalue, context))
         # 4. Run function and return result.
         return func(*args)
 
