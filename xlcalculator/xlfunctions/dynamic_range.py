@@ -92,6 +92,30 @@ def _get_array_row(array_data, row_idx):
     return array_data[row_idx]
 
 
+def _validate_array_bounds(array_data, row_idx, col_idx):
+    """Validate that array indices are within bounds.
+    
+    Used by: INDEX error handling
+    Returns: None if valid, raises RefExcelError if out of bounds
+    """
+    if row_idx < 0 or row_idx >= len(array_data):
+        raise xlerrors.RefExcelError("Row index out of range")
+    if col_idx < 0 or col_idx >= len(array_data[0]):
+        raise xlerrors.RefExcelError("Column index out of range")
+
+
+def _validate_index_parameters(row_num, col_num):
+    """Validate INDEX function parameters for common error cases.
+    
+    Used by: INDEX parameter validation
+    Returns: None if valid, raises ValueExcelError for invalid combinations
+    """
+    if row_num == 0 and col_num == 0:
+        raise xlerrors.ValueExcelError("Both row and column cannot be 0")
+    if row_num < 0 or col_num < 0:
+        raise xlerrors.ValueExcelError("Row and column numbers must be positive")
+
+
 # ============================================================================
 # DYNAMIC RANGE FUNCTIONS - Implemented via ATDD strict methodology
 # ============================================================================
@@ -120,6 +144,9 @@ def INDEX(
     row_num_int = _convert_to_python_int(row_num)
     col_num_int = _convert_to_python_int(col_num)
     
+    # Validate parameter combinations using shared utility
+    _validate_index_parameters(row_num_int, col_num_int)
+    
     # Resolve array data using shared utility
     array_data = _resolve_array_data(array, evaluator)
     
@@ -127,15 +154,22 @@ def INDEX(
     if row_num_int == 0:
         # Return entire column as Array using shared utility
         col_idx = col_num_int - 1  # Convert to 0-based index
+        # Validate column bounds
+        if col_idx < 0 or col_idx >= len(array_data[0]):
+            raise xlerrors.RefExcelError("Column index out of range")
         column_data = _get_array_column(array_data, col_idx)
         return func_xltypes.Array(column_data)
     elif col_num_int == 0:
         # Return entire row as Array using shared utility
         row_idx = row_num_int - 1  # Convert to 0-based index
+        # Validate row bounds
+        if row_idx < 0 or row_idx >= len(array_data):
+            raise xlerrors.RefExcelError("Row index out of range")
         row_data = _get_array_row(array_data, row_idx)
         return func_xltypes.Array(row_data)
     else:
-        # Return single value
+        # Return single value with bounds validation
         row_idx = row_num_int - 1  # Convert to 0-based index
         col_idx = col_num_int - 1  # Convert to 0-based index
+        _validate_array_bounds(array_data, row_idx, col_idx)
         return array_data[row_idx][col_idx]
