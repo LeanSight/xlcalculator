@@ -233,3 +233,20 @@ def UPPER(
         upper-function-c11f29b3-d1a3-4537-8df6-04d0049963d6
     """
     return str(text).upper()
+
+
+@xl.register()
+@xl.validate_args
+def CHAR(
+        number: func_xltypes.XlNumber
+) -> func_xltypes.XlText:
+    """Returns the character specified by the code number.
+
+    https://support.microsoft.com/en-us/office/
+        char-function-bbd249c8-b36e-4a91-8017-1c133f9b837a
+    """
+    num = int(number)
+    if num < 1 or num > 255:
+        raise xlerrors.ValueExcelError(f"CHAR number must be between 1 and 255, got {num}")
+    
+    return chr(num)
