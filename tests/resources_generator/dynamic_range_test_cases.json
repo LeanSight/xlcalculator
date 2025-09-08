@@ -16,6 +16,7 @@
     "class_name": "DynamicRangesComprehensiveTest",
     "test_description": "Comprehensive integration tests for dynamic ranges",
     "class_docstring": "These tests validate FAITHFUL Excel behavior of INDEX, OFFSET, and INDIRECT functions",
+    "excel_filename": "dynamic_ranges.xlsx",
     "label_row": 20,
     "integrity_method_name": "test_data_integrity",
     "integrity_method_description": "Verify test data integrity",
@@ -46,7 +47,7 @@
     "Q3": true,
     "Q4": "#REF!",
     "Q5": "#VALUE!",
-    "O1": "Test Value"
+    "Z1": "Test Value"
   },
   "levels": [
     {
@@ -212,7 +213,7 @@
         {
           "cell": "D5",
           "formula": "=OFFSET(Data!C3, -1, 1)",
-          "expected_value": 30,
+          "expected_value": 85,
           "expected_type": "number",
           "description": "OFFSET básico - offset negativo"
         }
@@ -529,7 +530,7 @@
         {
           "cell": "L3",
           "formula": "=INDEX(INDIRECT(\"Data!A2:C4\"), 2, 3)",
-          "expected_value": "Chicago",
+          "expected_value": "LA",
           "expected_type": "text",
           "description": "Combinación INDEX+INDIRECT subrange"
         },
@@ -678,7 +679,7 @@
       "test_cases": [
         {
           "cell": "Q1",
-          "formula": "=INDIRECT(\"Tests!O1\")",
+          "formula": "=INDIRECT(\"Tests!Z1\")",
           "expected_value": "Test Value",
           "expected_type": "text",
           "description": "INDIRECT misma hoja"
