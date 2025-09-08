@@ -18,6 +18,28 @@ def resolve_sheet(sheet_str):
     return sheet_match.group("quoted") or sheet_match.group("notquoted")
 
 
+def parse_sheet_and_address(ref, default_sheet='Sheet1'):
+    """Parse reference into sheet name and address part.
+    
+    Args:
+        ref: Reference string (e.g., 'Sheet1!A1' or 'A1')
+        default_sheet: Default sheet name when no sheet prefix provided
+        
+    Returns:
+        Tuple of (sheet_name, address_part)
+        
+    Examples:
+        parse_sheet_and_address('Sheet1!A1') -> ('Sheet1', 'A1')
+        parse_sheet_and_address('A1') -> ('Sheet1', 'A1')
+        parse_sheet_and_address('Data!B2:C3') -> ('Data', 'B2:C3')
+    """
+    if '!' in ref:
+        parts = ref.split('!', 1)
+        return parts[0], parts[1]
+    else:
+        return default_sheet, ref
+
+
 def resolve_address(addr):
     # Addresses without sheet name are not supported.
     sheet_str, addr_str = addr.split('!')

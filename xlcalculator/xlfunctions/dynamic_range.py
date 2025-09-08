@@ -163,7 +163,8 @@ def _parse_cell_coordinates(cell_address):
     Used by: OFFSET utilities
     Returns: Tuple of (sheet, col_letter, row_num)
     """
-    sheet, cell_part = cell_address.split('!')
+    from ..utils import parse_sheet_and_address
+    sheet, cell_part = parse_sheet_and_address(cell_address)
     col_letter = ''.join(c for c in cell_part if c.isalpha())
     row_num = int(''.join(c for c in cell_part if c.isdigit()))
     return sheet, col_letter, row_num
@@ -255,14 +256,15 @@ def _validate_sheet_exists(ref_string, evaluator):
     Returns:
         RefExcelError if sheet doesn't exist, None if valid
     """
-    if '!' in ref_string:
-        sheet_name = ref_string.split('!')[0]
-        
+    from ..utils import parse_sheet_and_address
+    sheet_name, _ = parse_sheet_and_address(ref_string)
+    
+    if sheet_name != 'Sheet1':  # Only validate non-default sheets
         # Get all available sheet names from model cells
         available_sheets = set()
         for cell_addr in evaluator.model.cells.keys():
-            if '!' in cell_addr:
-                available_sheets.add(cell_addr.split('!')[0])
+            sheet, _ = parse_sheet_and_address(cell_addr)
+            available_sheets.add(sheet)
         
         # Check if referenced sheet exists
         if sheet_name not in available_sheets:
