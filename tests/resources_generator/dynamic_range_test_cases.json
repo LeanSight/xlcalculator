@@ -1,15 +1,26 @@
 {
   "metadata": {
-    "title": "Dynamic Ranges Comprehensive Test Cases",
+    "title": "Dynamic Ranges",
     "description": "Complete test suite for INDEX, OFFSET, INDIRECT functions with faithful Excel behavior",
     "total_cases": 66,
-    "source": "DYNAMIC_RANGES_COMPREHENSIVE_DESIGN.md",
+    "source": "DYNAMIC_RANGES_DESIGN.md",
     "levels": {
       "1": "CASOS ESTRUCTURALES (Comportamiento Core)",
       "2": "CASOS INTERMEDIOS (Funciones Individuales)", 
       "3": "CASOS AVANZADOS (Combinaciones)",
-      "4": "CASOS EDGE (Comportamientos Límite)"
+      "4": "CASOS DE CONTEXTO (Uso con Otras Funciones)",
+      "5": "CASOS EDGE (Comportamientos Límite)"
     }
+  },
+  "generation_config": {
+    "class_name": "DynamicRangesComprehensiveTest",
+    "test_description": "Comprehensive integration tests for dynamic ranges",
+    "class_docstring": "These tests validate FAITHFUL Excel behavior of INDEX, OFFSET, and INDIRECT functions",
+    "label_row": 20,
+    "integrity_method_name": "test_data_integrity",
+    "integrity_method_description": "Verify test data integrity",
+    "consistency_method_name": "test_type_consistency", 
+    "consistency_method_description": "Verify data type consistency across test cases"
   },
   "data_sheet": {
     "name": "Data",
@@ -26,8 +37,10 @@
     "P1": "Data!B2",
     "P2": "Data!C3", 
     "P3": "Data!A1:C3",
-    "P4": "InvalidRef",
+    "P4": "InvalidSheet!A1",
     "P5": "",
+    "P6": "Data!A:A",
+    "P7": "Data!1:1",
     "Q1": 25,
     "Q2": "Bob",
     "Q3": true,
@@ -82,41 +95,78 @@
     },
     {
       "level": "1B",
-      "title": "INDEX - Casos de Error Estructurales",
-      "description": "Manejo de errores",
-      "cell_range": "B1:B5",
-      "category": "index_errors",
+      "title": "INDEX - Arrays Completos",
+      "description": "Filas y columnas completas",
+      "cell_range": "B1:B4",
+      "category": "index_arrays",
       "test_cases": [
         {
           "cell": "B1",
+          "formula": "=INDEX(Data!A1:E6, 0, 2)",
+          "expected_value": null,
+          "expected_type": "array",
+          "description": "INDEX array - columna completa Age"
+        },
+        {
+          "cell": "B2",
+          "formula": "=INDEX(Data!A1:E6, 2, 0)",
+          "expected_value": null,
+          "expected_type": "array",
+          "description": "INDEX array - fila completa Alice"
+        },
+        {
+          "cell": "B3",
+          "formula": "=INDEX(Data!A1:E6, 0, 1)",
+          "expected_value": null,
+          "expected_type": "array", 
+          "description": "INDEX array - primera columna Name"
+        },
+        {
+          "cell": "B4",
+          "formula": "=INDEX(Data!A1:E6, 0, 5)",
+          "expected_value": null,
+          "expected_type": "array",
+          "description": "INDEX array - columna Active"
+        }
+      ]
+    },
+    {
+      "level": "1C",
+      "title": "INDEX - Casos de Error Estructurales",
+      "description": "Manejo de errores",
+      "cell_range": "C1:C5",
+      "category": "index_errors",
+      "test_cases": [
+        {
+          "cell": "C1",
           "formula": "=INDEX(Data!A1:E6, 7, 1)",
           "expected_value": null,
           "expected_type": "ref_error",
           "description": "INDEX error - fila fuera de rango"
         },
         {
-          "cell": "B2",
+          "cell": "C2",
           "formula": "=INDEX(Data!A1:E6, 1, 7)",
           "expected_value": null,
           "expected_type": "ref_error",
           "description": "INDEX error - columna fuera de rango"
         },
         {
-          "cell": "B3",
+          "cell": "C3",
           "formula": "=INDEX(Data!A1:E6, 0, 0)",
           "expected_value": null,
           "expected_type": "value_error",
           "description": "INDEX error - ambos cero"
         },
         {
-          "cell": "B4",
+          "cell": "C4",
           "formula": "=INDEX(Data!A1:E6, -1, 1)",
           "expected_value": null,
           "expected_type": "value_error", 
           "description": "INDEX error - fila negativa"
         },
         {
-          "cell": "B5",
+          "cell": "C5",
           "formula": "=INDEX(Data!A1:E6, 1, -1)",
           "expected_value": null,
           "expected_type": "value_error",
@@ -125,40 +175,10 @@
       ]
     },
     {
-      "level": "1C",
-      "title": "INDEX - Casos de Fila/Columna Completa",
-      "description": "Arrays completos",
-      "cell_range": "C1:C3",
-      "category": "index_arrays",
-      "test_cases": [
-        {
-          "cell": "C1",
-          "formula": "=INDEX(Data!A1:E6, 0, 2)",
-          "expected_value": null,
-          "expected_type": "array",
-          "description": "INDEX array - columna completa"
-        },
-        {
-          "cell": "C2", 
-          "formula": "=INDEX(Data!A1:E6, 2, 0)",
-          "expected_value": null,
-          "expected_type": "array",
-          "description": "INDEX array - fila completa"
-        },
-        {
-          "cell": "C3",
-          "formula": "=INDEX(Data!A1:E6, 0, 1)",
-          "expected_value": null,
-          "expected_type": "array", 
-          "description": "INDEX array - primera columna"
-        }
-      ]
-    },
-    {
       "level": "2D",
       "title": "OFFSET - Casos Fundamentales",
       "description": "Valores individuales básicos",
-      "cell_range": "D1:D4",
+      "cell_range": "D1:D5",
       "category": "offset_fundamentals",
       "test_cases": [
         {
@@ -188,14 +208,21 @@
           "expected_value": false,
           "expected_type": "boolean",
           "description": "OFFSET básico - esquina"
+        },
+        {
+          "cell": "D5",
+          "formula": "=OFFSET(Data!C3, -1, 1)",
+          "expected_value": 30,
+          "expected_type": "number",
+          "description": "OFFSET básico - offset negativo"
         }
       ]
     },
     {
       "level": "2E",
-      "title": "OFFSET - Casos con Dimensiones", 
+      "title": "OFFSET - Arrays con Dimensiones", 
       "description": "Rangos con height/width",
-      "cell_range": "E1:E4",
+      "cell_range": "E1:E5",
       "category": "offset_dimensions",
       "test_cases": [
         {
@@ -225,6 +252,13 @@
           "expected_value": null,
           "expected_type": "array",
           "description": "OFFSET dimensiones - 1x3"
+        },
+        {
+          "cell": "E5",
+          "formula": "=OFFSET(Data!A1, 1, 0, 3, 1)",
+          "expected_value": null,
+          "expected_type": "array",
+          "description": "OFFSET dimensiones - 3x1"
         }
       ]
     },
@@ -237,31 +271,31 @@
       "test_cases": [
         {
           "cell": "F1",
-          "formula": "=OFFSET(Data!A1, -1, 0)",
+          "formula": "=OFFSET(Data!A1, -2, 0)",
           "expected_value": null,
-          "expected_type": "value_error",
-          "description": "OFFSET error - fila negativa"
+          "expected_type": "ref_error",
+          "description": "OFFSET error - antes del inicio de hoja"
         },
         {
           "cell": "F2",
-          "formula": "=OFFSET(Data!A1, 0, -1)",
+          "formula": "=OFFSET(Data!A1, 0, -2)",
           "expected_value": null,
-          "expected_type": "value_error", 
-          "description": "OFFSET error - columna negativa"
+          "expected_type": "ref_error", 
+          "description": "OFFSET error - antes del inicio de hoja"
         },
         {
           "cell": "F3",
-          "formula": "=OFFSET(Data!A1, 10, 0)",
+          "formula": "=OFFSET(Data!A1, 100, 0)",
           "expected_value": null,
           "expected_type": "ref_error",
-          "description": "OFFSET error - fuera de hoja"
+          "description": "OFFSET error - más allá de hoja"
         },
         {
           "cell": "F4",
-          "formula": "=OFFSET(Data!A1, 0, 10)",
+          "formula": "=OFFSET(Data!A1, 0, 100)",
           "expected_value": null,
           "expected_type": "ref_error",
-          "description": "OFFSET error - fuera de hoja"
+          "description": "OFFSET error - más allá de hoja"
         },
         {
           "cell": "F5",
@@ -283,7 +317,7 @@
       "level": "2G",
       "title": "INDIRECT - Casos Fundamentales",
       "description": "Referencias directas",
-      "cell_range": "G1:G3",
+      "cell_range": "G1:G4",
       "category": "indirect_fundamentals",
       "test_cases": [
         {
@@ -306,6 +340,13 @@
           "expected_value": true,
           "expected_type": "boolean",
           "description": "INDIRECT básico - boolean"
+        },
+        {
+          "cell": "G4",
+          "formula": "=INDIRECT(P1)",
+          "expected_value": 25,
+          "expected_type": "number",
+          "description": "INDIRECT básico - desde celda"
         }
       ]
     },
@@ -332,185 +373,375 @@
         },
         {
           "cell": "H3",
-          "formula": "=INDIRECT(\"Data!A1:C1\")",
-          "expected_value": null,
-          "expected_type": "array",
-          "description": "INDIRECT rango - headers"
+          "formula": "=INDIRECT(\"Data!A\" & ROW())",
+          "expected_value": "Charlie",
+          "expected_type": "text",
+          "description": "INDIRECT dinámico - ROW"
         },
         {
           "cell": "H4",
-          "formula": "=INDIRECT(\"Data!A2:A6\")",
-          "expected_value": null,
-          "expected_type": "array",
-          "description": "INDIRECT rango - columna"
+          "formula": "=INDIRECT(\"Data!\" & CHAR(65+COLUMN()) & \"1\")",
+          "expected_value": "Score",
+          "expected_type": "text",
+          "description": "INDIRECT dinámico - COLUMN"
         }
       ]
     },
     {
       "level": "2I",
-      "title": "INDIRECT - Casos de Error",
-      "description": "Referencias inválidas",
+      "title": "INDIRECT - Arrays de Referencias",
+      "description": "Rangos y arrays",
       "cell_range": "I1:I4",
-      "category": "indirect_errors",
+      "category": "indirect_arrays",
       "test_cases": [
         {
           "cell": "I1",
+          "formula": "=INDIRECT(\"Data!A1:C1\")",
+          "expected_value": null,
+          "expected_type": "array",
+          "description": "INDIRECT array - headers"
+        },
+        {
+          "cell": "I2",
+          "formula": "=INDIRECT(\"Data!A2:A6\")",
+          "expected_value": null,
+          "expected_type": "array",
+          "description": "INDIRECT array - columna nombres"
+        },
+        {
+          "cell": "I3",
+          "formula": "=INDIRECT(\"Data!B1:B6\")",
+          "expected_value": null,
+          "expected_type": "array",
+          "description": "INDIRECT array - columna edad"
+        },
+        {
+          "cell": "I4",
+          "formula": "=INDIRECT(P3)",
+          "expected_value": null,
+          "expected_type": "array",
+          "description": "INDIRECT array - desde celda"
+        }
+      ]
+    },
+    {
+      "level": "2J",
+      "title": "INDIRECT - Referencias de Columna/Fila Completa",
+      "description": "Referencias completas",
+      "cell_range": "J1:J4",
+      "category": "indirect_columns",
+      "test_cases": [
+        {
+          "cell": "J1",
+          "formula": "=INDIRECT(\"Data!A:A\")",
+          "expected_value": null,
+          "expected_type": "array",
+          "description": "INDIRECT columna completa A"
+        },
+        {
+          "cell": "J2",
+          "formula": "=INDIRECT(\"Data!B:B\")",
+          "expected_value": null,
+          "expected_type": "array",
+          "description": "INDIRECT columna completa B"
+        },
+        {
+          "cell": "J3",
+          "formula": "=INDIRECT(\"Data!1:1\")",
+          "expected_value": null,
+          "expected_type": "array",
+          "description": "INDIRECT fila completa 1"
+        },
+        {
+          "cell": "J4",
+          "formula": "=INDIRECT(\"Data!2:2\")",
+          "expected_value": null,
+          "expected_type": "array",
+          "description": "INDIRECT fila completa 2"
+        }
+      ]
+    },
+    {
+      "level": "2K",
+      "title": "INDIRECT - Casos de Error",
+      "description": "Referencias inválidas",
+      "cell_range": "K1:K5",
+      "category": "indirect_errors",
+      "test_cases": [
+        {
+          "cell": "K1",
           "formula": "=INDIRECT(\"InvalidSheet!A1\")",
           "expected_value": null,
           "expected_type": "ref_error",
           "description": "INDIRECT error - hoja inexistente"
         },
         {
-          "cell": "I2",
+          "cell": "K2",
           "formula": "=INDIRECT(\"Data!Z99\")",
           "expected_value": 0,
           "expected_type": "number",
-          "description": "INDIRECT error - celda inválida"
+          "description": "INDIRECT error - celda vacía"
         },
         {
-          "cell": "I3",
+          "cell": "K3",
           "formula": "=INDIRECT(\"\")",
           "expected_value": null,
           "expected_type": "ref_error",
           "description": "INDIRECT error - referencia vacía"
         },
         {
-          "cell": "I4",
+          "cell": "K4",
           "formula": "=INDIRECT(\"NotAReference\")",
           "expected_value": null,
           "expected_type": "ref_error",
           "description": "INDIRECT error - texto inválido"
+        },
+        {
+          "cell": "K5",
+          "formula": "=INDIRECT(P4)",
+          "expected_value": null,
+          "expected_type": "ref_error",
+          "description": "INDIRECT error - hoja inválida desde celda"
         }
       ]
     },
     {
-      "level": "3J",
+      "level": "3L",
       "title": "INDEX + INDIRECT",
       "description": "Combinaciones INDEX+INDIRECT",
-      "cell_range": "J1:J3",
+      "cell_range": "L1:L4",
       "category": "index_indirect_combinations",
       "test_cases": [
         {
-          "cell": "J1",
+          "cell": "L1",
           "formula": "=INDEX(INDIRECT(\"Data!A1:E6\"), 2, 2)",
           "expected_value": 25,
           "expected_type": "number",
           "description": "Combinación INDEX+INDIRECT"
         },
         {
-          "cell": "J2",
+          "cell": "L2",
           "formula": "=INDEX(INDIRECT(\"Data!A1:E6\"), 0, 2)",
           "expected_value": null,
           "expected_type": "array",
           "description": "Combinación INDEX+INDIRECT array"
         },
         {
-          "cell": "J3",
+          "cell": "L3",
           "formula": "=INDEX(INDIRECT(\"Data!A2:C4\"), 2, 3)",
           "expected_value": "Chicago",
           "expected_type": "text",
           "description": "Combinación INDEX+INDIRECT subrange"
+        },
+        {
+          "cell": "L4",
+          "formula": "=INDEX(INDIRECT(\"Data!A:A\"), 3)",
+          "expected_value": "Bob",
+          "expected_type": "text",
+          "description": "Combinación INDEX+INDIRECT columna completa"
         }
       ]
     },
     {
-      "level": "3K",
+      "level": "3M",
       "title": "OFFSET + INDIRECT",
       "description": "Combinaciones OFFSET+INDIRECT",
-      "cell_range": "K1:K2",
+      "cell_range": "M1:M3",
       "category": "offset_indirect_combinations",
       "test_cases": [
         {
-          "cell": "K1",
+          "cell": "M1",
           "formula": "=OFFSET(INDIRECT(\"Data!A1\"), 1, 1)",
           "expected_value": 25,
           "expected_type": "number",
           "description": "Combinación OFFSET+INDIRECT"
         },
         {
-          "cell": "K2",
+          "cell": "M2",
           "formula": "=OFFSET(INDIRECT(\"Data!B2\"), 1, 1)",
           "expected_value": "LA",
           "expected_type": "text",
           "description": "Combinación OFFSET+INDIRECT desde B2"
+        },
+        {
+          "cell": "M3",
+          "formula": "=OFFSET(INDIRECT(\"Data!A1\"), 1, 1, 2, 2)",
+          "expected_value": null,
+          "expected_type": "array",
+          "description": "Combinación OFFSET+INDIRECT array"
         }
       ]
     },
     {
-      "level": "3L",
+      "level": "3N",
       "title": "Combinaciones Complejas",
       "description": "Funciones anidadas complejas",
-      "cell_range": "L1:L1",
+      "cell_range": "N1:N3",
       "category": "complex_combinations",
       "test_cases": [
         {
-          "cell": "L1",
+          "cell": "N1",
           "formula": "=INDEX(OFFSET(Data!A1, 0, 0, 3, 3), 2, 2)",
           "expected_value": 25,
           "expected_type": "number",
           "description": "Combinación INDEX+OFFSET"
-        }
-      ]
-    },
-    {
-      "level": "4M",
-      "title": "Rangos Especiales",
-      "description": "Referencias especiales",
-      "cell_range": "M1:M2",
-      "category": "special_ranges",
-      "test_cases": [
-        {
-          "cell": "M1",
-          "formula": "=INDEX(Data!A:A, 2)",
-          "expected_value": "Alice",
-          "expected_type": "text",
-          "description": "INDEX columna completa"
         },
         {
-          "cell": "M2",
-          "formula": "=INDEX(Data!1:1, 1, 2)",
-          "expected_value": "Age",
-          "expected_type": "text",
-          "description": "INDEX fila completa"
-        }
-      ]
-    },
-    {
-      "level": "4N",
-      "title": "Referencias Complejas",
-      "description": "Casos complejos",
-      "cell_range": "N1:N1",
-      "category": "complex_references",
-      "test_cases": [
+          "cell": "N2",
+          "formula": "=OFFSET(INDEX(Data!A1:E6, 2, 1), 1, 1)",
+          "expected_value": 30,
+          "expected_type": "number",
+          "description": "Combinación OFFSET+INDEX"
+        },
         {
-          "cell": "N1",
-          "formula": "=INDIRECT(\"Tests!O1\")",
-          "expected_value": "Test Value",
+          "cell": "N3",
+          "formula": "=INDIRECT(\"Data!\" & \"A\" & INDEX(Data!B1:B6, 2, 1))",
+          "expected_value": "Alice",
           "expected_type": "text",
-          "description": "INDIRECT misma hoja"
+          "description": "Referencia dinámica compleja"
         }
       ]
     },
     {
       "level": "4O",
-      "title": "Casos de Compatibilidad",
-      "description": "Manejo de errores",
-      "cell_range": "O2:O3",
-      "category": "compatibility_cases",
+      "title": "Funciones con Agregación",
+      "description": "Uso con funciones de agregado",
+      "cell_range": "O1:O4",
+      "category": "functions_with_aggregation",
       "test_cases": [
         {
+          "cell": "O1",
+          "formula": "=SUM(INDEX(Data!A1:E6, 0, 2))",
+          "expected_value": 130,
+          "expected_type": "number",
+          "description": "SUM con INDEX array"
+        },
+        {
           "cell": "O2",
-          "formula": "=IFERROR(INDEX(Data!A1:E6, 10, 1), \"Not Found\")",
-          "expected_value": "Not Found",
-          "expected_type": "text",
-          "description": "Manejo errores IFERROR"
+          "formula": "=AVERAGE(OFFSET(Data!B1, 1, 0, 5, 1))",
+          "expected_value": 28,
+          "expected_type": "number",
+          "description": "AVERAGE con OFFSET array"
         },
         {
           "cell": "O3",
+          "formula": "=COUNT(INDIRECT(\"Data!B:B\"))",
+          "expected_value": 5,
+          "expected_type": "number",
+          "description": "COUNT con INDIRECT columna"
+        },
+        {
+          "cell": "O4",
+          "formula": "=MAX(INDEX(Data!A1:E6, 0, 4))",
+          "expected_value": 95,
+          "expected_type": "number",
+          "description": "MAX con INDEX array"
+        }
+      ]
+    },
+    {
+      "level": "4P",
+      "title": "Manejo de Errores",
+      "description": "Manejo de errores con IFERROR/ISERROR",
+      "cell_range": "P1:P3",
+      "category": "error_handling",
+      "test_cases": [
+        {
+          "cell": "P1",
+          "formula": "=IFERROR(INDEX(Data!A1:E6, 10, 1), \"Not Found\")",
+          "expected_value": "Not Found",
+          "expected_type": "text",
+          "description": "Manejo errores IFERROR+INDEX"
+        },
+        {
+          "cell": "P2",
           "formula": "=IF(ISERROR(OFFSET(Data!A1, -1, 0)), \"Error\", \"OK\")",
           "expected_value": "Error",
           "expected_type": "text",
-          "description": "Detección errores IF+ISERROR"
+          "description": "Detección errores IF+ISERROR+OFFSET"
+        },
+        {
+          "cell": "P3",
+          "formula": "=IFERROR(INDIRECT(\"InvalidSheet!A1\"), \"Sheet Error\")",
+          "expected_value": "Sheet Error",
+          "expected_type": "text",
+          "description": "Manejo errores IFERROR+INDIRECT"
+        }
+      ]
+    },
+    {
+      "level": "5Q",
+      "title": "Referencias Especiales",
+      "description": "Referencias especiales y complejas",
+      "cell_range": "Q1:Q3",
+      "category": "special_references",
+      "test_cases": [
+        {
+          "cell": "Q1",
+          "formula": "=INDIRECT(\"Tests!O1\")",
+          "expected_value": "Test Value",
+          "expected_type": "text",
+          "description": "INDIRECT misma hoja"
+        },
+        {
+          "cell": "Q2",
+          "formula": "=INDEX(Data!A:A, 2)",
+          "expected_value": "Alice",
+          "expected_type": "text",
+          "description": "INDEX con columna completa"
+        },
+        {
+          "cell": "Q3",
+          "formula": "=OFFSET(Data!A:A, 1, 0, 3, 1)",
+          "expected_value": null,
+          "expected_type": "array",
+          "description": "OFFSET con columna completa"
+        }
+      ]
+    },
+    {
+      "level": "5R",
+      "title": "Arrays Dinámicos",
+      "description": "Comportamiento con arrays dinámicos",
+      "cell_range": "R1:R2",
+      "category": "dynamic_arrays",
+      "test_cases": [
+        {
+          "cell": "R1",
+          "formula": "=INDEX(Data!A1:E6, ROW(A1:A3), 1)",
+          "expected_value": null,
+          "expected_type": "array",
+          "description": "INDEX con array de filas"
+        },
+        {
+          "cell": "R2",
+          "formula": "=OFFSET(Data!A1, ROW(A1:A2)-1, 0)",
+          "expected_value": null,
+          "expected_type": "array",
+          "description": "OFFSET con array de offsets"
+        }
+      ]
+    },
+    {
+      "level": "5S",
+      "title": "Forma de Referencia vs Array",
+      "description": "Casos edge de formas de referencia",
+      "cell_range": "S1:S2",
+      "category": "reference_form_cases",
+      "test_cases": [
+        {
+          "cell": "S1",
+          "formula": "=INDEX((Data!A1:A5, Data!C1:C5), 2, 1, 1)",
+          "expected_value": "Alice",
+          "expected_type": "text",
+          "description": "INDEX forma referencia área 1"
+        },
+        {
+          "cell": "S2",
+          "formula": "=INDEX((Data!A1:A5, Data!C1:C5), 2, 1, 2)",
+          "expected_value": "NYC",
+          "expected_type": "text",
+          "description": "INDEX forma referencia área 2"
         }
       ]
     }

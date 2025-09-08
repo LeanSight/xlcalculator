@@ -16,20 +16,20 @@ Crear un Excel que capture FIELMENTE el comportamiento de Excel para todas las f
 6   Eve     22      Boston  88      FALSE   Average
 ```
 
-### Hoja 2: "Tests" - Casos de Prueba Organizados
+### Hoja 2: "Tests" - Casos de Prueba Organizados (75 Test Cases)
 
-## NIVEL 1: CASOS ESTRUCTURALES (Comportamiento Core)
+## NIVEL 1: CASOS ESTRUCTURALES (Comportamiento Core) - 14 Cases
 
-### A. INDEX - Casos Fundamentales (Valores Individuales)
+### 1A. INDEX - Casos Fundamentales (Valores Individuales) - 5 Cases
 ```
 A1: =INDEX(Data!A1:E6, 2, 2)     → 25 (valor numérico)
 A2: =INDEX(Data!A1:E6, 3, 1)     → "Bob" (texto)
 A3: =INDEX(Data!A1:E6, 4, 5)     → TRUE (boolean)
 A4: =INDEX(Data!A1:E6, 6, 1)     → "Eve" (última fila)
-A5: =INDEX(Data!A1:E6, 1, 5)     → TRUE (primera fila)
+A5: =INDEX(Data!A1:E6, 1, 5)     → "Active" (primera fila)
 ```
 
-### B. INDEX - Arrays Completos (row=0 o col=0)
+### 1B. INDEX - Arrays Completos (row=0 o col=0) - 4 Cases
 ```
 B1: =INDEX(Data!A1:E6, 0, 2)     → Array completo columna Age
 B2: =INDEX(Data!A1:E6, 2, 0)     → Array completo fila Alice
@@ -37,7 +37,7 @@ B3: =INDEX(Data!A1:E6, 0, 1)     → Array completo columna Name
 B4: =INDEX(Data!A1:E6, 0, 5)     → Array completo columna Active
 ```
 
-### C. INDEX - Casos de Error Estructurales
+### 1C. INDEX - Casos de Error Estructurales - 5 Cases
 ```
 C1: =INDEX(Data!A1:E6, 7, 1)     → #REF! (fila fuera de rango)
 C2: =INDEX(Data!A1:E6, 1, 7)     → #REF! (columna fuera de rango)
@@ -46,9 +46,9 @@ C4: =INDEX(Data!A1:E6, -1, 1)    → #VALUE! (fila negativa)
 C5: =INDEX(Data!A1:E6, 1, -1)    → #VALUE! (columna negativa)
 ```
 
-## NIVEL 2: CASOS INTERMEDIOS (Funciones Individuales)
+## NIVEL 2: CASOS INTERMEDIOS (Funciones Individuales) - 37 Cases
 
-### D. OFFSET - Casos Fundamentales (Valores Individuales)
+### 2D. OFFSET - Casos Fundamentales (Valores Individuales) - 5 Cases
 ```
 D1: =OFFSET(Data!A1, 1, 1)       → 25 (B2)
 D2: =OFFSET(Data!B2, 1, 1)       → "LA" (C3)
@@ -57,7 +57,7 @@ D4: =OFFSET(Data!A1, 5, 4)       → FALSE (E6)
 D5: =OFFSET(Data!C3, -1, 1)      → 30 (D2)
 ```
 
-### E. OFFSET - Arrays con Dimensiones
+### 2E. OFFSET - Arrays con Dimensiones - 5 Cases
 ```
 E1: =OFFSET(Data!A1, 1, 1, 1, 1) → 25 (B2 como array 1x1)
 E2: =OFFSET(Data!A1, 1, 1, 2, 2) → Array 2x2 desde B2
@@ -66,7 +66,7 @@ E4: =OFFSET(Data!A1, 2, 1, 1, 3) → Array 1x3 desde B3
 E5: =OFFSET(Data!A1, 1, 0, 3, 1) → Array 3x1 desde A2
 ```
 
-### F. OFFSET - Casos de Error
+### 2F. OFFSET - Casos de Error - 6 Cases
 ```
 F1: =OFFSET(Data!A1, -2, 0)      → #REF! (antes del inicio de hoja)
 F2: =OFFSET(Data!A1, 0, -2)      → #REF! (antes del inicio de hoja)
@@ -76,7 +76,7 @@ F5: =OFFSET(Data!A1, 1, 1, 0, 1) → #VALUE! (altura cero)
 F6: =OFFSET(Data!A1, 1, 1, 1, 0) → #VALUE! (ancho cero)
 ```
 
-### G. INDIRECT - Casos Fundamentales (Valores Individuales)
+### 2G. INDIRECT - Casos Fundamentales (Valores Individuales) - 4 Cases
 ```
 G1: =INDIRECT("Data!B2")         → 25 (valor numérico)
 G2: =INDIRECT("Data!C3")         → "LA" (texto)
@@ -84,15 +84,15 @@ G3: =INDIRECT("Data!E4")         → TRUE (boolean)
 G4: =INDIRECT(P1)                → 25 (desde celda con "Data!B2")
 ```
 
-### H. INDIRECT - Referencias Dinámicas
+### 2H. INDIRECT - Referencias Dinámicas - 4 Cases
 ```
 H1: =INDIRECT("Data!A" & 2)      → "Alice" (concatenación)
 H2: =INDIRECT("Data!" & CHAR(66) & "3") → 30 (usando CHAR)
-H3: =INDIRECT("Data!A" & ROW())  → Referencia dinámica por fila actual
-H4: =INDIRECT("Data!" & CHAR(65+COLUMN()) & "1") → Referencia por columna
+H3: =INDIRECT("Data!A" & ROW())  → "Charlie" (referencia dinámica por fila actual)
+H4: =INDIRECT("Data!" & CHAR(65+COLUMN()) & "1") → "Score" (referencia por columna)
 ```
 
-### I. INDIRECT - Arrays de Referencias
+### 2I. INDIRECT - Arrays de Referencias - 4 Cases
 ```
 I1: =INDIRECT("Data!A1:C1")      → Array de headers (3 elementos)
 I2: =INDIRECT("Data!A2:A6")      → Array de nombres (5 elementos)
@@ -100,7 +100,7 @@ I3: =INDIRECT("Data!B1:B6")      → Array de edad (6 elementos)
 I4: =INDIRECT(P3)                → Array desde celda (A1:C3)
 ```
 
-### J. INDIRECT - Referencias de Columna/Fila Completa
+### 2J. INDIRECT - Referencias de Columna/Fila Completa - 4 Cases
 ```
 J1: =INDIRECT("Data!A:A")        → Columna completa A
 J2: =INDIRECT("Data!B:B")        → Columna completa B
@@ -108,18 +108,18 @@ J3: =INDIRECT("Data!1:1")        → Fila completa 1
 J4: =INDIRECT("Data!2:2")        → Fila completa 2
 ```
 
-### K. INDIRECT - Casos de Error
+### 2K. INDIRECT - Casos de Error - 5 Cases
 ```
 K1: =INDIRECT("InvalidSheet!A1") → #REF! (hoja inexistente)
-K2: =INDIRECT("Data!Z99")        → Valor de celda vacía o 0
+K2: =INDIRECT("Data!Z99")        → 0 (celda vacía)
 K3: =INDIRECT("")                → #REF! (referencia vacía)
 K4: =INDIRECT("NotAReference")   → #REF! (texto inválido)
 K5: =INDIRECT(P4)                → #REF! (hoja inválida desde celda)
 ```
 
-## NIVEL 3: CASOS AVANZADOS (Combinaciones)
+## NIVEL 3: CASOS AVANZADOS (Combinaciones) - 10 Cases
 
-### L. INDEX + INDIRECT
+### 3L. INDEX + INDIRECT - 4 Cases
 ```
 L1: =INDEX(INDIRECT("Data!A1:E6"), 2, 2)    → 25
 L2: =INDEX(INDIRECT("Data!A1:E6"), 0, 2)    → Array columna Age
@@ -127,56 +127,56 @@ L3: =INDEX(INDIRECT("Data!A2:C4"), 2, 3)    → "Chicago"
 L4: =INDEX(INDIRECT("Data!A:A"), 3)         → "Bob"
 ```
 
-### M. OFFSET + INDIRECT
+### 3M. OFFSET + INDIRECT - 3 Cases
 ```
 M1: =OFFSET(INDIRECT("Data!A1"), 1, 1)      → 25
 M2: =OFFSET(INDIRECT("Data!B2"), 1, 1)      → "LA"
 M3: =OFFSET(INDIRECT("Data!A1"), 1, 1, 2, 2) → Array 2x2
 ```
 
-### N. Combinaciones Complejas
+### 3N. Combinaciones Complejas - 3 Cases
 ```
 N1: =INDEX(OFFSET(Data!A1, 0, 0, 3, 3), 2, 2)     → 25
 N2: =OFFSET(INDEX(Data!A1:E6, 2, 1), 1, 1)        → 30
-N3: =INDIRECT("Data!" & "A" & INDEX(Data!B1:B6, 2, 1)) → Ref dinámica
+N3: =INDIRECT("Data!" & "A" & INDEX(Data!B1:B6, 2, 1)) → "Alice"
 ```
 
-## NIVEL 4: CASOS DE CONTEXTO (Uso con Otras Funciones)
+## NIVEL 4: CASOS DE CONTEXTO (Uso con Otras Funciones) - 7 Cases
 
-### O. Funciones con Agregación
+### 4O. Funciones con Agregación - 4 Cases
 ```
-O1: =SUM(INDEX(Data!A1:E6, 0, 2))            → Suma columna Age
-O2: =AVERAGE(OFFSET(Data!B1, 1, 0, 5, 1))    → Promedio de edades
-O3: =COUNT(INDIRECT("Data!B:B"))              → Contar números en col B
-O4: =MAX(INDEX(Data!A1:E6, 0, 4))            → Máximo de scores
-```
-
-### P. Manejo de Errores
-```
-P1: =IFERROR(INDEX(Data!A1:E6, 10, 1), "Not Found") → Manejo con IFERROR
-P2: =IF(ISERROR(OFFSET(Data!A1, -1, 0)), "Error", "OK") → Detección errores
-P3: =IFERROR(INDIRECT("InvalidSheet!A1"), "Sheet Error") → Error de hoja
+O1: =SUM(INDEX(Data!A1:E6, 0, 2))            → 130 (suma columna Age)
+O2: =AVERAGE(OFFSET(Data!B1, 1, 0, 5, 1))    → 28 (promedio de edades)
+O3: =COUNT(INDIRECT("Data!B:B"))              → 5 (contar números en col B)
+O4: =MAX(INDEX(Data!A1:E6, 0, 4))            → 95 (máximo de scores)
 ```
 
-## NIVEL 5: CASOS AVANZADOS (Edge Cases)
-
-### Q. Referencias Especiales
+### 4P. Manejo de Errores - 3 Cases
 ```
-Q1: =INDIRECT("Tests!O1")        → Referencia misma hoja
-Q2: =INDEX(Data!A:A, 2)          → INDEX con columna completa
-Q3: =OFFSET(Data!A:A, 1, 0, 3, 1) → OFFSET con columna completa
+P1: =IFERROR(INDEX(Data!A1:E6, 10, 1), "Not Found") → "Not Found"
+P2: =IF(ISERROR(OFFSET(Data!A1, -1, 0)), "Error", "OK") → "Error"
+P3: =IFERROR(INDIRECT("InvalidSheet!A1"), "Sheet Error") → "Sheet Error"
 ```
 
-### R. Arrays Dinámicos (Excel 365)
+## NIVEL 5: CASOS EDGE (Comportamientos Límite) - 7 Cases
+
+### 5Q. Referencias Especiales - 3 Cases
+```
+Q1: =INDIRECT("Tests!O1")        → "Test Value" (referencia misma hoja)
+Q2: =INDEX(Data!A:A, 2)          → "Alice" (INDEX con columna completa)
+Q3: =OFFSET(Data!A:A, 1, 0, 3, 1) → Array (OFFSET con columna completa)
+```
+
+### 5R. Arrays Dinámicos (Excel 365) - 2 Cases
 ```
 R1: =INDEX(Data!A1:E6, ROW(A1:A3), 1)       → Array con múltiples filas
 R2: =OFFSET(Data!A1, ROW(A1:A2)-1, 0)       → Array con offset múltiple
 ```
 
-### S. Forma de Referencia vs Array
+### 5S. Forma de Referencia vs Array - 2 Cases
 ```
-S1: =INDEX((Data!A1:A5, Data!C1:C5), 2, 1, 1) → Forma referencia área 1
-S2: =INDEX((Data!A1:A5, Data!C1:C5), 2, 1, 2) → Forma referencia área 2
+S1: =INDEX((Data!A1:A5, Data!C1:C5), 2, 1, 1) → "Alice" (área 1)
+S2: =INDEX((Data!A1:A5, Data!C1:C5), 2, 1, 2) → "NYC" (área 2)
 ```
 
 ## Datos de Referencia para Validación
@@ -190,34 +190,35 @@ P4: "InvalidSheet!A1" → Para error testing
 P5: ""            → Para error testing vacío
 P6: "Data!A:A"    → Para columna completa
 P7: "Data!1:1"    → Para fila completa
+O1: "Test Value"  → Para referencias circulares
 ```
 
-### Valores Esperados (Columna Q)
-```
-Q1: 25            → Valor esperado para A1
-Q2: "Bob"         → Valor esperado para A2
-Q3: TRUE          → Valor esperado para A3
-Q4: "#REF!"       → Error esperado para C1
-Q5: "#VALUE!"     → Error esperado para C3
-```
+## Resumen de Cobertura (75 Test Cases Total)
 
-## Estrategia de Testing
+### Por Función:
+- **INDEX**: 14 casos (fundamentales, arrays, errores)
+- **OFFSET**: 16 casos (fundamentales, dimensiones, errores)
+- **INDIRECT**: 21 casos (fundamentales, dinámico, arrays, errores)
+- **Combinaciones**: 10 casos (INDEX+INDIRECT, OFFSET+INDIRECT, complejas)
+- **Contexto**: 7 casos (agregación, manejo errores)
+- **Edge Cases**: 7 casos (referencias especiales, arrays dinámicos)
 
-### Orden de Implementación (Estructural → Incremental)
-1. **INDEX valores individuales** (A1-A5): Valores simples
-2. **INDEX arrays** (B1-B4): Filas/columnas completas
-3. **INDEX errores** (C1-C5): Manejo de errores
-4. **OFFSET valores** (D1-D5): Referencias simples
-5. **OFFSET arrays** (E1-E5): Rangos con dimensiones
-6. **OFFSET errores** (F1-F6): Casos límite
-7. **INDIRECT valores** (G1-G4): Referencias directas
-8. **INDIRECT dinámico** (H1-H4): Referencias construidas
-9. **INDIRECT arrays** (I1-I4): Rangos y arrays
-10. **INDIRECT columnas** (J1-J4): Referencias completas
-11. **INDIRECT errores** (K1-K5): Casos inválidos
-12. **Combinaciones** (L1-N3): Funciones anidadas
-13. **Contexto** (O1-P3): Uso con agregación/errores
-14. **Avanzados** (Q1-S2): Edge cases y formas especiales
+### Por Comportamiento:
+- **Valores simples**: 19 casos
+- **Arrays/Rangos**: 28 casos
+- **Errores**: 16 casos
+- **Combinaciones**: 10 casos
+- **Edge cases**: 7 casos
+
+### Estrategia de Testing (Estructural → Incremental)
+1. **INDEX valores individuales** (1A): Base fundamental
+2. **INDEX arrays y errores** (1B, 1C): Comportamiento completo INDEX
+3. **OFFSET valores y arrays** (2D, 2E): Referencias dinámicas básicas
+4. **OFFSET errores** (2F): Manejo límites OFFSET
+5. **INDIRECT todas las formas** (2G-2K): Conversión texto→referencia
+6. **Combinaciones** (3L-3N): Interoperabilidad entre funciones
+7. **Contexto** (4O-4P): Uso con otras funciones Excel
+8. **Edge cases** (5Q-5S): Casos límite y compatibilidad moderna
 
 ### Criterios de Éxito
 - Cada celda debe devolver exactamente el mismo valor/error que Excel
@@ -231,8 +232,11 @@ Q5: "#VALUE!"     → Error esperado para C3
 - **INDIRECT**: Conversión texto→referencia→valor/array
 - **Combinaciones**: Compatibilidad entre funciones anidadas
 - **Errores**: Propagación correcta de tipos de error
+- **Edge Cases**: Referencias especiales y arrays dinámicos
 
 ### Compatibilidad
-- **Excel 365**: Dynamic array spilling
+- **Excel 365**: Dynamic array spilling y funciones modernas
 - **Excel Legacy**: Array formulas con CSE
 - **Todas las versiones**: Comportamiento básico consistente
+
+Los 75 casos proporcionan cobertura exhaustiva y fiel del comportamiento de Excel para rangos dinámicos, asegurando implementación robusta y compatible.
