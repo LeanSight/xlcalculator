@@ -91,10 +91,18 @@ class Evaluator:
         try:
             value = cell.formula.ast.eval(context)
         except Exception as err:
-            raise RuntimeError(
-                f"Problem evaluating cell {addr} formula "
-                f"{cell.formula.formula}: {repr(err)}"
-            ).with_traceback(sys.exc_info()[2])
+            # Handle Excel errors as return values, not exceptions
+            from xlcalculator.xlfunctions import xlerrors
+            if isinstance(err, (xlerrors.RefExcelError, xlerrors.ValueExcelError, 
+                              xlerrors.NameExcelError, xlerrors.NumExcelError, 
+                              xlerrors.NaExcelError, xlerrors.DivZeroExcelError,
+                              xlerrors.NullExcelError)):
+                value = err
+            else:
+                raise RuntimeError(
+                    f"Problem evaluating cell {addr} formula "
+                    f"{cell.formula.formula}: {repr(err)}"
+                ).with_traceback(sys.exc_info()[2])
 
         # 4. Update the cell value.
         #    Note for later: If an array is returned, we should distribute the
