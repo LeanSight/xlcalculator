@@ -11,61 +11,47 @@
     "test_description": "Integration tests for sheet context behavior",
     "class_docstring": "These tests validate Excel sheet context behavior for implicit references",
     "excel_filename": "sheet_context_test.xlsx",
-    "test_filename": "test_sheet_context_integration.py"
+    "test_filename": "test_sheet_context_integration.py",
+    "label_row": 20
   },
-  "workbook_config": {
-    "sheets": [
-      {
-        "name": "Sheet1",
-        "data": {
-          "A1": 10,
-          "A2": 20,
-          "A3": 30,
-          "B1": 5,
-          "B2": 15,
-          "B3": 25
-        },
-        "formulas": {
-          "C1": "=SUM(A1:A3)",
-          "C2": "=A1 + Sheet2!A1",
-          "D1": "=Sheet2!C1"
-        }
-      },
-      {
-        "name": "Sheet2", 
-        "data": {
-          "A1": 100,
-          "A2": 200,
-          "A3": 300,
-          "B1": 50,
-          "B2": 150,
-          "B3": 250
-        },
-        "formulas": {
-          "C1": "=SUM(A1:A3)",
-          "C2": "=A1 + Sheet1!A1",
-          "D1": "=Sheet1!C1"
-        }
-      }
+  "data_sheet": {
+    "name": "Sheet1",
+    "headers": ["A", "B", "C", "D"],
+    "rows": [
+      [10, 5, "=SUM(A1:A3)", "=Sheet2!C1"],
+      [20, 15, "=A1 + Sheet2!A1", null],
+      [30, 25, null, null]
     ]
   },
-  "test_cases": [
+  "auxiliary_data": {
+    "Sheet2!A1": 100,
+    "Sheet2!A2": 200,
+    "Sheet2!A3": 300,
+    "Sheet2!B1": 50,
+    "Sheet2!B2": 150,
+    "Sheet2!B3": 250,
+    "Sheet2!C1": "=SUM(A1:A3)",
+    "Sheet2!C2": "=A1 + Sheet1!A1",
+    "Sheet2!D1": "=Sheet1!C1"
+  },
+  "levels": [
     {
       "level": "1",
       "title": "Implicit Reference Context",
       "description": "Test that implicit references use formula sheet context",
+      "cell_range": "A1:A2",
       "category": "core_behavior",
-      "cases": [
+      "test_cases": [
         {
-          "cell": "Sheet1!C1",
-          "formula": "=SUM(A1:A3)",
+          "cell": "A1",
+          "formula": "=Sheet1!C1",
           "expected_value": 60,
           "expected_type": "number",
           "description": "Sheet1 formula with implicit range should sum Sheet1 values (10+20+30=60)"
         },
         {
-          "cell": "Sheet2!C1", 
-          "formula": "=SUM(A1:A3)",
+          "cell": "A2", 
+          "formula": "=Sheet2!C1",
           "expected_value": 600,
           "expected_type": "number",
           "description": "Sheet2 formula with implicit range should sum Sheet2 values (100+200+300=600)"
@@ -76,18 +62,19 @@
       "level": "2",
       "title": "Mixed References",
       "description": "Test mixed explicit and implicit references in same formula",
+      "cell_range": "B1:B2",
       "category": "mixed_behavior",
-      "cases": [
+      "test_cases": [
         {
-          "cell": "Sheet1!C2",
-          "formula": "=A1 + Sheet2!A1", 
+          "cell": "B1",
+          "formula": "=Sheet1!C2", 
           "expected_value": 110,
           "expected_type": "number",
           "description": "Mixed reference: implicit A1 (Sheet1) + explicit Sheet2!A1 = 10+100=110"
         },
         {
-          "cell": "Sheet2!C2",
-          "formula": "=A1 + Sheet1!A1",
+          "cell": "B2",
+          "formula": "=Sheet2!C2",
           "expected_value": 110, 
           "expected_type": "number",
           "description": "Mixed reference: implicit A1 (Sheet2) + explicit Sheet1!A1 = 100+10=110"
@@ -98,18 +85,19 @@
       "level": "3",
       "title": "Cross-Sheet References",
       "description": "Test cross-sheet formula references",
+      "cell_range": "C1:C2",
       "category": "cross_sheet",
-      "cases": [
+      "test_cases": [
         {
-          "cell": "Sheet1!D1",
-          "formula": "=Sheet2!C1",
+          "cell": "C1",
+          "formula": "=Sheet1!D1",
           "expected_value": 600,
           "expected_type": "number", 
           "description": "Sheet1 referencing Sheet2 formula result should return 600"
         },
         {
-          "cell": "Sheet2!D1",
-          "formula": "=Sheet1!C1", 
+          "cell": "C2",
+          "formula": "=Sheet2!D1", 
           "expected_value": 60,
           "expected_type": "number",
           "description": "Sheet2 referencing Sheet1 formula result should return 60"
@@ -120,29 +108,24 @@
       "level": "4",
       "title": "Data Integrity",
       "description": "Verify base data values are correct",
+      "cell_range": "D1:D2",
       "category": "data_validation",
-      "cases": [
+      "test_cases": [
         {
-          "cell": "Sheet1!A1",
-          "formula": "10",
+          "cell": "D1",
+          "formula": "=Sheet1!A1",
           "expected_value": 10,
           "expected_type": "number",
           "description": "Sheet1 A1 should contain value 10"
         },
         {
-          "cell": "Sheet2!A1", 
-          "formula": "100",
+          "cell": "D2", 
+          "formula": "=Sheet2!A1",
           "expected_value": 100,
           "expected_type": "number",
           "description": "Sheet2 A1 should contain value 100"
         }
       ]
     }
-  ],
-  "expected_behavior": {
-    "implicit_references": "Resolve to the sheet where the formula is defined",
-    "explicit_references": "Use the explicitly specified sheet",
-    "mixed_formulas": "Each reference resolves according to its type (implicit vs explicit)",
-    "cross_sheet_formulas": "Reference results from other sheets correctly"
-  }
+  ]
 }
