@@ -22,22 +22,25 @@ def generate_test_method_from_case(case: TestCase) -> str:
     expected_repr = repr(case.expected_value) if case.expected_value is not None else "None"
     
     if case.expected_type in ["ref_error", "value_error", "name_error", "num_error", "na_error"]:
+        formula_escaped = case.formula.replace('"', '\\"')
         return f"""        # {case.description}
         value = self.evaluator.evaluate('{case.cell}')
         self.assertIsInstance(value, {map_excel_type_to_python(case.expected_type)},
-                            '{case.formula} should return {case.expected_type.upper()}')"""
+                            "{formula_escaped} should return {case.expected_type.upper()}")"""
     
     elif case.expected_type == "array":
+        formula_escaped = case.formula.replace('"', '\\"')
         return f"""        # {case.description}
         value = self.evaluator.evaluate('{case.cell}')
-        self.assertIsInstance(value, Array, '{case.formula} should return Array')"""
+        self.assertIsInstance(value, Array, "{formula_escaped} should return Array")"""
     
     else:
         python_type = map_excel_type_to_python(case.expected_type)
+        formula_escaped = case.formula.replace('"', '\\"')
         return f"""        # {case.description}
         value = self.evaluator.evaluate('{case.cell}')
-        self.assertEqual({expected_repr}, value, '{case.formula} should return {expected_repr}')
-        self.assertIsInstance(value, {python_type}, 'Should be {case.expected_type}')"""
+        self.assertEqual({expected_repr}, value, "{formula_escaped} should return {expected_repr}")
+        self.assertIsInstance(value, {python_type}, "Should be {case.expected_type}")"""
 
 
 def generate_test_method_from_level(level: TestLevel) -> str:
