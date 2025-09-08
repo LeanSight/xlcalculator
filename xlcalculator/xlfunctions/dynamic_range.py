@@ -163,11 +163,12 @@ def _parse_cell_coordinates(cell_address):
     Used by: OFFSET utilities
     Returns: Tuple of (sheet, col_letter, row_num)
     """
-    from ..utils import parse_sheet_and_address
-    sheet, cell_part = parse_sheet_and_address(cell_address)
-    col_letter = ''.join(c for c in cell_part if c.isalpha())
-    row_num = int(''.join(c for c in cell_part if c.isdigit()))
-    return sheet, col_letter, row_num
+    from ..utils import CellReference
+    # Use Sheet1 as default context for OFFSET operations
+    cell_ref = CellReference.parse(cell_address, current_sheet='Sheet1')
+    col_letter = ''.join(c for c in cell_ref.address if c.isalpha())
+    row_num = int(''.join(c for c in cell_ref.address if c.isdigit()))
+    return cell_ref.sheet, col_letter, row_num
 
 
 def _validate_offset_bounds(reference_value, rows_offset, cols_offset):
@@ -256,15 +257,17 @@ def _validate_sheet_exists(ref_string, evaluator):
     Returns:
         RefExcelError if sheet doesn't exist, None if valid
     """
-    from ..utils import parse_sheet_and_address
-    sheet_name, _ = parse_sheet_and_address(ref_string)
+    from ..utils import CellReference
+    # Use Sheet1 as default context for validation
+    ref_obj = CellReference.parse(ref_string, current_sheet='Sheet1')
+    sheet_name = ref_obj.sheet
     
     if sheet_name != 'Sheet1':  # Only validate non-default sheets
         # Get all available sheet names from model cells
         available_sheets = set()
         for cell_addr in evaluator.model.cells.keys():
-            sheet, _ = parse_sheet_and_address(cell_addr)
-            available_sheets.add(sheet)
+            cell_ref = CellReference.parse(cell_addr, current_sheet='Sheet1')
+            available_sheets.add(cell_ref.sheet)
         
         # Check if referenced sheet exists
         if sheet_name not in available_sheets:

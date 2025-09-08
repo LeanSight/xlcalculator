@@ -1,5 +1,6 @@
 import collections
 import re
+from dataclasses import dataclass
 from openpyxl.utils.cell import COORD_RE, SHEET_TITLE
 from openpyxl.utils.cell import range_boundaries, get_column_letter
 
@@ -18,8 +19,58 @@ def resolve_sheet(sheet_str):
     return sheet_match.group("quoted") or sheet_match.group("notquoted")
 
 
+@dataclass(frozen=True)
+class CellReference:
+    """Represents a cell reference with proper Excel context.
+    
+    Captures both explicit sheet references (Sheet1!A1) and 
+    implicit references (A1) with their evaluation context.
+    
+    Attributes:
+        sheet: Resolved sheet name
+        address: Cell/range address (A1, A1:B2, etc.)
+        is_sheet_explicit: Whether sheet was explicitly specified in original reference
+    """
+    sheet: str
+    address: str
+    is_sheet_explicit: bool
+    
+    @classmethod
+    def parse(cls, ref: str, current_sheet: str) -> 'CellReference':
+        """Parse reference string with proper sheet context.
+        
+        Args:
+            ref: Reference string (e.g., 'Sheet1!A1' or 'A1')
+            current_sheet: Current sheet context for implicit references
+            
+        Returns:
+            CellReference object with resolved sheet and address
+            
+        Examples:
+            CellReference.parse('Sheet1!A1', 'Sheet2') -> CellReference(sheet='Sheet1', address='A1', is_sheet_explicit=True)
+            CellReference.parse('A1', 'Sheet2') -> CellReference(sheet='Sheet2', address='A1', is_sheet_explicit=False)
+        """
+        if '!' in ref:
+            # Explicit sheet reference
+            parts = ref.split('!', 1)
+            return cls(sheet=parts[0], address=parts[1], is_sheet_explicit=True)
+        else:
+            # Implicit reference - use current sheet context
+            return cls(sheet=current_sheet, address=ref, is_sheet_explicit=False)
+    
+    def __str__(self) -> str:
+        """Return full sheet!address format."""
+        return f"{self.sheet}!{self.address}"
+    
+    def is_same_sheet_as_context(self, context_sheet: str) -> bool:
+        """Check if reference is in the same sheet as given context."""
+        return self.sheet == context_sheet
+
+
 def parse_sheet_and_address(ref, default_sheet='Sheet1'):
     """Parse reference into sheet name and address part.
+    
+    DEPRECATED: Use CellReference.parse() instead for better semantics.
     
     Args:
         ref: Reference string (e.g., 'Sheet1!A1' or 'A1')
@@ -33,11 +84,9 @@ def parse_sheet_and_address(ref, default_sheet='Sheet1'):
         parse_sheet_and_address('A1') -> ('Sheet1', 'A1')
         parse_sheet_and_address('Data!B2:C3') -> ('Data', 'B2:C3')
     """
-    if '!' in ref:
-        parts = ref.split('!', 1)
-        return parts[0], parts[1]
-    else:
-        return default_sheet, ref
+    # Use CellReference internally for consistency
+    cell_ref = CellReference.parse(ref, current_sheet=default_sheet)
+    return cell_ref.sheet, cell_ref.address
 
 
 def resolve_address(addr):

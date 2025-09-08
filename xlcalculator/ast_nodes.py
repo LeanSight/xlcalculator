@@ -51,8 +51,15 @@ class EvalContext:
         self.seen = seen if seen is not None else []
         self.namespace = namespace if namespace is not None else xl.FUNCTIONS
         self.ref = ref
-        from .utils import parse_sheet_and_address
-        self.sheet, _ = parse_sheet_and_address(ref)
+        from .utils import CellReference
+        # Extract current sheet from ref for proper context
+        if '!' in ref:
+            current_sheet = ref.split('!')[0]
+        else:
+            current_sheet = 'Sheet1'  # Default fallback
+        
+        self.cell_ref = CellReference.parse(ref, current_sheet=current_sheet)
+        self.sheet = self.cell_ref.sheet
         self.refsheet = self.sheet
 
     def eval_cell(self, addr):
