@@ -117,7 +117,7 @@ setuptools.setup(
         ],
         excel_generation=EXCEL_GENERATION_REQUIRE,
     ),
-    python_requires='>=3.13',  # Only validated on Python 3.13
+    python_requires='>=3.12',  # Allow 3.12 for development, validated on 3.13
     tests_require=TESTS_REQUIRE,
     include_package_data=True,
     zip_safe=False,

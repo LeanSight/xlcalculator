@@ -183,11 +183,40 @@ class ModelCompiler:
         archive = self.read_excel_file(file_name)
         self.parse_archive(
             archive, ignore_sheets=ignore_sheets, ignore_hidden=ignore_hidden)
+        
+        # Add default sheet aliases for active sheet
+        self._add_default_sheet_aliases(archive)
 
         if build_code:
             self.model.build_code()
 
         return self.model
+    
+    def _add_default_sheet_aliases(self, archive):
+        """Add aliases for active sheet cells to support relative references.
+        
+        This allows tests to use 'A1' instead of 'Sheet!A1' for the active sheet.
+        """
+        if hasattr(archive, 'book') and archive.book.active:
+            active_sheet_name = archive.book.active.title
+            
+            # Create aliases for active sheet cells
+            active_cells = {k: v for k, v in self.model.cells.items() 
+                          if k.startswith(f'{active_sheet_name}!')}
+            
+            for full_addr, cell in active_cells.items():
+                short_addr = full_addr.replace(f'{active_sheet_name}!', '')
+                if short_addr not in self.model.cells:  # Don't overwrite existing cells
+                    self.model.cells[short_addr] = cell
+                    
+            # Also create aliases for formulae
+            active_formulae = {k: v for k, v in self.model.formulae.items() 
+                             if k.startswith(f'{active_sheet_name}!')}
+            
+            for full_addr, formula in active_formulae.items():
+                short_addr = full_addr.replace(f'{active_sheet_name}!', '')
+                if short_addr not in self.model.formulae:  # Don't overwrite existing formulae
+                    self.model.formulae[short_addr] = formula
 
     def read_and_parse_dict(
             self, input_dict, default_sheet="Sheet1", build_code=True):
