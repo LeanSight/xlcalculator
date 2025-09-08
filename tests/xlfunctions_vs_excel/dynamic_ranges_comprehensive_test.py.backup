@@ -78,23 +78,28 @@ class DynamicRangesComprehensiveTest(testing.FunctionalTestCase):
                             "INDEX(Data.A1:E6, 1, -1) debe devolver #VALUE!")
 
     def test_level1_index_arrays(self):
-        """NIVEL 1B: INDEX - Casos de fila/columna completa."""
+        """NIVEL 1C: INDEX - Casos de fila/columna completa."""
         
-        # B1: Columna completa (Age) - INDEX(Data!A1:E6, 0, 2)
-        value = self.evaluator.evaluate("Tests!B1")
+        # C1: Columna completa (Age)
+        value = self.evaluator.evaluate('Tests!B1')
         self.assertIsInstance(value, Array, "INDEX(Data.A1:E6, 0, 2) debe devolver Array")
+        # Verificar que contiene los valores de la columna Age
+        expected_ages = ["Age", 25, 30, 35, 28, 22]  # B1:B6
+        if hasattr(value, 'values'):
+            actual_values = [row[0].value if hasattr(row[0], 'value') else row[0] for row in value.values]  # Columna única
+            self.assertEqual(expected_ages, actual_values, "Array debe contener valores de columna Age")
         
-        # B2: Fila completa (Alice) - INDEX(Data!A1:E6, 2, 0)
-        value = self.evaluator.evaluate("Tests!B2")
+        # C2: Fila completa (Alice)
+        value = self.evaluator.evaluate('Tests!B2')
         self.assertIsInstance(value, Array, "INDEX(Data.A1:E6, 2, 0) debe devolver Array")
+        # Verificar que contiene los valores de la fila Alice
+        expected_alice = ["Alice", 25, "NYC", 85, True]  # A2:E2
+        if hasattr(value, 'values'):
+            actual_values = [v.value if hasattr(v, 'value') else v for v in value.values[0]]  # Fila única
+            self.assertEqual(expected_alice, actual_values, "Array debe contener valores de fila Alice")
         
-        # B3: Primera columna (Names) - INDEX(Data!A1:E6, 0, 1)
-        value = self.evaluator.evaluate("Tests!B3")
-        self.assertIsInstance(value, Array, "INDEX(Data.A1:E6, 0, 1) debe devolver Array")
-        
-        # B4: Columna Active - INDEX(Data!A1:E6, 0, 5)
-        value = self.evaluator.evaluate("Tests!B4")
-        self.assertIsInstance(value, Array, "INDEX(Data.A1:E6, 0, 5) debe devolver Array")
+        # C3: Primera columna (Names)
+        value = self.evaluator.evaluate('Tests!C3')
         self.assertIsInstance(value, Array, "INDEX(Data.A1:E6, 0, 1) debe devolver Array")
 
     # ========================================================================
@@ -133,8 +138,15 @@ class DynamicRangesComprehensiveTest(testing.FunctionalTestCase):
         self.assertEqual(expected, value, "OFFSET(Data.A1, 1, 1, 1, 1) debe devolver 25")
         
         # E2: OFFSET dimensiones - 2x2
-        value = self.evaluator.evaluate("Tests!E2")
+        value = self.evaluator.evaluate('Tests!E2')
         self.assertIsInstance(value, Array, "OFFSET(Data.A1, 1, 1, 2, 2) debe devolver Array 2x2")
+        # Verificar dimensiones y contenido
+        if hasattr(value, 'values'):
+            self.assertEqual(2, len(value.values), "Array debe tener 2 filas")
+            self.assertEqual(2, len(value.values[0]), "Array debe tener 2 columnas")
+            # Contenido esperado: B2:C3
+            expected_content = [[25, "NYC"], [30, "LA"]]
+            self.assertEqual(expected_content, value.values, "Array debe contener valores B2:C3")
         
         # E3: OFFSET dimensiones - 3x3
         value = self.evaluator.evaluate('Tests!E3')

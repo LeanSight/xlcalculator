@@ -9,6 +9,7 @@ from .xlfunctions.func_xltypes import *  # noqa: F401, F403
 # Make sure to register all functions
 from .xlfunctions import (  # noqa: F401
     date,
+    dynamic_range,
     financial,
     information,
     logical,
