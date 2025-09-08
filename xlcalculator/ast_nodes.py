@@ -47,7 +47,7 @@ class EvalContext:
     refsheet = None
     sheet = None
 
-    def __init__(self, namespace=None, ref=None, seen=None):
+    def __init__(self, namespace=None, ref=None, seen=None, formula_sheet=None):
         self.seen = seen if seen is not None else []
         self.namespace = namespace if namespace is not None else xl.FUNCTIONS
         self.ref = ref
@@ -56,7 +56,8 @@ class EvalContext:
         if '!' in ref:
             current_sheet = ref.split('!')[0]
         else:
-            current_sheet = 'Sheet1'  # Default fallback
+            # Use formula_sheet as context for implicit references (Excel behavior)
+            current_sheet = formula_sheet or 'Sheet1'  # Fallback only if no context
         
         self.cell_ref = CellReference.parse(ref, current_sheet=current_sheet)
         self.sheet = self.cell_ref.sheet

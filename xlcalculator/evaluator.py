@@ -8,8 +8,8 @@ from . import ast_nodes, xltypes
 
 class EvaluatorContext(ast_nodes.EvalContext):
 
-    def __init__(self, evaluator, ref):
-        super().__init__(evaluator.namespace, ref)
+    def __init__(self, evaluator, ref, formula_sheet=None):
+        super().__init__(evaluator.namespace, ref, formula_sheet=formula_sheet)
         self.evaluator = evaluator
 
     @property
@@ -40,8 +40,8 @@ class Evaluator:
             if namespace is not None else xl.FUNCTIONS.copy()
         self.cache_count = 0
 
-    def _get_context(self, ref):
-        return EvaluatorContext(self, ref)
+    def _get_context(self, ref, formula_sheet=None):
+        return EvaluatorContext(self, ref, formula_sheet)
 
     def resolve_names(self, addr):
         # Although defined names have been resolved in Model.create_node()
@@ -80,9 +80,9 @@ class Evaluator:
                 self.model.cells[addr].value)
 
         # 3. Prepare the execution environment and evaluate the formula.
-        #    (Note: Range nodes will automatically evaluate all their
-        #           dependencies.)
-        context = context if context is not None else self._get_context(addr)
+        #    Extract formula sheet context for proper Excel behavior
+        formula_sheet = cell.formula.sheet_name if cell.formula else None
+        context = context if context is not None else self._get_context(addr, formula_sheet)
         
         # Set evaluator context for dynamic range functions
         from xlcalculator.xlfunctions.dynamic_range import _set_evaluator_context
