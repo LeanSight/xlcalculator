@@ -51,7 +51,11 @@ class EvalContext:
         self.seen = seen if seen is not None else []
         self.namespace = namespace if namespace is not None else xl.FUNCTIONS
         self.ref = ref
-        self.sheet = self.refsheet = ref.split("!")[0]
+        if "!" in ref:
+            self.sheet = self.refsheet = ref.split("!")[0]
+        else:
+            # For cells without sheet prefix, default to Sheet1
+            self.sheet = self.refsheet = "Sheet1"
 
     def eval_cell(self, addr):
         raise NotImplementedError()
