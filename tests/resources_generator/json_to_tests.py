@@ -1,18 +1,17 @@
 #!/usr/bin/env python3
 """
-Generate Python test files from JSON test configuration.
-Creates FunctionalTestCase classes for dynamic ranges testing.
+Generate Python test files by category from JSON test configuration.
+Creates separate FunctionalTestCase classes for each category.
 """
 
 import argparse
 from pathlib import Path
 from typing import List, Dict, Any
+from collections import defaultdict
 
 from json_to_tests_utils import (
     load_json_config, extract_test_levels, extract_metadata, extract_generation_config,
     extract_data_config, validate_json_and_output_dir, map_excel_type_to_python,
-    get_test_filename_from_config,
-    get_excel_filename_from_config,
     TestLevel, TestCase, count_total_test_cases
 )
 
@@ -21,24 +20,27 @@ def generate_test_method_from_case(case: TestCase) -> str:
     """Generate individual test assertion from test case."""
     expected_repr = repr(case.expected_value) if case.expected_value is not None else "None"
     
+    # Ensure cell reference includes Tests sheet
+    cell_ref = case.cell if '!' in case.cell else f'Tests!{case.cell}'
+    
     if case.expected_type in ["ref_error", "value_error", "name_error", "num_error", "na_error"]:
         formula_escaped = case.formula.replace('"', '\\"')
         return f"""        # {case.description}
-        value = self.evaluator.evaluate('{case.cell}')
+        value = self.evaluator.evaluate('{cell_ref}')
         self.assertIsInstance(value, {map_excel_type_to_python(case.expected_type)},
                             "{formula_escaped} should return {case.expected_type.upper()}")"""
     
     elif case.expected_type == "array":
         formula_escaped = case.formula.replace('"', '\\"')
         return f"""        # {case.description}
-        value = self.evaluator.evaluate('{case.cell}')
+        value = self.evaluator.evaluate('{cell_ref}')
         self.assertIsInstance(value, Array, "{formula_escaped} should return Array")"""
     
     else:
         python_type = map_excel_type_to_python(case.expected_type)
         formula_escaped = case.formula.replace('"', '\\"')
         return f"""        # {case.description}
-        value = self.evaluator.evaluate('{case.cell}')
+        value = self.evaluator.evaluate('{cell_ref}')
         self.assertEqual({expected_repr}, value, "{formula_escaped} should return {expected_repr}")
         self.assertIsInstance(value, {python_type}, "Should be {case.expected_type}")"""
 
@@ -95,8 +97,9 @@ def generate_type_consistency_method(levels: List[TestLevel], gen_config: Dict[s
     for expected_type, case in type_samples.items():
         if expected_type not in ["ref_error", "value_error", "name_error", "num_error", "na_error"]:
             python_type = map_excel_type_to_python(expected_type)
+            cell_ref = case.cell if '!' in case.cell else f'Tests!{case.cell}'
             type_checks.append(f"""        # {expected_type} validation
-        {expected_type}_value = self.evaluator.evaluate('{case.cell}')
+        {expected_type}_value = self.evaluator.evaluate('{cell_ref}')
         self.assertIsInstance({expected_type}_value, {python_type})""")
     
     type_checks_code = "\n\n".join(type_checks)
@@ -121,10 +124,40 @@ from xlcalculator.xlfunctions import xlerrors
 from xlcalculator.xlfunctions.func_xltypes import Array, Number, Text, Boolean'''
 
 
-def generate_test_class(levels: List[TestLevel], data_config: Dict[str, Any], gen_config: Dict[str, Any], metadata: dict, excel_filename: str) -> str:
-    """Generate complete test class with all methods."""
-    class_name = gen_config.get("class_name", "ComprehensiveTest")
-    class_description = gen_config.get("class_docstring", "Comprehensive integration tests")
+def group_levels_by_category(levels: List[TestLevel]) -> Dict[str, List[TestLevel]]:
+    """Group test levels by category."""
+    categories = defaultdict(list)
+    for level in levels:
+        category = level.category
+        categories[category].append(level)
+    return dict(categories)
+
+
+def get_category_class_name(category: str) -> str:
+    """Generate class name from category."""
+    # Convert snake_case to PascalCase
+    words = category.split('_')
+    return ''.join(word.capitalize() for word in words) + 'Test'
+
+
+def get_category_test_filename(category: str) -> str:
+    """Generate test filename from category."""
+    return f"test_{category}.py"
+
+
+def get_category_excel_filename(category: str) -> str:
+    """Generate Excel filename from category."""
+    return f"{category}.xlsx"
+
+
+def generate_test_class_for_category(category: str, levels: List[TestLevel], data_config: Dict[str, Any], 
+                                   gen_config: Dict[str, Any], metadata: dict) -> str:
+    """Generate test class for specific category."""
+    class_name = get_category_class_name(category)
+    excel_filename = get_category_excel_filename(category)
+    
+    # Generate category description from first level
+    category_description = levels[0].title.split(' - ')[0] if levels else category.replace('_', ' ').title()
     
     test_methods = "\n\n".join(
         generate_test_method_from_level(level) for level in levels
@@ -133,10 +166,13 @@ def generate_test_class(levels: List[TestLevel], data_config: Dict[str, Any], ge
     integrity_method = generate_data_integrity_method(data_config, gen_config)
     consistency_method = generate_type_consistency_method(levels, gen_config)
     
-    docstring = f"""
-    {class_description}.
+    total_cases = count_total_test_cases(levels)
     
-    Tests: {count_total_test_cases(levels)} cases across {len(levels)} levels
+    docstring = f"""
+    {category_description} integration tests.
+    
+    Tests: {total_cases} cases across {len(levels)} levels
+    Category: {category}
     Source: {metadata.get('source', 'JSON configuration')}
     """
     
@@ -153,10 +189,11 @@ class {class_name}(testing.FunctionalTestCase):
 {consistency_method}'''
 
 
-def generate_complete_test_file(levels: List[TestLevel], data_config: Dict[str, Any], gen_config: Dict[str, Any], metadata: dict, excel_filename: str) -> str:
-    """Generate complete Python test file."""
+def generate_complete_test_file_for_category(category: str, levels: List[TestLevel], data_config: Dict[str, Any], 
+                                           gen_config: Dict[str, Any], metadata: dict) -> str:
+    """Generate complete Python test file for specific category."""
     imports = generate_imports()
-    test_class = generate_test_class(levels, data_config, gen_config, metadata, excel_filename)
+    test_class = generate_test_class_for_category(category, levels, data_config, gen_config, metadata)
     
     return f"{imports}{test_class}\n"
 
@@ -168,28 +205,54 @@ def write_test_file(content: str, output_path: Path) -> None:
     print(f"Generated test file: {output_path}")
 
 
-def main(json_path: str, output_dir: str) -> None:
-    """Generate Python test file from JSON configuration."""
-    json_file, output_path = validate_json_and_output_dir(json_path, output_dir)
-    
-    config = load_json_config(str(json_file))
+def generate_tests_by_category(config: Dict[str, Any], output_path: Path) -> None:
+    """Generate Python test files by category."""
     levels = extract_test_levels(config)
     data_config = extract_data_config(config)
     gen_config = extract_generation_config(config)
     metadata = extract_metadata(config)
     
-    # Generate filenames from config
-    test_filename = get_test_filename_from_config(config)
-    excel_filename = get_excel_filename_from_config(config)
+    # Group levels by category
+    categories = group_levels_by_category(levels)
     
-    test_content = generate_complete_test_file(levels, data_config, gen_config, metadata, excel_filename)
+    print(f"Generating {len(categories)} Python test files by category...")
     
-    test_file_path = output_path / test_filename
-    write_test_file(test_content, test_file_path)
+    total_files = 0
+    total_cases = 0
     
-    print(f"Generated {count_total_test_cases(levels)} test cases across {len(levels)} levels")
-    print(f"Output: {test_file_path}")
-    print(f"Excel expected: {excel_filename}")
+    for category, category_levels in categories.items():
+        # Generate test content
+        test_content = generate_complete_test_file_for_category(category, category_levels, 
+                                                              data_config, gen_config, metadata)
+        
+        # Generate filename
+        test_filename = get_category_test_filename(category)
+        test_file_path = output_path / test_filename
+        
+        # Write file
+        write_test_file(test_content, test_file_path)
+        
+        cases_count = count_total_test_cases(category_levels)
+        total_cases += cases_count
+        total_files += 1
+        
+        print(f"  {category}: {cases_count} cases in {len(category_levels)} levels")
+    
+    print(f"\nGenerated {total_files} test files with {total_cases} total test cases")
+
+
+def main(json_path: str, output_dir: str) -> None:
+    """Generate Python test files by category from JSON configuration."""
+    json_file, output_path = validate_json_and_output_dir(json_path, output_dir)
+    
+    config = load_json_config(str(json_file))
+    
+    generate_tests_by_category(config, output_path)
+    
+    print("\nNEXT STEPS:")
+    print("1. Run generated tests to identify failures")
+    print("2. Implement missing functions using ATDD")
+    print("3. Commit after each test passes")
 
 
 if __name__ == "__main__":
