@@ -74,6 +74,24 @@ def _resolve_array_data(array, evaluator):
         return evaluator.get_range_values(str(array))
 
 
+def _get_array_column(array_data, col_idx):
+    """Extract a column from 2D array data.
+    
+    Used by: INDEX (row=0 case)
+    Returns: List of values from specified column
+    """
+    return [row[col_idx] for row in array_data]
+
+
+def _get_array_row(array_data, row_idx):
+    """Extract a row from 2D array data.
+    
+    Used by: INDEX (col=0 case)
+    Returns: List of values from specified row
+    """
+    return array_data[row_idx]
+
+
 # ============================================================================
 # DYNAMIC RANGE FUNCTIONS - Implemented via ATDD strict methodology
 # ============================================================================
@@ -94,16 +112,30 @@ def INDEX(
     """Returns value at intersection of row/column in array.
     
     CICLO 2.1: INDEX(Data!A1:E6, 2, 2) = 25
-    Refactored to use shared utilities.
+    CICLO 3.1: INDEX(Data!A1:E6, 0, 2) = Array (full column)
     """
     evaluator = _get_evaluator_context()
     
     # Convert parameters using shared utility
-    row_idx = _convert_to_python_int(row_num) - 1  # Convert to 0-based index
-    col_idx = _convert_to_python_int(col_num) - 1  # Convert to 0-based index
+    row_num_int = _convert_to_python_int(row_num)
+    col_num_int = _convert_to_python_int(col_num)
     
     # Resolve array data using shared utility
     array_data = _resolve_array_data(array, evaluator)
     
-    # Return value at specified position
-    return array_data[row_idx][col_idx]
+    # Handle array cases (row=0 or col=0)
+    if row_num_int == 0:
+        # Return entire column as Array using shared utility
+        col_idx = col_num_int - 1  # Convert to 0-based index
+        column_data = _get_array_column(array_data, col_idx)
+        return func_xltypes.Array(column_data)
+    elif col_num_int == 0:
+        # Return entire row as Array using shared utility
+        row_idx = row_num_int - 1  # Convert to 0-based index
+        row_data = _get_array_row(array_data, row_idx)
+        return func_xltypes.Array(row_data)
+    else:
+        # Return single value
+        row_idx = row_num_int - 1  # Convert to 0-based index
+        col_idx = col_num_int - 1  # Convert to 0-based index
+        return array_data[row_idx][col_idx]
