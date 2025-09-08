@@ -312,6 +312,27 @@ def _validate_offset_target_bounds(target_range, evaluator):
     # For now, let evaluator.get_range_values handle invalid ranges
 
 
+def _find_value_in_model(value, evaluator):
+    """Find the first cell address that contains the specified value.
+    
+    Args:
+        value: Value to search for
+        evaluator: Evaluator instance with model access
+        
+    Returns:
+        Cell address string if found, None if not found
+    """
+    # Convert value to string for comparison
+    search_value = str(value)
+    
+    # Search through all cells in the model
+    for cell_addr, cell in evaluator.model.cells.items():
+        if str(cell.value) == search_value:
+            return cell_addr
+    
+    return None
+
+
 def _is_valid_excel_reference(ref_string):
     """Check if string is a valid Excel reference format.
     
@@ -619,15 +640,15 @@ def OFFSET(reference, rows, cols, height=None, width=None):
         # It's already a string or needs conversion
         ref_string = str(reference)
         
-        # WORKAROUND: If we received a value instead of a reference,
-        # try to map it back to a known reference for test compatibility
-        if ref_string in ["Name", "25", "LA"]:
-            value_to_ref_map = {
-                "Name": "Data!A1",
-                "25": "Data!B2", 
-                "LA": "Data!C3"
-            }
-            ref_string = value_to_ref_map.get(ref_string, ref_string)
+        # If we received a value instead of a reference, search for it in the model
+        # This handles cases like OFFSET(INDEX(...), ...) where INDEX returns a value
+        if not _is_valid_excel_reference(ref_string):
+            # Search for the value in all cells to find its location
+            found_address = _find_value_in_model(ref_string, evaluator)
+            if found_address:
+                ref_string = found_address
+            else:
+                raise xlerrors.RefExcelError("Invalid cell reference format")
     
     # print(f"OFFSET ref_string: {ref_string}")
     
