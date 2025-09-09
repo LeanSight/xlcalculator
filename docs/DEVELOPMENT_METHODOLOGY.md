@@ -162,18 +162,46 @@ todo_reset ["Read server.js to understand current structure", "Check package.jso
 - **Excel Behavior**: Match Excel behavior as defined by official documentation
 - **No Hardcoded Values**: Dynamic context-based calculation
 - **Proper Error Handling**: Meaningful errors when context unavailable
+- **No Fallbacks**: Avoid fallbacks that violate Excel behavior
+- **Return Actual Data**: Return actual Excel data or proper Excel errors
+- **Performance Without Compromise**: Optimization without compromising compatibility
+
+### ATDD Strict Compliance
+**❌ NOT Permitted**:
+- Hardcoding specific values for test cases
+- Changing tests to match incorrect implementation
+- Modifying data to make formulas work
+- Fallbacks that mask Excel errors
+
+**✅ Permitted**:
+- Correcting implementation if there's a real bug
+- Implementing missing Excel functionality
+- Documenting limitations for incorrect formula design
+- Using Excel's pre-calculated values for compatibility
 
 ### Problem Resolution Approach
 1. **Root Cause Analysis**: Identify fundamental architectural gaps, not symptoms
 2. **Architecture-First**: Fix architectural foundations that make individual problems automatic
 3. **Evidence-Based**: Use official documentation to verify legitimate vs problematic patterns
 4. **Multiplicative Impact**: Prefer solutions that fix multiple issues simultaneously
+5. **Gap Analysis**: Distinguish between function bugs and evaluator architecture limitations
+6. **Context Isolation**: Identify when functions lack necessary calling context
+
+### Solution Selection Criteria
+**Primary Criteria**:
+1. **Cleanliness**: Minimal, focused changes that address core issue
+2. **Self-Documentation**: Code that clearly expresses intent without extensive comments
+3. **Low Risk**: Changes that minimize chance of introducing new bugs
+4. **Immediate Impact**: Solutions that directly fix identified problems
+5. **Maintainability**: Code that is easy to understand and modify in future
 
 ### Design Pattern Priorities
 1. **Context-Aware Function Execution**: Functions receive proper context, not global state
 2. **Reference Object Preservation**: Maintain Excel's lazy evaluation semantics
 3. **Hierarchical Model Structure**: Mirror Excel's actual object model
 4. **Coordinate-First API Design**: Work with coordinate objects, not strings
+5. **Error Propagation Consistency**: Maintain error types through evaluation chain
+6. **Parameter Evaluation Pipeline**: Proper handling of nested function calls
 
 ## 📊 Analysis and Documentation Standards
 
@@ -183,6 +211,15 @@ todo_reset ["Read server.js to understand current structure", "Check package.jso
 3. **Evidence-Based Verification**: Use official documentation to confirm legitimacy
 4. **Document with Context**: Provide clear explanations and recommendations
 5. **Prioritize by Impact**: Focus on architectural changes over individual fixes
+6. **Gap Analysis**: Distinguish between function implementation and evaluator architecture issues
+7. **Impact Assessment**: Evaluate working vs limited functionality
+
+### Root Cause Analysis Framework
+1. **Information Flow Analysis**: Track how data flows through evaluation chain
+2. **Context Loss Identification**: Find where necessary context information is lost
+3. **Error Propagation Tracking**: Verify errors maintain type through evaluation
+4. **Parameter Evaluation Pipeline**: Analyze how nested functions are processed
+5. **Architecture vs Implementation**: Distinguish architectural gaps from function bugs
 
 ### Documentation Requirements
 - **Evidence-Based**: Include official documentation references
@@ -190,6 +227,8 @@ todo_reset ["Read server.js to understand current structure", "Check package.jso
 - **Prioritized**: Clear priority levels and dependencies
 - **Measurable**: Define success criteria and metrics
 - **Timeline**: Realistic estimates with resource allocation
+- **Gap Classification**: Clearly identify type of issue (architecture vs implementation)
+- **Impact Scope**: Define what functionality is affected
 
 ## 🎯 Strategic Planning Framework
 
@@ -199,16 +238,232 @@ todo_reset ["Read server.js to understand current structure", "Check package.jso
 3. **Testing & Validation**: Comprehensive verification
 4. **Optimization & Enhancement**: Performance and additional features
 
+### Implementation Strategy Types
+1. **Hybrid Targeted Fixes**: Combine targeted fixes without major architectural changes
+2. **Architecture-First Approach**: Implement foundations that make function fixes automatic
+3. **Incremental Migration**: Gradual transition with backward compatibility
+4. **Collaborative Integration**: Work with upstream dependencies (e.g., openpyxl)
+
 ### Success Metrics Definition
 - **Immediate Benefits**: What improves right after each phase
 - **Short-term Benefits**: What improves in following phases
 - **Long-term Benefits**: Strategic advantages and scalability
 - **Measurable Criteria**: Specific, testable success conditions
+- **Functional Success**: Core functionality working correctly
+- **Code Quality Success**: Maintainable, self-documenting changes
+- **Compatibility Success**: Excel behavior matching
 
 ### Risk Management Approach
 - **Technical Risks**: Backward compatibility, performance, integration
 - **Implementation Risks**: Scope creep, timeline, resource allocation
 - **Mitigation Strategies**: Specific actions to address each risk category
+- **Rollback Plans**: Phase-by-phase and emergency rollback procedures
+- **Risk Classification**: Low/Medium/High risk areas with specific mitigations
+
+## 🧪 Integration Testing Framework
+
+### Integration Test Architecture
+**Purpose**: Validate xlcalculator functions against actual Excel behavior by comparing results from real Excel files.
+
+**Test Structure Pattern**:
+```python
+from .. import testing
+
+class FunctionNameTest(testing.FunctionalTestCase):
+    filename = "FUNCTION_NAME.xlsx"
+    
+    def test_evaluation_cellref(self):
+        excel_value = self.evaluator.get_cell_value('Sheet1!A1')
+        value = self.evaluator.evaluate('Sheet1!A1')
+        self.assertEqual(excel_value, value)
+```
+
+### Excel File Requirements
+1. **Formula Cells**: Contain Excel formulas to be tested
+2. **Data Cells**: Provide input data for formulas
+3. **Result Storage**: Excel calculates and stores expected results
+4. **Multiple Scenarios**: Cover edge cases, data types, error conditions
+
+### Test Design Templates
+
+#### Template 1: Simple Function Test
+- Basic functionality validation
+- Edge cases and error conditions
+- Single scenario per test method
+
+#### Template 2: Multi-Scenario Test
+- Matrix testing across multiple inputs
+- Comprehensive scenario coverage
+- Loop-based validation
+
+#### Template 3: Data Type Validation
+- Numeric inputs testing
+- Text inputs testing
+- Error inputs testing
+- Type conversion validation
+
+### Excel File Design Patterns
+
+#### Pattern 1: Basic Function Testing
+```
+A1: =FUNCTION(parameter1, parameter2)
+A2: =FUNCTION(edge_case_param)
+A3: =FUNCTION(error_case_param)
+B1: Input data 1
+B2: Input data 2
+B3: Input data 3
+```
+
+#### Pattern 2: Comprehensive Matrix Testing
+```
+    A        B        C        D        E
+1   Input1   Input2   Input3   Input4   Input5
+2   =FUNC(A1) =FUNC(B1) =FUNC(C1) =FUNC(D1) =FUNC(E1)
+3   =FUNC(A1,B1) =FUNC(B1,C1) =FUNC(C1,D1) =FUNC(D1,E1) =FUNC(E1,A1)
+```
+
+#### Pattern 3: Error Condition Testing
+```
+A1: =FUNCTION(valid_input)     → Expected result
+A2: =FUNCTION(#DIV/0!)         → Error handling
+A3: =FUNCTION("")              → Empty string handling
+A4: =FUNCTION(text_input)      → Type conversion
+A5: =FUNCTION(large_number)    → Boundary testing
+```
+
+### Priority Classification
+- **Priority 1**: Critical missing functions (immediate)
+- **Priority 2**: Information & text functions (high)
+- **Priority 3**: Advanced functions (medium)
+- **Priority 4**: Specialized functions (low)
+
+### Coverage Targets
+- **Phase 1**: 70% integration test coverage
+- **Phase 2**: 85% integration test coverage
+- **Phase 3**: 95% integration test coverage
+- **Phase 4**: 100% integration test coverage
+
+## 🔧 Implementation Patterns
+
+### Red-Green-Refactor Cycle
+**Standard TDD approach for all implementations**:
+1. **Red**: Write failing test that defines expected behavior
+2. **Green**: Implement minimal code to make test pass
+3. **Refactor**: Improve code quality while maintaining test passage
+
+### Function Implementation Patterns
+
+#### Pattern 1: Simple Function Implementation
+```python
+@xl.register()
+@xl.validate_args
+def FUNCTION_NAME(param1: func_xltypes.XlType, param2: func_xltypes.XlType = None) -> func_xltypes.XlType:
+    """Function description with Excel documentation link."""
+    # Validation logic
+    # Core implementation
+    # Return proper Excel type
+```
+
+#### Pattern 2: Context-Aware Function Implementation
+```python
+@xl.register()
+@xl.validate_args
+def CONTEXT_FUNCTION(reference: func_xltypes.XlAnything = None, *, _context: CellContext = None) -> func_xltypes.XlType:
+    """Context-dependent function (ROW, COLUMN, etc.)."""
+    if reference is None:
+        return _context.cell.property  # Use context for current cell
+    # Handle reference parameter
+```
+
+#### Pattern 3: Error Handling Implementation
+```python
+def FUNCTION_WITH_ERRORS(param):
+    """Function with proper Excel error handling."""
+    try:
+        # Validation
+        if invalid_condition:
+            raise xlerrors.ValueExcelError("Specific error message")
+        # Implementation
+        return result
+    except Exception as e:
+        # Convert to appropriate Excel error
+        return self._convert_to_excel_error(e)
+```
+
+### Evaluator Integration Patterns
+
+#### Pattern 1: Parameter Evaluation with Fallback
+```python
+def _eval_with_fallback(self, pitem, context):
+    """Evaluate parameter with fallback to stored cell values."""
+    result = pitem.eval(context)
+    
+    # If evaluation returns BLANK, try fallback strategies
+    if isinstance(result, Blank) and hasattr(pitem, 'tvalue'):
+        # Strategy 1: Try to get stored cell value
+        cell_addr = pitem.tvalue
+        if hasattr(context, 'evaluator') and cell_addr in context.evaluator.model.cells:
+            cell = context.evaluator.model.cells[cell_addr]
+            if cell.value and str(cell.value) != 'BLANK':
+                return func_xltypes.ExcelType.cast_from_native(cell.value)
+    
+    return result
+```
+
+#### Pattern 2: Context Propagation
+```python
+def _get_context(self, ref, formula_sheet=None):
+    """Create context with proper sheet information."""
+    return EvaluatorContext(self, ref, formula_sheet)
+
+def __init__(self, evaluator, ref, formula_sheet=None):
+    """Initialize context with formula sheet context."""
+    super().__init__(evaluator.namespace, ref, formula_sheet)
+    self.evaluator = evaluator
+```
+
+#### Pattern 3: Error Propagation Enhancement
+```python
+def evaluate(self, addr, context=None):
+    """Enhanced evaluation with proper error handling."""
+    try:
+        value = cell.formula.ast.eval(context)
+        
+        # Enhanced error handling
+        if isinstance(value, xlerrors.ExcelError):
+            # Preserve error types instead of converting to BLANK
+            return value
+        elif value is None:
+            return func_xltypes.BLANK
+        
+        return value
+    except Exception as e:
+        # Improved exception handling
+        if isinstance(e, xlerrors.ExcelError):
+            return e
+        # Convert other exceptions to appropriate Excel errors
+        return self._convert_exception_to_excel_error(e)
+```
+
+### Code Quality Patterns
+
+#### Self-Documenting Code
+- Use descriptive variable names that explain intent
+- Prefer explicit conditionals over clever shortcuts
+- Structure code to read like the problem domain
+- Minimize comments by making code self-explanatory
+
+#### Minimal Change Principle
+- Make smallest possible change to fix issue
+- Prefer single-word changes when possible (e.g., `is not None`)
+- Avoid refactoring unrelated code in same change
+- Focus changes on core issue being addressed
+
+#### Backward Compatibility
+- Maintain existing API signatures
+- Add new parameters as optional with defaults
+- Use feature flags for behavior changes if needed
+- Provide migration path for breaking changes
 
 ## 🔍 Gitpod Knowledge Rules
 
