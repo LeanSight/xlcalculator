@@ -95,6 +95,11 @@ class ParsedAddress:
     row: int
     full_address: str
     
+    @property
+    def column_index(self) -> int:
+        """Get 1-based column index."""
+        return column_index_from_string(self.column)
+    
     @classmethod
     def parse(cls, addr: str) -> 'ParsedAddress':
         """Parse a complete address into components.

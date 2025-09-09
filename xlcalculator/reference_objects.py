@@ -49,7 +49,8 @@ class CellReference:
     @property
     def address(self) -> str:
         """Get Excel-style address (e.g., 'Sheet1!$A$1')."""
-        col_letter = self._column_to_letter(self.column)
+        from openpyxl.utils.cell import get_column_letter
+        col_letter = get_column_letter(self.column)
         row_prefix = '$' if self.absolute_row else ''
         col_prefix = '$' if self.absolute_column else ''
         
@@ -156,7 +157,8 @@ class CellReference:
         
         try:
             row_num = int(row_digits)
-            col_num = cls._letter_to_column(col_letters)
+            from openpyxl.utils.cell import column_index_from_string
+            col_num = column_index_from_string(col_letters)
         except (ValueError, OverflowError):
             raise xlerrors.RefExcelError(f"Invalid reference format: {address}")
         
@@ -167,30 +169,6 @@ class CellReference:
             absolute_row=row_absolute,
             absolute_column=col_absolute
         )
-    
-    @staticmethod
-    def _column_to_letter(col_num: int) -> str:
-        """Convert 1-based column number to Excel letter."""
-        if col_num < 1:
-            raise ValueError("Column number must be >= 1")
-        
-        result = ""
-        while col_num > 0:
-            col_num -= 1
-            result = chr(col_num % 26 + ord('A')) + result
-            col_num //= 26
-        return result
-    
-    @staticmethod
-    def _letter_to_column(letters: str) -> int:
-        """Convert Excel column letters to 1-based number."""
-        if not letters or not letters.isalpha():
-            raise ValueError("Invalid column letters")
-        
-        result = 0
-        for char in letters.upper():
-            result = result * 26 + (ord(char) - ord('A') + 1)
-        return result
 
 
 @dataclass
@@ -201,7 +179,6 @@ class RangeReference:
     Represents a range of cells with start and end coordinates.
     Supports range operations and Excel-style addressing.
     """
-    
     start_cell: CellReference
     end_cell: CellReference
     

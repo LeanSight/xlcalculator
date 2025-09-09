@@ -1,7 +1,7 @@
 """Representation of a Microsoft Excel formula
 """
 from dataclasses import dataclass, field
-from openpyxl.utils.cell import column_index_from_string
+# Removed: from openpyxl.utils.cell import column_index_from_string - using ParsedAddress data directly
 from typing import List
 
 from . import ast_nodes, tokenizer, utils
@@ -66,7 +66,7 @@ class XLCell(XLType):
         self.sheet = parsed.sheet
         self.column = parsed.column
         self.row = str(parsed.row)
-        self.column_index = column_index_from_string(self.column)
+        self.column_index = parsed.column_index  # Use parsed data directly
         self.row_index = parsed.row
 
     def __float__(self):

@@ -206,12 +206,19 @@ def _build_offset_range(ref_string, rows_offset, cols_offset, height, width):
     """
     import re
     
-    # Parse the reference string manually to avoid evaluation issues
-    if '!' in ref_string:
-        sheet_name, cell_part = ref_string.split('!', 1)
-    else:
-        sheet_name = 'Sheet1'
-        cell_part = ref_string
+    # Parse the reference string using robust parsing
+    from ..range import CellReference
+    try:
+        cell_ref = CellReference.parse(ref_string, current_sheet='Sheet1')
+        sheet_name = cell_ref.sheet
+        cell_part = cell_ref.address
+    except Exception:
+        # Fallback for complex range references
+        if '!' in ref_string:
+            sheet_name, cell_part = ref_string.split('!', 1)
+        else:
+            sheet_name = 'Sheet1'
+            cell_part = ref_string
     
     # Handle different reference types
     if ':' in cell_part:
@@ -441,8 +448,14 @@ def _get_available_sheet_names_optimized(evaluator):
         # This is the only way to be certain we find all sheets
         for cell_address in evaluator.model.cells.keys():
             if '!' in cell_address:
-                sheet = cell_address.split('!')[0]
-                available_sheets.add(sheet)
+                from ..range import CellReference
+                try:
+                    cell_ref = CellReference.parse(cell_address, current_sheet='Sheet1')
+                    available_sheets.add(cell_ref.sheet)
+                except Exception:
+                    # Fallback for malformed addresses
+                    sheet = cell_address.split('!')[0]
+                    available_sheets.add(sheet)
     
     # Cache the result to avoid repeated computation
     evaluator._cached_sheet_names = available_sheets
@@ -525,12 +538,19 @@ def _handle_full_column_row_reference(ref_string, evaluator):
     Returns:
         Array containing the column/row data
     """
-    # Extract sheet and column/row info
-    if '!' in ref_string:
-        sheet_part, range_part = ref_string.split('!', 1)
-    else:
-        sheet_part = 'Sheet1'  # Default sheet
-        range_part = ref_string
+    # Extract sheet and column/row info using robust parsing
+    from ..range import CellReference
+    try:
+        cell_ref = CellReference.parse(ref_string, current_sheet='Sheet1')
+        sheet_part = cell_ref.sheet
+        range_part = cell_ref.address
+    except Exception:
+        # Fallback for complex range references
+        if '!' in ref_string:
+            sheet_part, range_part = ref_string.split('!', 1)
+        else:
+            sheet_part = 'Sheet1'  # Default sheet
+            range_part = ref_string
     
     # Check if it's a column reference (contains letters)
     if any(c.isalpha() for c in range_part):

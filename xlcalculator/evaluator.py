@@ -90,15 +90,16 @@ class Evaluator:
     def _get_hierarchical_cell(self, addr):
         """Get cell from hierarchical model by full address."""
         try:
-            if '!' in addr:
-                sheet_name, cell_address = addr.split('!', 1)
-                if sheet_name in self.model.worksheets:
-                    worksheet = self.model.worksheets[sheet_name]
-                    if cell_address in worksheet.cells:
-                        return worksheet.cells[cell_address]
-                    else:
-                        # Create empty cell if it doesn't exist
-                        return worksheet.get_cell(cell_address)
+            from .range import CellReference
+            cell_ref = CellReference.parse(addr, current_sheet='Sheet1')
+            
+            if cell_ref.sheet in self.model.worksheets:
+                worksheet = self.model.worksheets[cell_ref.sheet]
+                if cell_ref.address in worksheet.cells:
+                    return worksheet.cells[cell_ref.address]
+                else:
+                    # Create empty cell if it doesn't exist
+                    return worksheet.get_cell(cell_ref.address)
             return None
         except Exception:
             return None

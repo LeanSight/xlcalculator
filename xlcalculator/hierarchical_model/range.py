@@ -6,7 +6,7 @@ address parsing, and range operations.
 """
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, List, Optional, Tuple
-from openpyxl.utils.cell import column_index_from_string, get_column_letter
+from openpyxl.utils.cell import get_column_letter  # Removed column_index_from_string - using ParsedAddress data directly
 
 if TYPE_CHECKING:
     from .worksheet import Worksheet
@@ -48,7 +48,7 @@ class Range:
         from ..range import ParsedAddress
         full_address = f"{self.worksheet.name}!{address}"
         parsed = ParsedAddress.parse(full_address)
-        return parsed.row, column_index_from_string(parsed.column)
+        return parsed.row, parsed.column_index
     
     @property
     def full_address(self) -> str:

@@ -47,21 +47,23 @@ class TestCellReference(unittest.TestCase):
     
     def test_column_to_letter_conversion(self):
         """Test column number to letter conversion."""
-        self.assertEqual(CellReference._column_to_letter(1), "A")
-        self.assertEqual(CellReference._column_to_letter(26), "Z")
-        self.assertEqual(CellReference._column_to_letter(27), "AA")
-        self.assertEqual(CellReference._column_to_letter(52), "AZ")
-        self.assertEqual(CellReference._column_to_letter(702), "ZZ")
-        self.assertEqual(CellReference._column_to_letter(703), "AAA")
+        from openpyxl.utils.cell import get_column_letter
+        self.assertEqual(get_column_letter(1), "A")
+        self.assertEqual(get_column_letter(26), "Z")
+        self.assertEqual(get_column_letter(27), "AA")
+        self.assertEqual(get_column_letter(52), "AZ")
+        self.assertEqual(get_column_letter(702), "ZZ")
+        self.assertEqual(get_column_letter(703), "AAA")
     
     def test_letter_to_column_conversion(self):
         """Test letter to column number conversion."""
-        self.assertEqual(CellReference._letter_to_column("A"), 1)
-        self.assertEqual(CellReference._letter_to_column("Z"), 26)
-        self.assertEqual(CellReference._letter_to_column("AA"), 27)
-        self.assertEqual(CellReference._letter_to_column("AZ"), 52)
-        self.assertEqual(CellReference._letter_to_column("ZZ"), 702)
-        self.assertEqual(CellReference._letter_to_column("AAA"), 703)
+        from openpyxl.utils.cell import column_index_from_string
+        self.assertEqual(column_index_from_string("A"), 1)
+        self.assertEqual(column_index_from_string("Z"), 26)
+        self.assertEqual(column_index_from_string("AA"), 27)
+        self.assertEqual(column_index_from_string("AZ"), 52)
+        self.assertEqual(column_index_from_string("ZZ"), 702)
+        self.assertEqual(column_index_from_string("AAA"), 703)
     
     def test_parse_basic_references(self):
         """Test parsing basic cell references."""

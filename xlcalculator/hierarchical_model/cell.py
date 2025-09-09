@@ -6,7 +6,7 @@ formula handling, and value management.
 """
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Optional
-from openpyxl.utils.cell import column_index_from_string
+# Removed: from openpyxl.utils.cell import column_index_from_string - using ParsedAddress data directly
 
 if TYPE_CHECKING:
     from .worksheet import Worksheet
@@ -41,7 +41,7 @@ class Cell:
             
             self._row = parsed.row
             self._column = parsed.column
-            self._column_index = column_index_from_string(parsed.column)
+            self._column_index = parsed.column_index  # Use parsed data directly
         except Exception as e:
             raise ValueError(f"Invalid cell address '{self.address}': {e}")
     
