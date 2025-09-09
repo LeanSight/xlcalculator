@@ -50,6 +50,7 @@
 - **Functional Style Priority**: Prefer functional style over object-oriented when simpler
 - **Idiomatic Code**: Use most idiomatic code for the language and version
 - **📝 Immediate Commit**: Every refactor completion triggers immediate commit
+- **refactor never adds new behaviour**: the tests should be always in the same state before and after refactor
 
 ### NEVER MOVE FORWARD TO A NEW ACCEPTANCE TEST WITHOUT ALL TESTS IN GREEN
 ---

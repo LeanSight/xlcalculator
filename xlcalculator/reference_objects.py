@@ -171,26 +171,14 @@ class CellReference:
     @staticmethod
     def _column_to_letter(col_num: int) -> str:
         """Convert 1-based column number to Excel letter."""
-        if col_num < 1:
-            raise ValueError("Column number must be >= 1")
-        
-        result = ""
-        while col_num > 0:
-            col_num -= 1
-            result = chr(col_num % 26 + ord('A')) + result
-            col_num //= 26
-        return result
+        from openpyxl.utils.cell import get_column_letter
+        return get_column_letter(col_num)
     
     @staticmethod
     def _letter_to_column(letters: str) -> int:
         """Convert Excel column letters to 1-based number."""
-        if not letters or not letters.isalpha():
-            raise ValueError("Invalid column letters")
-        
-        result = 0
-        for char in letters.upper():
-            result = result * 26 + (ord(char) - ord('A') + 1)
-        return result
+        from openpyxl.utils.cell import column_index_from_string
+        return column_index_from_string(letters)
 
 
 @dataclass
