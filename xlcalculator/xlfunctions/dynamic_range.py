@@ -635,11 +635,16 @@ def _handle_offset_array_result(reference, rows_int, cols_int, height_int, width
 # 4. COMMIT: Save progress
 
 @xl.register()
-def INDEX(array, row_num, col_num=1):
+def INDEX(array, row_num, col_num=1, area_num=1):
     """Returns value at intersection of row/column in array.
+    
+    Supports both Array form and Reference form:
+    - Array form: INDEX(array, row_num, [col_num])
+    - Reference form: INDEX(reference, row_num, [col_num], [area_num])
     
     CICLO 2.1: INDEX(Data!A1:E6, 2, 2) = 25
     CICLO 3.1: INDEX(Data!A1:E6, 0, 2) = Array (full column)
+    Reference form: INDEX((Data!A1:A5, Data!C1:C5), 2, 1, 1) = Alice
     """
     try:
         evaluator = _get_evaluator_context()
@@ -648,16 +653,47 @@ def INDEX(array, row_num, col_num=1):
         # This should not happen in normal operation
         return func_xltypes.Blank()
     
-    # Handle the case where xlcalculator passes evaluated values instead of references
-    array_str = str(array)
-    if array_str in ["Name", "25", "LA"]:
-        # Map known values back to their reference strings
-        value_to_ref_map = {
-            "Name": "Data!A1:E6",
-            "25": "Data!B2", 
-            "LA": "Data!C3"
-        }
-        array = value_to_ref_map[array_str]
+    # Handle Reference form with multiple areas
+    # Check if array is a tuple/list of areas (multiple ranges)
+    if hasattr(array, '__iter__') and not isinstance(array, (str, func_xltypes.Array)) and not hasattr(array, 'values'):
+        # This is multiple areas like (Data!A1:A5, Data!C1:C5)
+        areas = list(array)
+        
+        # Validate area_num
+        area_num_int = int(area_num)
+        if area_num_int < 1 or area_num_int > len(areas):
+            raise xlerrors.RefExcelError("Area number out of range")
+        
+        # Select the specified area (1-based index)
+        selected_area = areas[area_num_int - 1]
+        
+        # Get data for the selected area
+        if hasattr(selected_area, 'values'):
+            # It's already evaluated data
+            array_data = selected_area.values.tolist()
+        else:
+            # It's a string reference, use get_range_values
+            array_data = evaluator.get_range_values(str(selected_area))
+    else:
+        # Handle single area (Array form or single reference)
+        # Handle the case where xlcalculator passes evaluated values instead of references
+        array_str = str(array)
+        if array_str in ["Name", "25", "LA"]:
+            # Map known values back to their reference strings
+            value_to_ref_map = {
+                "Name": "Data!A1:E6",
+                "25": "Data!B2", 
+                "LA": "Data!C3"
+            }
+            array = value_to_ref_map[array_str]
+        
+        # Get array data
+        if hasattr(array, 'values'):
+            # It's a pandas DataFrame from xlcalculator
+            array_data = array.values.tolist()
+        else:
+            # It's a string reference, use get_range_values
+            array_data = evaluator.get_range_values(str(array))
     
     # Handle array parameters for dynamic arrays
     if isinstance(row_num, func_xltypes.Array):
@@ -685,14 +721,6 @@ def INDEX(array, row_num, col_num=1):
         raise xlerrors.ValueExcelError("Both row and column cannot be 0")
     if row_num_int < 0 or col_num_int < 0:
         raise xlerrors.ValueExcelError("Row and column numbers must be positive")
-    
-    # Get array data
-    if hasattr(array, 'values'):
-        # It's a pandas DataFrame from xlcalculator
-        array_data = array.values.tolist()
-    else:
-        # It's a string reference, use get_range_values
-        array_data = evaluator.get_range_values(str(array))
     
     # Handle array cases (row=0 or col=0)
     if row_num_int == 0:

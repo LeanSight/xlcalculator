@@ -117,3 +117,17 @@ def OP_PERCENT(
         left: func_xltypes.XlNumber
 ) -> func_xltypes.XlNumber:
     return left * 0.01
+
+
+@xl.register()
+def OP_UNION(
+        left: func_xltypes.XlAnything,
+        right: func_xltypes.XlAnything
+) -> func_xltypes.XlAnything:
+    """Handle Excel union operator (comma).
+    
+    Returns a tuple containing both operands for functions like INDEX
+    that need to handle multiple areas.
+    """
+    # Return a tuple that can be handled by functions like INDEX
+    return (left, right)

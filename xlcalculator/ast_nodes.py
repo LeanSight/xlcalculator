@@ -32,6 +32,7 @@ INFIX_OP_TO_FUNC = {
     "<": operator.OP_LT,
     ">=": operator.OP_GE,
     "<=": operator.OP_LE,
+    ",": operator.OP_UNION,
 }
 
 MAX_EMPTY = 100
