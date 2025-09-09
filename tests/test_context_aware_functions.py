@@ -118,14 +118,26 @@ class ContextAwareFunctionsAcceptanceTest(unittest.TestCase):
         - COLUMN("A1") should return 1  
         - ROW("C5") should return 5
         - COLUMN("C5") should return 3
+        - ROW("Sheet1!B2") should return 2
+        - COLUMN("Sheet1!B2") should return 2
         
         This tests the reference parameter path, not context injection
         """
-        # Test explicit references - these should work with current implementation
-        self.assertEqual(1, self.evaluator.evaluate('ROW("A1")'))
-        self.assertEqual(1, self.evaluator.evaluate('COLUMN("A1")'))
-        self.assertEqual(5, self.evaluator.evaluate('ROW("C5")'))
-        self.assertEqual(3, self.evaluator.evaluate('COLUMN("C5")'))
+        # Test explicit references - these should work with proper parsing
+        self.assertEqual(1, self.evaluator.evaluate('ROW("A1")'), 
+                        "ROW(\"A1\") should return 1")
+        self.assertEqual(1, self.evaluator.evaluate('COLUMN("A1")'),
+                        "COLUMN(\"A1\") should return 1")
+        self.assertEqual(5, self.evaluator.evaluate('ROW("C5")'),
+                        "ROW(\"C5\") should return 5")
+        self.assertEqual(3, self.evaluator.evaluate('COLUMN("C5")'),
+                        "COLUMN(\"C5\") should return 3")
+        
+        # Test with sheet references
+        self.assertEqual(2, self.evaluator.evaluate('ROW("Sheet1!B2")'),
+                        "ROW(\"Sheet1!B2\") should return 2")
+        self.assertEqual(2, self.evaluator.evaluate('COLUMN("Sheet1!B2")'),
+                        "COLUMN(\"Sheet1!B2\") should return 2")
 
 
 if __name__ == '__main__':
