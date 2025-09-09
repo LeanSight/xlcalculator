@@ -170,9 +170,16 @@ Q3: =OFFSET(Data!A:A, 1, 0, 3, 1) → Array (OFFSET con columna completa)
 
 ### 5R. Arrays Dinámicos (Excel 365) - 2 Cases
 ```
-R1: =INDEX(Data!A1:E6, ROW(A1:A3), 1)       → Array con múltiples filas
-R2: =OFFSET(Data!A1, ROW(A1:A2)-1, 0)       → Array con offset múltiple
+R1: =INDEX(Data!A1:E6, ROW(A1:A3), 1)       → Array ["Name", "Alice", "Bob"] (3 filas)
+R2: =OFFSET(Data!A1, ROW(A1:A2)-1, 0)       → Array ["Name", "Alice"] (2 filas)
 ```
+
+**Comportamiento Esperado:**
+- ROW(A1:A3) debe retornar array [1, 2, 3]
+- ROW(A1:A2) debe retornar array [1, 2]  
+- ROW(A1:A2)-1 debe retornar array [0, 1]
+- INDEX y OFFSET con arrays de entrada deben retornar arrays de salida
+- Este es comportamiento válido de Excel 365 dynamic arrays
 
 ### 5S. Forma de Referencia vs Array - 2 Cases
 ```

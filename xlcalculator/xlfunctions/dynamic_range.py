@@ -829,7 +829,8 @@ def OFFSET(reference, rows, cols, height=None, width=None):
         # Rows parameter is an array - return array of results
         results = []
         for row_data in rows.values:
-            if isinstance(row_data, list) and len(row_data) > 0:
+            # Handle both list and numpy array
+            if hasattr(row_data, '__len__') and len(row_data) > 0:
                 row_val = row_data[0]
                 if isinstance(cols, func_xltypes.Array):
                     # Both rows and cols are arrays - not implemented yet
@@ -928,14 +929,28 @@ def ROW(reference: func_xltypes.XlAnything = None) -> func_xltypes.XlAnything:
     https://support.microsoft.com/en-us/office/
         row-function-3a63b74a-c4d0-4093-b49a-e76eb49a6d8d
     """
+    import re
+    
+    # Debug: Print what we're receiving
+    # print(f"ROW function received: {repr(reference)} (type: {type(reference)})")
+    # if hasattr(reference, 'values'):
+    #     print(f"Array values: {reference.values}")
+    #     print(f"Array length: {len(reference)}")
+    
     if reference is None:
         # Return row number of current cell - for now return 4 as fallback
         return 4
     
+    # Handle BLANK values (this might be the issue)
+    if isinstance(reference, func_xltypes.Blank):
+        # If we get BLANK, it might mean the range wasn't evaluated properly
+        # For now, return BLANK to maintain the error
+        return reference
+    
     # Handle different reference types
     if hasattr(reference, 'values'):
-        # It's a pandas DataFrame - extract row numbers from the range
-        # For A1:A3, this should return [1, 2, 3]
+        # It's an Array (evaluated range values) - extract row numbers from the range size
+        # For A1:A3, this should return [1, 2, 3] regardless of cell content
         num_rows = len(reference)
         row_numbers = [[i + 1] for i in range(num_rows)]
         return func_xltypes.Array(row_numbers)
@@ -944,7 +959,6 @@ def ROW(reference: func_xltypes.XlAnything = None) -> func_xltypes.XlAnything:
     ref_string = str(reference)
     if ':' in ref_string:
         # Range reference like A1:A3
-        import re
         # Extract start and end row numbers
         match = re.search(r'([A-Z]+)(\d+):([A-Z]+)(\d+)', ref_string)
         if match:
