@@ -2,6 +2,11 @@
 
 This directory contains strategic documentation for xlcalculator development and architecture.
 
+## 📁 Documentation Organization
+
+**`docs/`** - Permanent documentation (guides, architecture, references)  
+**`ona-memory/`** - Transient project artifacts (summaries, analysis, decisions)
+
 ## 📋 Documents
 
 ### Development Framework
