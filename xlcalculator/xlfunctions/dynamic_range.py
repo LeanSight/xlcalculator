@@ -532,7 +532,11 @@ def _handle_offset_array_result(reference, rows_int, cols_int, height_int, width
     
     # Parse the reference string to get sheet and cell coordinates
     ref_string = str(reference)
-    target_range = _build_offset_range(ref_string, rows_int, cols_int, height_int, width_int)
+    try:
+        target_range = _build_offset_range(ref_string, rows_int, cols_int, height_int, width_int)
+    except xlerrors.RefExcelError as e:
+        # Return error as value instead of raising exception
+        return e
     
     # Validate the target range is within bounds
     _validate_offset_target_bounds(target_range, evaluator)
@@ -629,7 +633,6 @@ def OFFSET(reference, rows, cols, height=None, width=None):
     CICLO 5.1: OFFSET(Data!A1, 1, 1) = 25
     Minimal implementation for first test case.
     """
-    # print(f"OFFSET called: ref={reference}, rows={rows}, cols={cols}, height={height}, width={width}")
     evaluator = _get_evaluator_context()
     
     # Handle reference parameter - convert to string if needed
@@ -675,83 +678,28 @@ def INDIRECT(
 ) -> func_xltypes.XlAnything:
     """Returns reference specified by text string.
     
-    CICLO 8.1: INDIRECT("Data!B2") = 25
-    CICLO 9.1: INDIRECT("Data!A" & 2) = Alice (dynamic concatenation)
+    According to Excel documentation:
+    - If ref_text is not a valid cell reference, INDIRECT returns #REF! error
+    - If ref_text refers to another workbook that is not open, INDIRECT returns #REF! error
     """
-    # print("INDIRECT FUNCTION CALLED!")
     evaluator = _get_evaluator_context()
     
-    # DEBUG: Print input type and value
-    # print(f"INDIRECT DEBUG: ref_text={repr(ref_text)}, type={type(ref_text)}")
-    
-    # Handle different input types
+    # Handle blank input - return #REF! error according to Excel behavior
     if isinstance(ref_text, func_xltypes.Blank):
-        # Handle blank inputs - this can happen when P1/P3 evaluation fails due to missing IFERROR
-        # This is a temporary workaround until IFERROR is implemented
-        
-        # Both P1 and P3 evaluation fail, but they have different expected outcomes:
-        # - INDIRECT(P1) should return 25 (P1 contains "Not Found")
-        # - INDIRECT(P3) should return Array (test expectation, though this seems incorrect)
-        #
-        # Since we can't distinguish the context easily, we'll implement a solution
-        # that works for the current test suite. This is not ideal but necessary for ATDD.
-        
-        # Advanced workaround for P1 vs P3 distinction
-        # Use a more sophisticated approach to determine the context
-        
-        try:
-            # Strategy: Check if we can determine which cell is calling INDIRECT
-            # by examining the current evaluation context or cell dependencies
-            
-            # Get all cells that reference P1 and P3
-            p1_refs = []
-            p3_refs = []
-            
-            for cell_addr, cell in evaluator.model.cells.items():
-                if cell.formula and cell.formula.formula:
-                    if 'P1' in cell.formula.formula and 'INDIRECT' in cell.formula.formula:
-                        p1_refs.append(cell_addr)
-                    elif 'P3' in cell.formula.formula and 'INDIRECT' in cell.formula.formula:
-                        p3_refs.append(cell_addr)
-            
-            # Heuristic: If we have both P1 and P3 references, we need to guess
-            # Based on the test patterns:
-            # - G4 uses P1 and expects 25
-            # - I4 uses P3 and expects Array
-            
-            # The issue is that we can't determine which cell is currently calling INDIRECT
-            # Both G4 and I4 will trigger this BLANK case, but they expect different results
-            # 
-            # Since the heuristic approach is complex and error-prone, let's implement
-            # a simpler solution: prioritize the most recent test case (test_2i)
-            # and handle the backward compatibility issue separately
-            
-            # For now, return 25 for all BLANK cases (test_2g compatibility)
-            # TODO: Implement proper context tracking or fix IFERROR evaluation
-            return 25
-                
-        except Exception:
-            # Fallback to P1 behavior
-            return 25
+        return xlerrors.RefExcelError("Invalid reference")
     
-    # Handle error inputs (e.g., when P1 evaluation fails due to missing functions)
+    # Handle error inputs - propagate the error
     if isinstance(ref_text, xlerrors.ExcelError):
-        # For test compatibility, return 25 for error cases
-        # This handles INDIRECT(P1) where P1 evaluation fails
-        # print(f"INDIRECT DEBUG: Handling ExcelError, returning 25")
-        return 25
+        return ref_text
     
     # Convert ref_text to string and resolve using shared utility
     ref_string = str(ref_text)
-    # print(f"INDIRECT: Resolving reference: {ref_string}")
     result = _resolve_indirect_reference(ref_string, evaluator)
-    # print(f"INDIRECT: Result: {result}, type: {type(result)}")
     return result
 
 
 # Enhanced IFERROR implementation for test compatibility
 @xl.register()
-@xl.validate_args  
 def IFERROR(
     value: func_xltypes.XlAnything,
     value_if_error: func_xltypes.XlAnything
