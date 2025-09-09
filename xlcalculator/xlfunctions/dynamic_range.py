@@ -792,77 +792,69 @@ def INDEX(array, row_num, col_num=1, area_num=1, *, _context=None):
 def OFFSET(reference, rows, cols, height=None, width=None, *, _context=None):
     """Returns reference offset from starting reference.
     
-    CICLO 5.1: OFFSET(Data!A1, 1, 1) = 25
-    Minimal implementation for first test case.
+    ATDD Implementation: Uses reference objects for Excel-compatible reference arithmetic.
+    
+    https://support.microsoft.com/en-us/office/
+        offset-function-c8de19ae-dd79-4b9b-a14e-b4d906d11b66
     """
+    from ..reference_objects import CellReference, RangeReference
+    
     if _context is None:
-        return func_xltypes.Blank()
+        raise xlerrors.ValueExcelError("OFFSET function requires evaluator context")
     
     evaluator = _context.evaluator
     
-    # Handle reference parameter - convert to string if needed
-    if hasattr(reference, 'address'):
-        # It's a cell reference object
-        ref_string = f"{reference.sheet}!{reference.address}"
-    elif hasattr(reference, 'values'):
-        # It's a pandas DataFrame from evaluator - this happens when evaluator
-        # evaluates a range reference like Data!A:A before passing to OFFSET
-        # We need to reconstruct the original reference from the context
-        # Use the evaluator to find the original reference that produced this array
-        ref_string = _reconstruct_reference_from_array(reference, evaluator)
-    else:
-        # It's already a string or needs conversion
-        ref_string = str(reference)
-        
-        # If we received a value instead of a reference, search for it in the model
-        # This handles cases like OFFSET(INDEX(...), ...) where INDEX returns a value
-        if not _is_valid_excel_reference(ref_string):
-            # Search for the value in all cells to find its location
-            found_address = _find_value_in_model(ref_string, evaluator)
-            if found_address:
-                ref_string = found_address
-            else:
-                raise xlerrors.RefExcelError("Invalid cell reference format")
+    # Parse the starting reference using our reference objects
+    try:
+        if isinstance(reference, str):
+            # String reference like "Data!A1"
+            start_ref = CellReference.parse(reference)
+        else:
+            # Convert other types to string and parse
+            ref_string = str(reference)
+            start_ref = CellReference.parse(ref_string)
+    except Exception as e:
+        raise xlerrors.RefExcelError(f"Invalid reference: {reference}")
+    
+    # Convert offset parameters to integers
+    try:
+        rows_int = int(rows)
+        cols_int = int(cols)
+    except (ValueError, TypeError):
+        raise xlerrors.ValueExcelError("Row and column offsets must be numbers")
+    
+    # Calculate the offset reference
+    try:
+        offset_ref = start_ref.offset(rows_int, cols_int)
+    except Exception as e:
+        raise xlerrors.RefExcelError("Offset results in invalid reference")
     
 
     
-    # Handle array parameters for dynamic arrays (like ROW(A1:A2))
-    if isinstance(rows, func_xltypes.Array):
-        # Rows parameter is an array - return array of results
-        results = []
-        for row_data in rows.values:
-            # Handle both list and numpy array
-            if hasattr(row_data, '__len__') and len(row_data) > 0:
-                row_val = row_data[0]
-                if isinstance(cols, func_xltypes.Array):
-                    # Both rows and cols are arrays - not implemented yet
-                    raise xlerrors.ValueExcelError("Multiple array parameters not supported")
-                else:
-                    cols_int = _convert_to_python_int(cols)
-                    # Get single result for this row offset
-                    if height is None and width is None:
-                        single_result = _handle_offset_array_result(ref_string, int(row_val), cols_int, 1, 1, evaluator)
-                    else:
-                        height_int = _convert_to_python_int(height) if height is not None else 1
-                        width_int = _convert_to_python_int(width) if width is not None else 1
-                        single_result = _handle_offset_array_result(ref_string, int(row_val), cols_int, height_int, width_int, evaluator)
-                    results.append([single_result])
-        return func_xltypes.Array(results)
-    
-    # Convert numeric parameters using shared utility (normal case)
-    rows_int = _convert_to_python_int(rows)
-    cols_int = _convert_to_python_int(cols)
-    
-    # Handle both single cell and array cases using shared utility
-    if height is None and width is None:
-        # Single cell offset (no height/width specified) - use 1x1 dimensions
-        return _handle_offset_array_result(ref_string, rows_int, cols_int, 1, 1, evaluator)
-    else:
-        # Array offset with height/width specified
-        height_int = _convert_to_python_int(height) if height is not None else 1
-        width_int = _convert_to_python_int(width) if width is not None else 1
+    # Handle height and width parameters for range results
+    if height is not None or width is not None:
+        # Validate height and width
+        try:
+            height_int = int(height) if height is not None else 1
+            width_int = int(width) if width is not None else 1
+        except (ValueError, TypeError):
+            raise xlerrors.ValueExcelError("Height and width must be numbers")
         
-        return _handle_offset_array_result(ref_string, rows_int, cols_int, height_int, width_int, evaluator)
+        if height_int <= 0 or width_int <= 0:
+            raise xlerrors.ValueExcelError("Height and width must be positive")
+        
+        # Create range reference
+        try:
+            end_ref = offset_ref.offset(height_int - 1, width_int - 1)
+            range_ref = RangeReference(start_cell=offset_ref, end_cell=end_ref)
+            
+            # Return range values
+            return range_ref.resolve(evaluator)
+        except Exception as e:
+            raise xlerrors.RefExcelError("Range results in invalid reference")
+    else:
+        # Return single cell value
+        return offset_ref.resolve(evaluator)
 
 
 @xl.register()
@@ -874,10 +866,13 @@ def INDIRECT(
 ) -> func_xltypes.XlAnything:
     """Returns reference specified by text string.
     
-    According to Excel documentation:
-    - If ref_text is not a valid cell reference, INDIRECT returns #REF! error
-    - If ref_text refers to another workbook that is not open, INDIRECT returns #REF! error
+    ATDD Implementation: Uses reference objects for dynamic reference resolution.
+    
+    https://support.microsoft.com/en-us/office/
+        indirect-function-474b3a3a-8a26-4f44-b491-92b6306fa261
     """
+    from ..reference_objects import CellReference, RangeReference
+    
     if _context is None:
         raise xlerrors.ValueExcelError("INDIRECT function requires evaluator context")
     
@@ -885,16 +880,34 @@ def INDIRECT(
     
     # Handle blank input - return #REF! error according to Excel behavior
     if isinstance(ref_text, func_xltypes.Blank):
-        return xlerrors.RefExcelError("Invalid reference")
+        raise xlerrors.RefExcelError("Invalid reference")
     
     # Handle error inputs - propagate the error
     if isinstance(ref_text, xlerrors.ExcelError):
         return ref_text
     
-    # Convert ref_text to string and resolve using shared utility
-    ref_string = str(ref_text)
-    result = _resolve_indirect_reference(ref_string, evaluator)
-    return result
+    # Convert to string
+    if not isinstance(ref_text, str):
+        ref_string = str(ref_text)
+    else:
+        ref_string = ref_text
+    
+    # Check A1 style parameter (R1C1 not supported yet)
+    if not a1:
+        raise xlerrors.ValueExcelError("R1C1 reference style not supported")
+    
+    # Parse and resolve the reference
+    try:
+        if ':' in ref_string:
+            # Range reference
+            range_ref = RangeReference.parse(ref_string)
+            return range_ref.resolve(evaluator)
+        else:
+            # Single cell reference
+            cell_ref = CellReference.parse(ref_string)
+            return cell_ref.resolve(evaluator)
+    except Exception as e:
+        raise xlerrors.RefExcelError(f"Invalid reference text: {ref_string}")
 
 
 # Enhanced IFERROR implementation for test compatibility
