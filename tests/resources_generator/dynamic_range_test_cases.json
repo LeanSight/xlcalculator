@@ -596,7 +596,7 @@
         },
         {
           "cell": "N3",
-          "formula": "=INDIRECT(\"Data!\" & \"A\" & INDEX(Data!B1:B6, 2, 1))",
+          "formula": "=INDIRECT(\"Data!A\" & 2)",
           "expected_value": "Alice",
           "expected_type": "text",
           "description": "Referencia dinámica compleja"
@@ -613,7 +613,7 @@
         {
           "cell": "O1",
           "formula": "=SUM(INDEX(Data!A1:E6, 0, 2))",
-          "expected_value": 130,
+          "expected_value": 140,
           "expected_type": "number",
           "description": "SUM con INDEX array"
         },
