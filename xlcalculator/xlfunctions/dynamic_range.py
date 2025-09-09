@@ -880,9 +880,29 @@ def INDIRECT(
         return ref_text
     
     # Convert to string (handle func_xltypes.Text)
-    # Note: The evaluator should properly evaluate cell references before passing to INDIRECT
-    # If ref_text is a cell reference like "P1", it should already be evaluated to its content
     ref_string = str(ref_text)
+    
+    # CRITICAL FIX: Handle cell references that need to be evaluated to get their content.
+    # 
+    # IMPORTANT DOCUMENTATION: evaluator.evaluate() ALWAYS requires FULL cell addresses with sheet prefix.
+    # - evaluator.evaluate("Tests!P1") ✅ Returns cell content
+    # - evaluator.evaluate("P1") ❌ Returns <BLANK> (invalid reference)
+    #
+    # When INDIRECT receives a cell reference without sheet context (e.g., "P1"), 
+    # we need to construct the full address using the current sheet context.
+    if _is_valid_excel_reference(ref_string) and '!' not in ref_string:
+        # This is a cell reference without sheet prefix (e.g., "P1")
+        # Get current sheet from evaluation context
+        current_sheet = getattr(_context, 'sheet', None)
+        
+        if current_sheet:
+            full_ref = f"{current_sheet}!{ref_string}"
+            try:
+                cell_content = evaluator.evaluate(full_ref)
+                ref_string = str(cell_content)
+            except Exception:
+                # If evaluation fails, treat as literal string
+                pass
     
     # Check A1 style parameter (R1C1 not supported yet)
     if not a1:
