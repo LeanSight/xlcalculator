@@ -14,11 +14,21 @@ class EvaluatorContext(ast_nodes.EvalContext):
 
     @property
     def cells(self):
-        return self.evaluator.model.cells
+        # Support both flat model and hierarchical model
+        if hasattr(self.evaluator.model, 'cells'):
+            return self.evaluator.model.cells
+        else:
+            # Hierarchical model - create flat view
+            return self.evaluator._get_flat_cells_view()
 
     @property
     def ranges(self):
-        return self.evaluator.model.ranges
+        # Support both flat model and hierarchical model
+        if hasattr(self.evaluator.model, 'ranges'):
+            return self.evaluator.model.ranges
+        else:
+            # Hierarchical model - create flat view
+            return self.evaluator._get_flat_ranges_view()
 
     @lru_cache(maxsize=None)
     def eval_cell(self, addr):
@@ -40,7 +50,59 @@ class Evaluator:
             if namespace is not None else xl.FUNCTIONS.copy()
         self.cache_count = 0
         self._lazy_manager = None
+        self._is_hierarchical = self._detect_hierarchical_model()
 
+    def _detect_hierarchical_model(self):
+        """Detect if model is hierarchical (Workbook) or flat (Model)."""
+        return hasattr(self.model, 'worksheets')
+    
+    def _get_flat_cells_view(self):
+        """Create flat cells view from hierarchical model."""
+        if not self._is_hierarchical:
+            return {}
+        
+        flat_cells = {}
+        for sheet_name, worksheet in self.model.worksheets.items():
+            for cell_address, cell in worksheet.cells.items():
+                full_address = f"{sheet_name}!{cell_address}"
+                # Create XLCell-like object for compatibility
+                xl_cell = xltypes.XLCell(full_address, cell.value)
+                xl_cell.formula = cell.formula
+                flat_cells[full_address] = xl_cell
+        
+        return flat_cells
+    
+    def _get_flat_ranges_view(self):
+        """Create flat ranges view from hierarchical model."""
+        if not self._is_hierarchical:
+            return {}
+        
+        flat_ranges = {}
+        for sheet_name, worksheet in self.model.worksheets.items():
+            for range_address, range_obj in worksheet.ranges.items():
+                full_address = f"{sheet_name}!{range_address}"
+                # Create XLRange-like object for compatibility
+                xl_range = xltypes.XLRange(full_address, range_obj.address)
+                flat_ranges[full_address] = xl_range
+        
+        return flat_ranges
+    
+    def _get_hierarchical_cell(self, addr):
+        """Get cell from hierarchical model by full address."""
+        try:
+            if '!' in addr:
+                sheet_name, cell_address = addr.split('!', 1)
+                if sheet_name in self.model.worksheets:
+                    worksheet = self.model.worksheets[sheet_name]
+                    if cell_address in worksheet.cells:
+                        return worksheet.cells[cell_address]
+                    else:
+                        # Create empty cell if it doesn't exist
+                        return worksheet.get_cell(cell_address)
+            return None
+        except Exception:
+            return None
+    
     def _get_context(self, ref, formula_sheet=None):
         return EvaluatorContext(self, ref, formula_sheet)
 
@@ -70,15 +132,26 @@ class Evaluator:
     def evaluate(self, addr, context=None):
         # 1. Resolve the address to a cell.
         addr = self.resolve_names(addr)
-        if addr not in self.model.cells:
-            # Blank cell that has no stored value in the model.
-            return func_xltypes.BLANK
-        cell = self.model.cells[addr]
+        
+        # Handle hierarchical model
+        if self._is_hierarchical:
+            cell = self._get_hierarchical_cell(addr)
+            if cell is None:
+                return func_xltypes.BLANK
+        else:
+            # Handle flat model
+            if addr not in self.model.cells:
+                # Blank cell that has no stored value in the model.
+                return func_xltypes.BLANK
+            cell = self.model.cells[addr]
 
         # 2. If there is no formula, we simply return the cell value.
         if (cell.formula is None or cell.formula.evaluate is False):
-            return func_xltypes.ExcelType.cast_from_native(
-                self.model.cells[addr].value)
+            if self._is_hierarchical:
+                return func_xltypes.ExcelType.cast_from_native(cell.value)
+            else:
+                return func_xltypes.ExcelType.cast_from_native(
+                    self.model.cells[addr].value)
 
         # 3. Prepare the execution environment and evaluate the formula.
         #    Extract formula sheet context for proper Excel behavior

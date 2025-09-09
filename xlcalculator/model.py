@@ -192,6 +192,155 @@ class ModelCompiler:
 
         return self.model
     
+    def read_and_parse_dict_hierarchical(
+            self, input_dict, default_sheet="Sheet1", build_code=True):
+        """Create hierarchical model from dictionary input.
+        
+        Args:
+            input_dict: Dictionary of cell addresses to values
+            default_sheet: Default sheet name for cells without sheet prefix
+            build_code: Whether to build AST code for formulas
+            
+        Returns:
+            Workbook instance with hierarchical structure
+        """
+        from .hierarchical_model import Workbook
+        
+        workbook = Workbook(name="Workbook")
+        
+        # Group cells by sheet
+        sheet_cells = {}
+        for item, value in input_dict.items():
+            if "!" in item:
+                sheet_name, cell_address = item.split("!", 1)
+            else:
+                sheet_name = default_sheet
+                cell_address = item
+            
+            if sheet_name not in sheet_cells:
+                sheet_cells[sheet_name] = {}
+            sheet_cells[sheet_name][cell_address] = value
+        
+        # Create worksheets and populate cells
+        for sheet_name, cells in sheet_cells.items():
+            worksheet = workbook.add_worksheet(sheet_name)
+            
+            for cell_address, value in cells.items():
+                worksheet.set_cell_value(cell_address, value)
+        
+        # Build code if requested
+        if build_code:
+            self._build_hierarchical_code(workbook)
+        
+        return workbook
+    
+    def _build_hierarchical_code(self, workbook):
+        """Build AST code for formulas in hierarchical model.
+        
+        Args:
+            workbook: Workbook instance to build code for
+        """
+        from . import parser
+        
+        # Collect defined names for parser
+        defined_names = {}
+        for name, obj in workbook.defined_names.items():
+            if hasattr(obj, 'full_address'):
+                defined_names[name] = obj.full_address
+            elif hasattr(obj, 'address'):
+                defined_names[name] = obj.address
+        
+        # Build AST for all formulas
+        for worksheet in workbook.worksheets.values():
+            for cell in worksheet.cells.values():
+                if cell.formula is not None:
+                    try:
+                        cell.formula.ast = parser.FormulaParser().parse(
+                            cell.formula.formula, defined_names)
+                    except Exception as e:
+                        logging.warning(f"Failed to parse formula in {cell.full_address}: {e}")
+    
+    def parse_archive_hierarchical(self, archive, ignore_sheets=[], ignore_hidden=False):
+        """Parse archive into hierarchical model structure.
+        
+        Args:
+            archive: Excel archive reader
+            ignore_sheets: List of sheet names to ignore
+            ignore_hidden: Whether to ignore hidden sheets
+            
+        Returns:
+            Workbook instance with hierarchical structure
+        """
+        from .hierarchical_model import Workbook
+        
+        # Read cells, formulae, and ranges from archive
+        cells, formulae, ranges = archive.read_cells(ignore_sheets, ignore_hidden)
+        defined_names = archive.read_defined_names(ignore_sheets, ignore_hidden)
+        
+        workbook = Workbook(name=getattr(archive, 'filename', 'Workbook'))
+        
+        # Group cells by sheet
+        sheet_cells = {}
+        for full_address, cell in cells.items():
+            if '!' in full_address:
+                sheet_name, cell_address = full_address.split('!', 1)
+            else:
+                sheet_name = "Sheet1"
+                cell_address = full_address
+            
+            if sheet_name not in sheet_cells:
+                sheet_cells[sheet_name] = {}
+            sheet_cells[sheet_name][cell_address] = cell
+        
+        # Create worksheets and populate cells
+        for sheet_name, sheet_cell_dict in sheet_cells.items():
+            if sheet_name in ignore_sheets:
+                continue
+                
+            worksheet = workbook.add_worksheet(sheet_name)
+            
+            for cell_address, xl_cell in sheet_cell_dict.items():
+                # Create hierarchical cell
+                hierarchical_cell = worksheet.get_cell(cell_address)
+                hierarchical_cell.value = xl_cell.value
+                
+                # Handle formula
+                if xl_cell.formula:
+                    hierarchical_cell.formula = xl_cell.formula
+        
+        # Handle defined names
+        for name, reference in defined_names.items():
+            try:
+                workbook.add_defined_name(name, reference)
+            except Exception as e:
+                logging.warning(f"Failed to add defined name '{name}': {e}")
+        
+        return workbook
+    
+    def read_and_parse_archive_hierarchical(
+            self, file_name=None, ignore_sheets=[], ignore_hidden=False,
+            build_code=True
+    ):
+        """Read Excel file and create hierarchical model.
+        
+        Args:
+            file_name: Path to Excel file
+            ignore_sheets: List of sheet names to ignore
+            ignore_hidden: Whether to ignore hidden sheets
+            build_code: Whether to build AST code for formulas
+            
+        Returns:
+            Workbook instance with hierarchical structure
+        """
+        archive = self.read_excel_file(file_name)
+        workbook = self.parse_archive_hierarchical(
+            archive, ignore_sheets=ignore_sheets, ignore_hidden=ignore_hidden)
+        
+        if build_code:
+            self._build_hierarchical_code(workbook)
+        
+        return workbook
+    
     def _add_default_sheet_aliases(self, archive):
         """Add aliases for active sheet cells to support relative references.
         
@@ -250,6 +399,155 @@ class ModelCompiler:
             self.model.build_code()
 
         return self.model
+    
+    def read_and_parse_dict_hierarchical(
+            self, input_dict, default_sheet="Sheet1", build_code=True):
+        """Create hierarchical model from dictionary input.
+        
+        Args:
+            input_dict: Dictionary of cell addresses to values
+            default_sheet: Default sheet name for cells without sheet prefix
+            build_code: Whether to build AST code for formulas
+            
+        Returns:
+            Workbook instance with hierarchical structure
+        """
+        from .hierarchical_model import Workbook
+        
+        workbook = Workbook(name="Workbook")
+        
+        # Group cells by sheet
+        sheet_cells = {}
+        for item, value in input_dict.items():
+            if "!" in item:
+                sheet_name, cell_address = item.split("!", 1)
+            else:
+                sheet_name = default_sheet
+                cell_address = item
+            
+            if sheet_name not in sheet_cells:
+                sheet_cells[sheet_name] = {}
+            sheet_cells[sheet_name][cell_address] = value
+        
+        # Create worksheets and populate cells
+        for sheet_name, cells in sheet_cells.items():
+            worksheet = workbook.add_worksheet(sheet_name)
+            
+            for cell_address, value in cells.items():
+                worksheet.set_cell_value(cell_address, value)
+        
+        # Build code if requested
+        if build_code:
+            self._build_hierarchical_code(workbook)
+        
+        return workbook
+    
+    def _build_hierarchical_code(self, workbook):
+        """Build AST code for formulas in hierarchical model.
+        
+        Args:
+            workbook: Workbook instance to build code for
+        """
+        from . import parser
+        
+        # Collect defined names for parser
+        defined_names = {}
+        for name, obj in workbook.defined_names.items():
+            if hasattr(obj, 'full_address'):
+                defined_names[name] = obj.full_address
+            elif hasattr(obj, 'address'):
+                defined_names[name] = obj.address
+        
+        # Build AST for all formulas
+        for worksheet in workbook.worksheets.values():
+            for cell in worksheet.cells.values():
+                if cell.formula is not None:
+                    try:
+                        cell.formula.ast = parser.FormulaParser().parse(
+                            cell.formula.formula, defined_names)
+                    except Exception as e:
+                        logging.warning(f"Failed to parse formula in {cell.full_address}: {e}")
+    
+    def parse_archive_hierarchical(self, archive, ignore_sheets=[], ignore_hidden=False):
+        """Parse archive into hierarchical model structure.
+        
+        Args:
+            archive: Excel archive reader
+            ignore_sheets: List of sheet names to ignore
+            ignore_hidden: Whether to ignore hidden sheets
+            
+        Returns:
+            Workbook instance with hierarchical structure
+        """
+        from .hierarchical_model import Workbook
+        
+        # Read cells, formulae, and ranges from archive
+        cells, formulae, ranges = archive.read_cells(ignore_sheets, ignore_hidden)
+        defined_names = archive.read_defined_names(ignore_sheets, ignore_hidden)
+        
+        workbook = Workbook(name=getattr(archive, 'filename', 'Workbook'))
+        
+        # Group cells by sheet
+        sheet_cells = {}
+        for full_address, cell in cells.items():
+            if '!' in full_address:
+                sheet_name, cell_address = full_address.split('!', 1)
+            else:
+                sheet_name = "Sheet1"
+                cell_address = full_address
+            
+            if sheet_name not in sheet_cells:
+                sheet_cells[sheet_name] = {}
+            sheet_cells[sheet_name][cell_address] = cell
+        
+        # Create worksheets and populate cells
+        for sheet_name, sheet_cell_dict in sheet_cells.items():
+            if sheet_name in ignore_sheets:
+                continue
+                
+            worksheet = workbook.add_worksheet(sheet_name)
+            
+            for cell_address, xl_cell in sheet_cell_dict.items():
+                # Create hierarchical cell
+                hierarchical_cell = worksheet.get_cell(cell_address)
+                hierarchical_cell.value = xl_cell.value
+                
+                # Handle formula
+                if xl_cell.formula:
+                    hierarchical_cell.formula = xl_cell.formula
+        
+        # Handle defined names
+        for name, reference in defined_names.items():
+            try:
+                workbook.add_defined_name(name, reference)
+            except Exception as e:
+                logging.warning(f"Failed to add defined name '{name}': {e}")
+        
+        return workbook
+    
+    def read_and_parse_archive_hierarchical(
+            self, file_name=None, ignore_sheets=[], ignore_hidden=False,
+            build_code=True
+    ):
+        """Read Excel file and create hierarchical model.
+        
+        Args:
+            file_name: Path to Excel file
+            ignore_sheets: List of sheet names to ignore
+            ignore_hidden: Whether to ignore hidden sheets
+            build_code: Whether to build AST code for formulas
+            
+        Returns:
+            Workbook instance with hierarchical structure
+        """
+        archive = self.read_excel_file(file_name)
+        workbook = self.parse_archive_hierarchical(
+            archive, ignore_sheets=ignore_sheets, ignore_hidden=ignore_hidden)
+        
+        if build_code:
+            self._build_hierarchical_code(workbook)
+        
+        return workbook
 
     def build_defined_names(self):
         """Add defined ranges to model."""

@@ -284,15 +284,24 @@ class FunctionNode(ASTNode):
             # Check if this looks like a cell reference and Excel has calculated it
             if (hasattr(context, 'evaluator') and 
                 context.evaluator and 
-                context.evaluator.model and
-                cell_address in context.evaluator.model.cells):
+                context.evaluator.model):
                 
-                cell = context.evaluator.model.cells[cell_address]
+                # Get cell using evaluator's method (supports both flat and hierarchical models)
+                if hasattr(context.evaluator.model, 'cells'):
+                    # Flat model
+                    if cell_address in context.evaluator.model.cells:
+                        cell = context.evaluator.model.cells[cell_address]
+                    else:
+                        cell = None
+                else:
+                    # Hierarchical model
+                    cell = context.evaluator._get_hierarchical_cell(cell_address)
                 
-                # Use Excel's stored value if available and meaningful
-                if cell.value is not None and str(cell.value).strip() != '':
-                    excel_value = func_xltypes.ExcelType.cast_from_native(cell.value)
-                    return excel_value
+                if cell:
+                    # Use Excel's stored value if available and meaningful
+                    if cell.value is not None and str(cell.value).strip() != '':
+                        excel_value = func_xltypes.ExcelType.cast_from_native(cell.value)
+                        return excel_value
         
         # Final fallback: return BLANK
         return func_xltypes.Blank()
