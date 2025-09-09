@@ -1092,7 +1092,7 @@ def COLUMN(reference: func_xltypes.XlAnything = None, *, _context=None) -> func_
             pass  # Fall back to regex if parsing fails
         
         # Fallback regex for edge cases
-        match = re.search(r'([A-Z]+)(\\d+):([A-Z]+)(\\d+)', ref_string)
+        match = re.search(r'([A-Z]+)(\d+):([A-Z]+)(\d+)', ref_string)
         if match:
             start_col = _column_letter_to_number(match.group(1))
             end_col = _column_letter_to_number(match.group(3))
@@ -1109,7 +1109,7 @@ def COLUMN(reference: func_xltypes.XlAnything = None, *, _context=None) -> func_
             pass  # Fall back to regex if parsing fails
         
         # Fallback regex for edge cases
-        match = re.search(r'([A-Z]+)(\\d+)', ref_string)
+        match = re.search(r'([A-Z]+)(\d+)', ref_string)
         if match:
             return _column_letter_to_number(match.group(1))
     

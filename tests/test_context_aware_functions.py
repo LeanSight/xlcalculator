@@ -123,20 +123,46 @@ class ContextAwareFunctionsAcceptanceTest(unittest.TestCase):
         
         This tests the reference parameter path, not context injection
         """
-        # Test explicit references - these should work with proper parsing
-        self.assertEqual(1, self.evaluator.evaluate('ROW("A1")'), 
+        # Test explicit references by creating cells with formulas
+        from xlcalculator.xltypes import XLCell, XLFormula
+        
+        # Create test cells for explicit reference formulas
+        self.model.cells["Sheet1!F1"] = XLCell(
+            "Sheet1!F1", None, XLFormula('=ROW("A1")', "Sheet1", "F1")
+        )
+        self.model.cells["Sheet1!F2"] = XLCell(
+            "Sheet1!F2", None, XLFormula('=COLUMN("A1")', "Sheet1", "F2")
+        )
+        self.model.cells["Sheet1!F3"] = XLCell(
+            "Sheet1!F3", None, XLFormula('=ROW("C5")', "Sheet1", "F3")
+        )
+        self.model.cells["Sheet1!F4"] = XLCell(
+            "Sheet1!F4", None, XLFormula('=COLUMN("C5")', "Sheet1", "F4")
+        )
+        self.model.cells["Sheet1!F5"] = XLCell(
+            "Sheet1!F5", None, XLFormula('=ROW("Sheet1!B2")', "Sheet1", "F5")
+        )
+        self.model.cells["Sheet1!F6"] = XLCell(
+            "Sheet1!F6", None, XLFormula('=COLUMN("Sheet1!B2")', "Sheet1", "F6")
+        )
+        
+        # Rebuild the code to parse new formulas
+        self.model.build_code()
+        
+        # Test explicit references
+        self.assertEqual(1, self.evaluator.evaluate("Sheet1!F1"), 
                         "ROW(\"A1\") should return 1")
-        self.assertEqual(1, self.evaluator.evaluate('COLUMN("A1")'),
+        self.assertEqual(1, self.evaluator.evaluate("Sheet1!F2"),
                         "COLUMN(\"A1\") should return 1")
-        self.assertEqual(5, self.evaluator.evaluate('ROW("C5")'),
+        self.assertEqual(5, self.evaluator.evaluate("Sheet1!F3"),
                         "ROW(\"C5\") should return 5")
-        self.assertEqual(3, self.evaluator.evaluate('COLUMN("C5")'),
+        self.assertEqual(3, self.evaluator.evaluate("Sheet1!F4"),
                         "COLUMN(\"C5\") should return 3")
         
         # Test with sheet references
-        self.assertEqual(2, self.evaluator.evaluate('ROW("Sheet1!B2")'),
+        self.assertEqual(2, self.evaluator.evaluate("Sheet1!F5"),
                         "ROW(\"Sheet1!B2\") should return 2")
-        self.assertEqual(2, self.evaluator.evaluate('COLUMN("Sheet1!B2")'),
+        self.assertEqual(2, self.evaluator.evaluate("Sheet1!F6"),
                         "COLUMN(\"Sheet1!B2\") should return 2")
 
 
