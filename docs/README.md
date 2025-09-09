@@ -4,8 +4,9 @@ This directory contains strategic documentation for xlcalculator development and
 
 ## 📋 Documents
 
-### Strategic Planning
-- **[Excel Compliance Strategy](EXCEL_COMPLIANCE_STRATEGY.md)** - Comprehensive strategy for achieving full Excel compliance in dynamic range functions
+### Development Framework
+- **[Development Methodology](DEVELOPMENT_METHODOLOGY.md)** - Comprehensive development methodology, problem resolution framework, and coding standards
+- **[Excel Compliance Strategy](EXCEL_COMPLIANCE_STRATEGY.md)** - Strategic approach for achieving full Excel compliance in dynamic range functions
 
 ### Architecture
 - **[Current Architecture Analysis](ARCHITECTURE_ANALYSIS.md)** *(Coming Soon)* - Analysis of current xlcalculator architecture
@@ -19,10 +20,13 @@ This directory contains strategic documentation for xlcalculator development and
 
 The primary focus is on **Excel Compliance Strategy** which outlines the architectural approach to fix dynamic range function issues (ROW, COLUMN, OFFSET, INDIRECT) by implementing proper Excel-like foundations rather than function-specific workarounds.
 
+The **Development Methodology** document provides the foundational framework for all development work, including ATDD compliance, task management, and problem resolution approaches.
+
 ## 📊 Status
 
 | Document | Status | Priority | Last Updated |
 |----------|--------|----------|--------------|
+| Development Methodology | ✅ Complete | Critical | 2025-01-09 |
 | Excel Compliance Strategy | ✅ Complete | Critical | 2025-01-09 |
 | Architecture Analysis | 📝 Planned | High | - |
 | Reference System Design | 📝 Planned | High | - |
