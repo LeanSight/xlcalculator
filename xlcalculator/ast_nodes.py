@@ -316,7 +316,22 @@ class FunctionNode(ASTNode):
                 ])
             else:
                 args.append(self._eval_parameter_with_excel_fallback(pvalue, context))
-        # 4. Run function and return result.
+        # 4. Inject context if function needs it, then run function and return result.
+        from .context import needs_context, create_context
+        
+        if needs_context(func):
+            # Get current cell and evaluator from context
+            current_cell_addr = context.ref
+            if hasattr(context, 'evaluator') and current_cell_addr in context.evaluator.model.cells:
+                current_cell = context.evaluator.model.cells[current_cell_addr]
+                cell_context = create_context(current_cell, context.evaluator)
+                
+                # Add context as keyword argument
+                sig = inspect.signature(func)
+                bound = sig.bind(*args)
+                bound.arguments['_context'] = cell_context
+                return func(*bound.args, **bound.kwargs)
+        
         return func(*args)
 
     def __str__(self):

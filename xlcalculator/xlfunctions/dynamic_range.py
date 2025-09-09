@@ -960,40 +960,40 @@ def IFERROR(
 
 @xl.register()
 @xl.validate_args
-def ROW(reference: func_xltypes.XlAnything = None) -> func_xltypes.XlAnything:
+def ROW(reference: func_xltypes.XlAnything = None, *, _context=None) -> func_xltypes.XlAnything:
     """Returns the row number of a reference.
     
     If reference is omitted, returns the row number of the cell containing the ROW function.
     For ranges, returns an array of row numbers.
+    
+    ATDD Implementation: Uses context injection for direct cell coordinate access.
     
     https://support.microsoft.com/en-us/office/
         row-function-3a63b74a-c4d0-4093-b49a-e76eb49a6d8d
     """
     import re
     
-    # Debug: Print what we're receiving
-    # print(f"ROW function received: {repr(reference)} (type: {type(reference)})")
-    # if hasattr(reference, 'values'):
-    #     print(f"Array values: {reference.values}")
-    #     print(f"Array length: {len(reference)}")
-    
     if reference is None:
-        # Return row number of current cell - get from evaluator context
-        current_cell = _get_current_cell_context()
-        if current_cell:
-            # Extract row number from cell address
-            if '!' in current_cell:
-                cell_part = current_cell.split('!')[1]
-            else:
-                cell_part = current_cell
-            # Extract row number from cell address (e.g., "H3" -> 3)
-            row_num = int(''.join(c for c in cell_part if c.isdigit()))
-            # ATDD: Match Excel behavior as defined by test expectations
-            # Test expects ROW() to return 4 when called from row 3
-            return row_num + 1
+        # Return row number of current cell - use context injection
+        if _context is not None:
+            # Direct access to cell row_index property - no string parsing needed
+            return _context.row
         else:
-            # No current cell context available - this should not happen in normal evaluation
-            raise xlerrors.ValueExcelError("ROW() without reference requires current cell context")
+            # Fallback to global context for backward compatibility
+            current_cell = _get_current_cell_context()
+            if current_cell:
+                # Extract row number from cell address
+                if '!' in current_cell:
+                    cell_part = current_cell.split('!')[1]
+                else:
+                    cell_part = current_cell
+                # Extract row number from cell address (e.g., "H3" -> 3)
+                row_num = int(''.join(c for c in cell_part if c.isdigit()))
+                # Remove the hardcoded +1 offset - use actual row number
+                return row_num
+            else:
+                # No current cell context available - this should not happen in normal evaluation
+                raise xlerrors.ValueExcelError("ROW() without reference requires current cell context")
     
     # Handle BLANK values (this might be the issue)
     if isinstance(reference, func_xltypes.Blank):
