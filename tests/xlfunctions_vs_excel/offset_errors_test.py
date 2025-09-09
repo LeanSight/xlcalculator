@@ -32,15 +32,15 @@ class OffsetErrorsTest(testing.FunctionalTestCase):
         self.assertIsInstance(value, xlerrors.RefExcelError,
                             "=OFFSET(Data!A1, 0, -2) should return REF_ERROR")
 
-        # OFFSET error - más allá de hoja
+        # OFFSET error - más allá de límites Excel (fila)
         value = self.evaluator.evaluate('Tests!F3')
         self.assertIsInstance(value, xlerrors.RefExcelError,
-                            "=OFFSET(Data!A1, 100, 0) should return REF_ERROR")
+                            "=OFFSET(Data!A1, 1048576, 0) should return REF_ERROR")
 
-        # OFFSET error - más allá de hoja
+        # OFFSET error - más allá de límites Excel (columna)
         value = self.evaluator.evaluate('Tests!F4')
         self.assertIsInstance(value, xlerrors.RefExcelError,
-                            "=OFFSET(Data!A1, 0, 100) should return REF_ERROR")
+                            "=OFFSET(Data!A1, 0, 16384) should return REF_ERROR")
 
         # OFFSET error - altura cero
         value = self.evaluator.evaluate('Tests!F5')
