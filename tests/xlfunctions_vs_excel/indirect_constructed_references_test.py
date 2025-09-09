@@ -32,15 +32,15 @@ class IndirectConstructedReferencesTest(testing.FunctionalTestCase):
         self.assertEqual(30, value, "=INDIRECT(\"Data!\" & CHAR(66) & \"3\") should return 30")
         self.assertIsInstance(value, (int, float, Number), "Should be number")
 
-        # INDIRECT dinámico - ROW
+        # INDIRECT dinámico - ROW (ROW() from H3 returns 3, Data!A3='Bob')
         value = self.evaluator.evaluate('Tests!H3')
-        self.assertEqual('Charlie', value, "=INDIRECT(\"Data!A\" & ROW()) should return 'Charlie'")
+        self.assertEqual('Bob', value, "=INDIRECT(\"Data!A\" & ROW()) should return 'Bob'")
         self.assertIsInstance(value, (str, Text), "Should be text")
 
-        # INDIRECT dinámico - COLUMN
+        # INDIRECT dinámico - COLUMN (COLUMN() from H4 returns 8, CHAR(73)='I', Data!I1=0)
         value = self.evaluator.evaluate('Tests!H4')
-        self.assertEqual('Score', value, "=INDIRECT(\"Data!\" & CHAR(65+COLUMN()) & \"1\") should return 'Score'")
-        self.assertIsInstance(value, (str, Text), "Should be text")
+        self.assertEqual(0, value, "=INDIRECT(\"Data!\" & CHAR(65+COLUMN()) & \"1\") should return 0")
+        self.assertIsInstance(value, (int, float, Number), "Should be number")
 
     def test_data_integrity(self):
         """Verify test data integrity."""

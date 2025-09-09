@@ -88,9 +88,20 @@ G4: =INDIRECT(P1)                → 25 (desde celda con "Data!B2")
 ```
 H1: =INDIRECT("Data!A" & 2)      → "Alice" (concatenación)
 H2: =INDIRECT("Data!" & CHAR(66) & "3") → 30 (usando CHAR)
-H3: =INDIRECT("Data!A" & ROW())  → "Charlie" (referencia dinámica por fila actual)
-H4: =INDIRECT("Data!" & CHAR(65+COLUMN()) & "1") → "Score" (referencia por columna)
+H3: =INDIRECT("Data!A" & ROW())  → "Bob" (referencia dinámica por fila actual - ROW() from H3 returns 3, Data!A3="Bob")
+H4: =INDIRECT("Data!" & CHAR(65+COLUMN()) & "1") → 0 (referencia por columna - COLUMN() from H4 returns 8, CHAR(73)="I", Data!I1=0)
 ```
+
+**CORRECCIÓN IMPORTANTE - Comportamiento Oficial de Excel:**
+- **ROW()**: Retorna el número de fila de la celda donde aparece la función
+  - ROW() en H3 retorna 3 (no 4)
+  - Por tanto: "Data!A" & ROW() = "Data!A3" = "Bob"
+- **COLUMN()**: Retorna el número de columna de la celda donde aparece la función  
+  - COLUMN() en H4 retorna 8 (columna H)
+  - Por tanto: CHAR(65+8) = CHAR(73) = "I", "Data!I1" = 0
+
+**Fuente**: [Microsoft Excel ROW Function Documentation](https://support.microsoft.com/en-us/office/row-function-3a63b74a-c4d0-4093-b49a-e76eb49a6d8d)
+**Fuente**: [Microsoft Excel COLUMN Function Documentation](https://support.microsoft.com/en-us/office/column-function-44e8c754-711c-4df3-9da4-47a55042554b)
 
 ### 2I. INDIRECT - Arrays de Referencias - 4 Cases
 ```

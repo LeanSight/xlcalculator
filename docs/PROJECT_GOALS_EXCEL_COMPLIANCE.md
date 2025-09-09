@@ -81,6 +81,35 @@
 - Maintain Excel's precedence rules and calculation order
 - Preserve Excel's handling of edge cases and boundary conditions
 
+### Test Review Process for Excel Compliance
+**CRITICAL**: When encountering test failures, follow this mandatory process:
+
+1. **Review Source Documents First**:
+   - Check `tests/resources_generator/dynamic_range_test_cases.json` for intended test behavior
+   - Review `tests/resources_generator/DYNAMIC_RANGES_DESIGN.md` for design intent
+   - **Never modify tests directly without checking source documents**
+
+2. **Verify Official Excel Behavior**:
+   - Consult official Microsoft Excel documentation
+   - Test actual Excel behavior for the specific function and scenario
+   - Document any discrepancies between design intent and official Excel behavior
+
+3. **Update Design Documents**:
+   - Correct `DYNAMIC_RANGES_DESIGN.md` with official Excel behavior
+   - Update `dynamic_range_test_cases.json` with correct expected values
+   - Include references to official Excel documentation
+
+4. **Regenerate Tests**:
+   - Use `tests/resources_generator/json_to_tests.py` to regenerate test files
+   - **Never manually edit generated test files**
+   - Verify regenerated tests reflect correct Excel behavior
+
+5. **Implement Fixes**:
+   - Only after tests reflect correct Excel behavior, implement function fixes
+   - Follow ATDD methodology: Red → Green → Refactor
+
+**Example**: ROW() and COLUMN() functions must return actual cell coordinates per [Microsoft Excel documentation](https://support.microsoft.com/en-us/office/row-function-3a63b74a-c4d0-4093-b49a-e76eb49a6d8d), not hardcoded values.
+
 ### Testing Strategy
 - Create comprehensive test suites that cover normal cases, edge cases, and error conditions
 - Use actual Excel files and formulas for validation

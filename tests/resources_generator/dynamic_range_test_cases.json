@@ -375,16 +375,16 @@
         {
           "cell": "H3",
           "formula": "=INDIRECT(\"Data!A\" & ROW())",
-          "expected_value": "Charlie",
+          "expected_value": "Bob",
           "expected_type": "text",
-          "description": "INDIRECT dinámico - ROW"
+          "description": "INDIRECT dinámico - ROW (ROW() from H3 returns 3, Data!A3='Bob')"
         },
         {
           "cell": "H4",
           "formula": "=INDIRECT(\"Data!\" & CHAR(65+COLUMN()) & \"1\")",
-          "expected_value": "Score",
-          "expected_type": "text",
-          "description": "INDIRECT dinámico - COLUMN"
+          "expected_value": 0,
+          "expected_type": "number",
+          "description": "INDIRECT dinámico - COLUMN (COLUMN() from H4 returns 8, CHAR(73)='I', Data!I1=0)"
         }
       ]
     },
