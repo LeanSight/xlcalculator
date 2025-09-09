@@ -708,11 +708,14 @@ def INDEX(array, row_num, col_num=1, area_num=1, *, _context=None):
     
     evaluator = _context.evaluator
     
-    # Handle Reference form with multiple areas
-    # Check if array is a tuple/list of areas (multiple ranges)
-    if hasattr(array, '__iter__') and not isinstance(array, (str, func_xltypes.Array)) and not hasattr(array, 'values'):
-        # This is multiple areas like (Data!A1:A5, Data!C1:C5)
-        areas = list(array)
+    # Handle Reference form with multiple areas vs single array data
+    # Detect multiple areas: tuple from OP_UNION containing DataFrames or string references
+    if (isinstance(array, tuple) and 
+        len(array) > 0 and
+        all(hasattr(area, 'values') or isinstance(area, str) for area in array)):
+        
+        # Multiple areas from OP_UNION: tuple of DataFrames or string references
+        areas = array  # Keep as tuple
         
         # Validate area_num
         area_num_int = int(area_num)
@@ -724,25 +727,25 @@ def INDEX(array, row_num, col_num=1, area_num=1, *, _context=None):
         
         # Get data for the selected area
         if hasattr(selected_area, 'values'):
-            # It's already evaluated data
+            # It's a pandas DataFrame from OP_UNION evaluation
             array_data = selected_area.values.tolist()
         else:
             # It's a string reference, use get_range_values
             array_data = evaluator.get_range_values(str(selected_area))
     else:
-        # Handle single area (Array form or single reference)
-        # Note: Hardcoded value mappings have been removed as they violate ATDD principles
-        # Excel functions must work with any data, not specific test values
+        # Handle single area (Array form, single reference, or 2D list data)
         
         # Get array data
         if hasattr(array, 'values'):
             # It's a pandas DataFrame from xlcalculator
             array_data = array.values.tolist()
+        elif isinstance(array, list) and len(array) > 0 and isinstance(array[0], list):
+            # It's already a 2D list of data (from get_range_values)
+            array_data = array
         else:
             # It's a string reference, use get_range_values
             array_data = evaluator.get_range_values(str(array))
             
-            # DEBUG: Check if we got data
             if not array_data:
                 raise xlerrors.ValueExcelError(f"No data found for range: {array}")
     
@@ -795,7 +798,7 @@ def INDEX(array, row_num, col_num=1, area_num=1, *, _context=None):
         row_idx = row_num_int - 1  # Convert to 0-based index
         col_idx = col_num_int - 1  # Convert to 0-based index
         
-        # DEBUG: Check bounds
+        # Validate bounds
         if row_idx < 0 or row_idx >= len(array_data):
             raise xlerrors.RefExcelError(f"Row index {row_num_int} out of range (1-{len(array_data)})")
         if col_idx < 0 or col_idx >= len(array_data[0]):
@@ -804,11 +807,9 @@ def INDEX(array, row_num, col_num=1, area_num=1, *, _context=None):
         # Get the actual value
         result_value = array_data[row_idx][col_idx]
         
-        # DEBUG: Check what we're returning
         if result_value is None:
             raise xlerrors.ValueExcelError(f"Cell at ({row_num_int}, {col_num_int}) contains None")
         
-        # Return the cell value directly (normal Excel behavior)
         return result_value
 
 
@@ -831,9 +832,22 @@ def OFFSET(reference, rows, cols, height=None, width=None, *, _context=None):
     # Parse the starting reference using our reference objects
     try:
         if isinstance(reference, (str, func_xltypes.Text)):
-            # String reference like "Data!A1"
+            # String reference - could be "Data!A1" or a value like "Alice" from INDEX
             ref_string = str(reference)  # Convert Text to string
-            start_ref = CellReference.parse(ref_string)
+            
+            # First try to parse as a direct cell reference
+            try:
+                start_ref = CellReference.parse(ref_string)
+            except xlerrors.RefExcelError:
+                # Key fix: If parsing as reference fails, treat it as a value from INDEX
+                # and find where that value is located in the spreadsheet
+                found_address = _find_cell_address_for_value(ref_string, evaluator)
+                
+                if found_address:
+                    start_ref = CellReference.parse(found_address)
+                else:
+                    raise xlerrors.RefExcelError(f"Cannot find cell containing value: {ref_string}")
+                    
         elif hasattr(reference, 'get_reference'):
             # Handle ExcelCellValue objects (if we had them)
             ref_string = reference.get_reference()
@@ -853,6 +867,9 @@ def OFFSET(reference, rows, cols, height=None, width=None, *, _context=None):
             else:
                 # If we can't find the value, this is likely an error
                 raise xlerrors.RefExcelError(f"Cannot find cell containing value: {ref_value}")
+    except xlerrors.RefExcelError:
+        # Re-raise RefExcelError as-is (preserves specific error messages)
+        raise
     except Exception as e:
         raise xlerrors.RefExcelError(f"Invalid reference: {reference}")
     
