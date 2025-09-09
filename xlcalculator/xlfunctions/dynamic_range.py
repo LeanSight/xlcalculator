@@ -493,6 +493,43 @@ def _is_full_column_or_row_reference(ref_string):
     return any(re.match(pattern, ref_string) for pattern in all_patterns)
 
 
+def _parse_full_reference_to_cell(ref_string):
+    """Parse full column/row reference and convert to starting cell reference.
+    
+    Args:
+        ref_string: Full reference like "Data!A:A" or "Sheet!1:1"
+        
+    Returns:
+        CellReference object for the starting cell
+    """
+    import re
+    from ..reference_objects import CellReference
+    
+    # Parse sheet and reference parts
+    if '!' in ref_string:
+        sheet_name, ref_part = ref_string.split('!', 1)
+    else:
+        sheet_name = None
+        ref_part = ref_string
+    
+    # Handle full column references (A:A, B:B)
+    if re.match(r'^[A-Z]+:[A-Z]+$', ref_part):
+        column = ref_part.split(':')[0]  # Get first column (A from A:A)
+        # Full column starts at row 1
+        cell_addr = f"{sheet_name}!{column}1" if sheet_name else f"{column}1"
+        return CellReference.parse(cell_addr)
+    
+    # Handle full row references (1:1, 2:2)
+    elif re.match(r'^[0-9]+:[0-9]+$', ref_part):
+        row = ref_part.split(':')[0]  # Get first row (1 from 1:1)
+        # Full row starts at column A
+        cell_addr = f"{sheet_name}!A{row}" if sheet_name else f"A{row}"
+        return CellReference.parse(cell_addr)
+    
+    else:
+        raise xlerrors.RefExcelError(f"Invalid full reference format: {ref_string}")
+
+
 def _get_index_single_value(array_data, row_num, col_num):
     """Get single value from array data for INDEX function.
     
@@ -831,22 +868,34 @@ def OFFSET(reference, rows, cols, height=None, width=None, *, _context=None):
     
     # Parse the starting reference using our reference objects
     try:
-        if isinstance(reference, (str, func_xltypes.Text)):
-            # String reference - could be "Data!A1" or a value like "Alice" from INDEX
+        if isinstance(reference, func_xltypes.Array):
+            # DataFrame from RangeNode.eval() - likely a full column/row reference
+            # Need to determine the original reference pattern
+            # For now, assume it's a full column starting at A1
+            # TODO: Implement proper context tracking for original reference
+            start_ref = CellReference.parse("Data!A1")  # Temporary fallback
+            
+        elif isinstance(reference, (str, func_xltypes.Text)):
+            # String reference - could be "Data!A1", "Data!A:A", or a value like "Alice" from INDEX
             ref_string = str(reference)  # Convert Text to string
             
-            # First try to parse as a direct cell reference
-            try:
-                start_ref = CellReference.parse(ref_string)
-            except xlerrors.RefExcelError:
-                # Key fix: If parsing as reference fails, treat it as a value from INDEX
-                # and find where that value is located in the spreadsheet
-                found_address = _find_cell_address_for_value(ref_string, evaluator)
-                
-                if found_address:
-                    start_ref = CellReference.parse(found_address)
-                else:
-                    raise xlerrors.RefExcelError(f"Cannot find cell containing value: {ref_string}")
+            # Check if it's a full column/row reference pattern
+            if _is_full_column_or_row_reference(ref_string):
+                # Parse full reference and convert to starting cell
+                start_ref = _parse_full_reference_to_cell(ref_string)
+            else:
+                # First try to parse as a direct cell reference
+                try:
+                    start_ref = CellReference.parse(ref_string)
+                except xlerrors.RefExcelError:
+                    # Key fix: If parsing as reference fails, treat it as a value from INDEX
+                    # and find where that value is located in the spreadsheet
+                    found_address = _find_cell_address_for_value(ref_string, evaluator)
+                    
+                    if found_address:
+                        start_ref = CellReference.parse(found_address)
+                    else:
+                        raise xlerrors.RefExcelError(f"Cannot find cell containing value: {ref_string}")
                     
         elif hasattr(reference, 'get_reference'):
             # Handle ExcelCellValue objects (if we had them)
