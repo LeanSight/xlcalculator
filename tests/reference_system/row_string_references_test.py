@@ -50,9 +50,9 @@ class RowStringReferencesTest(testing.FunctionalTestCase):
     def test_data_integrity(self):
         """Verify test data integrity."""
         # Auto-generated data validation
-        self.assertEqual('Value_A1', self.evaluator.evaluate('Data!A2'))
-        self.assertEqual('Value_B1', self.evaluator.evaluate('Data!B2'))
-        self.assertEqual('Value_C1', self.evaluator.evaluate('Data!C2'))
+        self.assertEqual('Value_A2', self.evaluator.evaluate('Data!A2'))
+        self.assertEqual('Value_B2', self.evaluator.evaluate('Data!B2'))
+        self.assertEqual('Value_C2', self.evaluator.evaluate('Data!C2'))
 
     def test_type_consistency(self):
         """Verify data type consistency across test cases."""

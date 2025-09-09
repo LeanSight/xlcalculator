@@ -23,9 +23,8 @@
   },
   "data_sheet": {
     "name": "Data",
-    "headers": ["Value_A", "Value_B", "Value_C"],
+    "headers": ["Value_A1", "Value_B1", "Value_C1"],
     "rows": [
-      ["Value_A1", "Value_B1", "Value_C1"],
       ["Value_A2", "Value_B2", "Value_C2"],
       ["Value_A3", "Value_B3", "Value_C3"]
     ]
