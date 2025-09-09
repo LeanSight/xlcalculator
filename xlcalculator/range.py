@@ -12,14 +12,9 @@ from dataclasses import dataclass
 from typing import Tuple, Optional, List, Union
 from openpyxl.utils.cell import COORD_RE, SHEET_TITLE, range_boundaries, get_column_letter, column_index_from_string
 
-# Excel limits
+# Excel limits - actual Excel boundaries
 MAX_COL = 18278
 MAX_ROW = 1048576
-
-# Smart range resolution defaults
-DEFAULT_MAX_DATA_ROW = 1000
-DEFAULT_MAX_DATA_COL = 100
-SMART_RANGE_ENABLED = True
 
 
 def resolve_sheet(sheet_str: str) -> str:

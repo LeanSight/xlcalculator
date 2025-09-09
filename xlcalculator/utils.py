@@ -17,9 +17,6 @@ from .range import (
     # Constants
     MAX_COL,
     MAX_ROW,
-    DEFAULT_MAX_DATA_ROW,
-    DEFAULT_MAX_DATA_COL,
-    SMART_RANGE_ENABLED,
 )
 
 # Re-export everything for backward compatibility
@@ -34,7 +31,4 @@ __all__ = [
     'is_full_range',
     'MAX_COL',
     'MAX_ROW',
-    'DEFAULT_MAX_DATA_ROW',
-    'DEFAULT_MAX_DATA_COL',
-    'SMART_RANGE_ENABLED',
 ]
