@@ -2,7 +2,9 @@
 
 ## 🎯 Project Overview
 
-**Objective**: Achieve full Excel compliance for dynamic range functions (ROW, COLUMN, OFFSET, INDIRECT) in xlcalculator through architectural improvements rather than function-specific workarounds.
+**Objective**: Achieve full Excel compliance for xlcalculator functions
+**Inmediate goal**
+ Achieve  full Excel compliance for xlcalculator functions dynamic range functions (ROW, COLUMN, OFFSET, INDIRECT) in xlcalculator through architectural improvements rather than function-specific workarounds.
 
 **Duration**: 12-18 days  
 **Priority**: Critical  

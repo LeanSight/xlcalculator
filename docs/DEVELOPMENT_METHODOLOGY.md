@@ -1,30 +1,82 @@
 # Development Methodology & Problem Resolution Framework
 
-This document captures the universal development methodology, problem resolution approach, and coding standards for software development projects.
+**Document Version**: 3.1  
+**Last Updated**: 2025-01-09  
+**Application**: All software development work following ATDD methodology
 
-**Related Documents**: 
-- [Excel Compliance Project Goals](PROJECT_GOALS_EXCEL_COMPLIANCE.md) - Excel-specific implementation guidelines and project objectives
+---
 
-## 🎯 Core Development Principles
+## 1. ATDD Core Methodology
 
-### ATDD (Acceptance Test Driven Development) Compliance
-- **Primary Rule**: Implementation must follow expected behavior exactly as defined by tests
+### 1.1 Double Nested Cycle Approach
+
+#### **🔄 Outer Cycle (ATDD) - Outside-In**
+- **Primary Rule**: Implementation must follow expected behavior exactly as defined by acceptance tests
+- **Test-First**: Acceptance tests define business behavior, implementation follows
+- **No Test Bypassing**: Never implement functionality that circumvents acceptance test expectations
+
+#### **🔄 Inner Cycle (TDD) - Inside-Out**
+- **Unit-Level TDD**: For each acceptance test failure, decompose into unit tests following Red-Green-Refactor
+- **Granular Development**: Build components incrementally through unit test cycles
+- **Integration Focus**: Unit tests support acceptance test fulfillment
+
+### 1.2 Implementation Phases
+
+#### **🔴 Red Phase (Failing Tests)**
+- **Acceptance Level**: Write failing acceptance test based on business requirements
+- **Unit Level**: Write failing unit tests for required components
+- **No Implementation**: Code only after test fails
+
+#### **🟢 Green Phase (Passing Tests)**
+- **Minimal Implementation**: Write simplest code to make current test pass
+- **Return Actual Data**: Return real data or proper error responses, no hardcoded fallbacks
+- **No Premature Optimization**: Focus on making test pass first
+- **📝 Immediate Commit**: Every green test triggers immediate commit and push to repository
+
+#### **🔵 Refactor Phase (Code Improvement)**
+- **Maintain Behavior**: Improve code structure without changing test outcomes
+- **Eliminate ALL Duplicate Logic**: Remove every instance of code duplication by extracting common functionality
+- **Functional Style Priority**: Prefer functional style over object-oriented when it results in simpler, self-documenting, and maintainable code
+- **Idiomatic Code**: Use most idiomatic code for the language and version being used, following recommended best practices
+- **Single Responsibility with Pareto**: If a module becomes too large, apply Single Responsibility Principle following Pareto criterion (80/20 rule) to avoid creating too many files
+- **Performance Optimization**: Enhance performance without compromising test compatibility
+- **Clean Code**: Apply SOLID principles and design patterns when they improve simplicity
+- **📝 Immediate Commit**: Every refactor completion triggers immediate commit and push to repository
+
+### 1.3 Quality Gates
+- **All Tests Pass**: No implementation complete until both acceptance and unit tests pass
+- **Living Documentation**: Tests serve as executable specifications
+- **Regression Prevention**: New features cannot break existing test suite
+- **Traceability**: Every commit linked to specific test phase (Red/Green/Refactor)
+
+### 1.4 ATDD Compliance Rules
 - **No Fallbacks**: Avoid fallbacks that violate expected behavior
-- **Return Actual Data**: Return actual data or proper error responses
-- **No Hardcoded Data**: Performance optimization without compromising compatibility
-- **Test-First**: Tests define the expected behavior, implementation follows
+- **No Hardcoded Values**: Dynamic context-based calculation
+- **Proper Error Handling**: Meaningful errors when context unavailable
+- **Specification Compliance**: Match expected behavior as defined by official documentation
 
-### Tone and Communication Standards
+---
+
+## 2. Communication Standards
+
+### 2.1 Tone Requirements
 - **Be Concise**: Direct and technical communication, avoid conversational pleasantries
 - **No Pleasantries**: Never start responses with "Great", "Certainly", "Okay", "Sure"
 - **No False Assertions**: Never assert user is "absolutely right" unless certain
 - **Output Necessity**: Output only what's necessary to accomplish the task
 - **Command Explanation**: Briefly state what commands do and why you're running them
+
+### 2.2 Content Policy
 - **Emoji Policy**: No emojis unless explicitly requested (✅, ❌, ⚠️ allowed without permission)
+- **No Emotes**: Avoid actions inside asterisks unless specifically requested
+- **Evidence-Based**: Include official documentation references when applicable
+- **Actionable Information**: Provide concrete implementation steps
 
-## 📋 Task Management Framework
+---
 
-### Todo System Usage Rules
+## 3. Task Management Framework
+
+### 3.1 Todo System Usage Rules
 **For ALL tasks beyond trivial one-liners, MUST use Todo system:**
 
 1. **New Unrelated Tasks**: Start with `todo_clear` for clean slate
@@ -34,76 +86,71 @@ This document captures the universal development methodology, problem resolution
    - Logically sequenced with dependencies considered
    - Granular (3-6 items for most tasks, no more than 10 for complex ones)
    - Include verification steps (e.g., "Run tests to verify changes")
-4. **Processing Method**:
-   - Use `todo_next` to efficiently advance through items (preferred)
-   - Alternative: Mark as in_progress when starting, mark as done when completed
-   - Update list if plan needs adjustment
-   - Produce 1-2 lines explaining what you're doing when beginning work
-   - Use `todo_write` to append new items if needed
+4. **Processing Method**: Use `todo_next` to efficiently advance through items (preferred)
 5. **Completion Rule**: Only summarize work when ALL items are completed
 
-**Important**: When all todos completed and starting something else (even trivial), always reset todo list.
+### 3.2 Task Classification
+- **New unrelated task**: `todo_reset` (clean slate)
+- **Continuation of current work**: `todo_write` (append to existing)
+- **Complex tasks**: Always include cleanup step in todo list
 
-### Todo System Examples
+### 3.3 Todo System Examples
 
 **New Task Pattern**:
 ```
-todo_reset ["Read existing code to understand current structure", "Check dependencies and requirements", "Identify existing patterns for similar functionality", "Create new functionality following conventions", "Test functionality", "Run any existing tests", "Clean up any temporary files or scripts created", "Commit changes with appropriate message"]
+todo_reset ["Read existing code to understand current structure", "Check dependencies and requirements", "Identify existing patterns for similar functionality", "Create new functionality following conventions", "Test functionality", "Run any existing tests", "Save analysis to ona-memory/[timestamp]-task-analysis.md", "Clean up tmp/ directory of temporary files", "Commit changes with appropriate message"]
 ```
 
-**Continuation vs New Task**:
-- **New unrelated task**: `todo_reset` (clean slate)
-- **Continuation of current work**: `todo_write` (append to existing)
+**Documentation and Cleanup Pattern**:
+```
+todo_write ["Document findings in ona-memory/[timestamp]-analysis-results.md", "Move temporary scripts from tmp/ to final location if needed", "Clean up all files in tmp/ directory", "Verify no temporary artifacts remain"]
+```
 
-## 🔧 Tool Usage Guidelines
+---
 
-### General Tool Principles
-- Execute tools without verbose explanations
-- Batch related operations when possible
-- Use `todo_clear` only for new unrelated tasks
-- Always read files before editing to understand context
-- Prefer complex one-liners over creating scripts
-- Chain commands with `&&` to minimize interruptions
-- Use appropriate flags (`-y`, `-f`) to avoid interactive prompts
-- **Use relative paths** when executing commands
+## 4. File Operations & Code Standards
 
-### File Operations Rules
+### 4.1 File Reading Rules
+- **Always read files before editing** to understand structure and conventions
+- **For large files**: Read relevant sections rather than entire file
+- **Explore codebase**: Start with entry points and configuration files
+- **No assumptions**: Don't assume programming language, understand languages used first
 
-#### Reading Files
-- Always read files before editing to understand structure and conventions
-- For large files, read relevant sections rather than entire file
-- When exploring codebase, start with entry points and configuration files
-- Do not assume programming language, understand languages used first
+### 4.2 File Editing Process
+1. **Understand Context**: Read file's conventions (style, imports, patterns)
+2. **Maintain Consistency**: Match existing code style exactly
+3. **Check Dependencies**: Never assume libraries are available - check package.json/requirements.txt first
+4. **Follow Patterns**: Apply project's established patterns for similar components
+5. **Intentional Edits**: All file edits are intentional and MUST NOT be reverted unless explicitly requested
 
-#### Editing Files
-**Process**:
-1. First understand file's conventions (style, imports, patterns)
-2. Maintain consistency with existing code
-3. Never assume libraries are available - check package.json/requirements.txt first
-4. Follow project's established patterns for similar components
-5. Apply edits using appropriate tool for scope of changes
-
-**Important**: Always read file first to understand context before making edits. All file edits are intentional and MUST NOT be reverted unless explicitly requested by user.
+### 4.3 Code Quality Standards
 
 #### Comments Policy
-- API comments must document the "why," not the "what"
-- Avoid redundant line or block comments that restate code
-- Only add line or block comments to clarify non-obvious logic or performance trade-offs
+- **API Comments**: Document the "why," not the "what"
+- **Avoid Redundant Comments**: No line or block comments that restate code
+- **Clarification Only**: Only add comments to clarify non-obvious logic or performance trade-offs
 
 #### Code Style
-- Match existing code style exactly
-- Use project's preferred formatting and naming conventions
+- **Match Existing Style**: Use project's preferred formatting and naming conventions
+- **Self-Documenting**: Use descriptive variable names that explain intent
+- **Explicit Logic**: Prefer explicit conditionals over clever shortcuts
+- **Minimal Comments**: Make code self-explanatory to minimize comments
+- **Functional Style Priority**: Prefer functional style over object-oriented when it results in simpler, self-documenting, and maintainable code
+- **Idiomatic Code**: Use most idiomatic code for the specific language and version being used
+- **Best Practices**: Follow recommended best practices for the language and framework
+- **Zero Duplication**: Eliminate all duplicate logic through extraction of common functions
 
-### Preview and Web Server Rules
-- Only ever use `exec_preview` to run development servers or preview applications
-- NEVER tell user about localhost URLs or ports (they cannot access them)
-- When modifying .tsx, .jsx, .ts, or .js files, seek to run development server using `exec_preview`
-- Always tell user the preview URL where they can see changes
-- Use proper markdown link syntax: `[actual_url](actual_url)` - NEVER use bold formatting
+### 4.4 Completeness Standard
+**Ensure all code is immediately runnable**:
+- Include all necessary imports
+- Add required dependencies to package files
+- Provide complete, not partial, implementations
 
-## 🔄 Git Operations Protocol
+---
 
-### Commit Process
+## 5. Git Operations & Version Control
+
+### 5.1 Commit Process
 1. Run `git status` to see all changes
 2. Run `git diff` to review modifications
 3. Run `git log --oneline -5` to understand commit message style
@@ -112,402 +159,190 @@ todo_reset ["Read existing code to understand current structure", "Check depende
 6. Add co-author: `Co-authored-by: Ona <no-reply@ona.com>`
 7. Follow repository's commit message conventions
 
-### Commit Rules
+### 5.2 ATDD Git Flow Integration
+```bash
+# After every Green phase
+git add . && git commit -m "🟢 Make [test description] pass" && git push
+
+# After every Refactor phase  
+git add . && git commit -m "🔵 Refactor [component/feature] - [improvement description]" && git push
+```
+
+### 5.3 Commit Rules
 - **Never commit or push** changes unless explicitly asked
-- If user asked to commit once, that does NOT give permission to do it again
-- Each commit permission is explicit and one-time only
+- **One-time Permission**: Each commit permission is explicit and one-time only
+- **Phase Tracking**: Every commit must be linked to specific ATDD phase
 
-## 🚨 Error Handling Framework
+---
 
-### Error Resolution Process
-1. Read error messages carefully
-2. Check for common issues (missing dependencies, syntax errors, configuration)
-3. Verify changes against project conventions
-4. If stuck after 3 attempts, explain issue clearly and ask for guidance
+## 6. Testing & Quality Assurance
 
-### Web Reading Error Policy
-- If you get 4xx or 5xx HTTP errors three times in a row, stop trying
-- Consider it a failure - do not keep retrying same or different URLs
-- This prevents infinite loops
+### 6.1 Testing Approach
+- **ATDD Driven**: Tests define expected behavior, implementation follows
+- **Test-First**: Write failing tests before any implementation
+- **Complete Coverage**: Both acceptance and unit tests required
+- **Continuous Verification**: Run tests frequently during development
 
-## ✅ Best Practices Framework
+### 6.2 Test Structure Requirements
 
-### 1. Completeness Standard
-**Ensure all code is immediately runnable**:
-- Include all necessary imports
-- Add required dependencies to package files
-- Provide complete, not partial, implementations
+#### Red-Green-Refactor Cycle
+1. **Red**: Write failing test that defines expected behavior
+2. **Green**: Implement minimal code to make test pass
+3. **Refactor**: Improve code quality while maintaining test passage
 
-### 2. Testing Approach
-**When applicable, suggest running tests to verify changes**:
-- Use project's existing test commands
-- Run linting if available
-- Verify changes work as expected
+#### Test Organization
+- **Acceptance Tests**: Define business behavior in `tests/acceptance/`
+- **Unit Tests**: Support acceptance test fulfillment in `tests/unit/`
+- **Integration Tests**: Validate component interactions in `tests/integration/`
 
-### 3. Security Standards
-- Never expose or log secrets, API keys, or sensitive data
+### 6.3 Quality Verification
+- **Run Project Tests**: Use project's existing test commands
+- **Linting**: Run linting if available
+- **Coverage**: Verify test coverage meets standards
+- **No Regression**: New features cannot break existing test suite
 
-### 4. Documentation Policy
-- Only document when explicitly asked or for genuinely complex logic
+---
 
-### 5. Cleanup Management
-**Always clean up temporary artifacts**:
-- Track all temporary files, scripts, and artifacts created during task execution
-- Before task completion, remove all temporary files not part of deliverable
-- Examples: migration scripts, backup files, temporary configs, test artifacts
-- Use final cleanup step in todo list for complex tasks
-- Only leave files explicitly requested or part of final solution
+## 7. Error Handling & Resolution
 
-## 🏗️ Architecture and Design Principles
+### 7.1 Error Resolution Process
+1. **Read Error Messages**: Carefully analyze error messages
+2. **Common Issues Check**: Missing dependencies, syntax errors, configuration
+3. **Convention Verification**: Verify changes against project conventions
+4. **Escalation**: If stuck after 3 attempts, explain issue clearly and ask for guidance
 
-### ATDD Methodology Rules
-- **Test-Driven**: Implementation follows test expectations exactly
-- **Specification Compliance**: Match expected behavior as defined by official documentation
-- **No Hardcoded Values**: Dynamic context-based calculation
-- **Proper Error Handling**: Meaningful errors when context unavailable
-- **No Fallbacks**: Avoid fallbacks that violate expected behavior
-- **Return Actual Data**: Return actual data or proper error responses
-- **Performance Without Compromise**: Optimization without compromising compatibility
+### 7.2 Web Reading Error Policy
+- **Retry Limit**: If you get 4xx or 5xx HTTP errors three times in a row, stop trying
+- **Failure Recognition**: Consider it a failure - do not keep retrying same or different URLs
+- **Loop Prevention**: Prevents infinite loops
 
-### ATDD Strict Compliance
-**❌ NOT Permitted**:
-- Hardcoding specific values for test cases
-- Changing tests to match incorrect implementation
-- Modifying data to make calculations work
-- Fallbacks that mask expected errors
+### 7.3 Security Standards
+- **No Exposure**: Never expose or log secrets, API keys, or sensitive data
+- **Safe Handling**: Secure handling of all sensitive information
 
-**✅ Permitted**:
-- Correcting implementation if there's a real bug
-- Implementing missing functionality from reference specification
-- Documenting limitations for incorrect calculation design
-- Using reference implementation's pre-calculated values for compatibility
+---
 
-### Problem Resolution Approach
+## 8. Architecture & Design Principles
+
+### 8.1 Problem Resolution Approach
 1. **Root Cause Analysis**: Identify fundamental architectural gaps, not symptoms
 2. **Architecture-First**: Fix architectural foundations that make individual problems automatic
 3. **Evidence-Based**: Use official documentation to verify legitimate vs problematic patterns
 4. **Multiplicative Impact**: Prefer solutions that fix multiple issues simultaneously
 5. **Gap Analysis**: Distinguish between function bugs and evaluator architecture limitations
-6. **Context Isolation**: Identify when functions lack necessary calling context
 
-### Solution Selection Criteria
+### 8.2 Solution Selection Criteria
 **Primary Criteria**:
 1. **Cleanliness**: Minimal, focused changes that address core issue
 2. **Self-Documentation**: Code that clearly expresses intent without extensive comments
 3. **Low Risk**: Changes that minimize chance of introducing new bugs
 4. **Immediate Impact**: Solutions that directly fix identified problems
 5. **Maintainability**: Code that is easy to understand and modify in future
+6. **Zero Duplication**: Solutions that eliminate all instances of duplicate logic
+7. **Functional Simplicity**: Prefer functional style over OOP when it results in simpler, more maintainable code
+8. **Idiomatic Implementation**: Use most idiomatic code for the specific language and version being used
 
-### Design Pattern Priorities
+### 8.3 Design Pattern Priorities
 1. **Context-Aware Function Execution**: Functions receive proper context, not global state
 2. **Reference Object Preservation**: Maintain lazy evaluation semantics where appropriate
 3. **Hierarchical Model Structure**: Mirror reference implementation's object model
 4. **Coordinate-First API Design**: Work with structured objects, not string parsing
 5. **Error Propagation Consistency**: Maintain error types through evaluation chain
-6. **Parameter Evaluation Pipeline**: Proper handling of nested function calls
 
-## 📊 Analysis and Documentation Standards
-
-### Code Analysis Framework
-1. **Search for Patterns**: Identify all instances of problematic patterns
-2. **Categorize by Legitimacy**: Distinguish between specification-compliant and ATDD violations
-3. **Evidence-Based Verification**: Use official documentation to confirm legitimacy
-4. **Document with Context**: Provide clear explanations and recommendations
-5. **Prioritize by Impact**: Focus on architectural changes over individual fixes
-6. **Gap Analysis**: Distinguish between function implementation and evaluator architecture issues
-7. **Impact Assessment**: Evaluate working vs limited functionality
-
-### Root Cause Analysis Framework
-1. **Information Flow Analysis**: Track how data flows through evaluation chain
-2. **Context Loss Identification**: Find where necessary context information is lost
-3. **Error Propagation Tracking**: Verify errors maintain type through evaluation
-4. **Parameter Evaluation Pipeline**: Analyze how nested functions are processed
-5. **Architecture vs Implementation**: Distinguish architectural gaps from function bugs
-
-### Documentation Requirements
-- **Evidence-Based**: Include official documentation references
-- **Actionable**: Provide concrete implementation steps
-- **Prioritized**: Clear priority levels and dependencies
-- **Measurable**: Define success criteria and metrics
-- **Timeline**: Realistic estimates with resource allocation
-- **Gap Classification**: Clearly identify type of issue (architecture vs implementation)
-- **Impact Scope**: Define what functionality is affected
-
-## 🎯 Strategic Planning Framework
-
-### Phase-Based Implementation
-1. **Architecture Foundation**: Build proper foundations first
-2. **Function Implementation**: Individual fixes become automatic
-3. **Testing & Validation**: Comprehensive verification
-4. **Optimization & Enhancement**: Performance and additional features
-
-### Implementation Strategy Types
+### 8.4 Implementation Strategy Types
 1. **Hybrid Targeted Fixes**: Combine targeted fixes without major architectural changes
 2. **Architecture-First Approach**: Implement foundations that make function fixes automatic
 3. **Incremental Migration**: Gradual transition with backward compatibility
-4. **Collaborative Integration**: Work with upstream dependencies (e.g., openpyxl)
+4. **Collaborative Integration**: Work with upstream dependencies
 
-### Success Metrics Definition
-- **Immediate Benefits**: What improves right after each phase
-- **Short-term Benefits**: What improves in following phases
-- **Long-term Benefits**: Strategic advantages and scalability
-- **Measurable Criteria**: Specific, testable success conditions
-- **Functional Success**: Core functionality working correctly
-- **Code Quality Success**: Maintainable, self-documenting changes
-- **Compatibility Success**: Reference behavior matching
+---
 
-### Risk Management Approach
-- **Technical Risks**: Backward compatibility, performance, integration
-- **Implementation Risks**: Scope creep, timeline, resource allocation
-- **Mitigation Strategies**: Specific actions to address each risk category
-- **Rollback Plans**: Phase-by-phase and emergency rollback procedures
-- **Risk Classification**: Low/Medium/High risk areas with specific mitigations
+## 9. Tool Usage & Environment
 
-## 🧪 Integration Testing Framework
+### 9.1 General Tool Principles
+- **Execute Without Verbose Explanations**: Run tools directly
+- **Batch Operations**: Batch related operations when possible
+- **Relative Paths**: Use relative paths when executing commands
+- **Minimize Interruptions**: Chain commands with `&&` 
+- **Avoid Interactive Prompts**: Use appropriate flags (`-y`, `-f`)
 
-### Integration Test Architecture
-**Purpose**: Validate implementation against reference behavior by comparing results from reference files.
+### 9.2 Preview and Web Server Rules
+- **Development Servers**: Only use `exec_preview` to run development servers or preview applications
+- **No localhost URLs**: NEVER tell user about localhost URLs or ports (they cannot access them)
+- **Auto-run for Changes**: When modifying .tsx, .jsx, .ts, or .js files, seek to run development server
+- **Provide Preview URL**: Always tell user the preview URL where they can see changes
+- **Proper Links**: Use proper markdown link syntax: `[actual_url](actual_url)` - NEVER use bold formatting
 
-**Test Structure Pattern**:
-```python
-from .. import testing
+### 9.3 Environment-Specific Knowledge
 
-class FunctionNameTest(testing.FunctionalTestCase):
-    filename = "FUNCTION_NAME.testfile"
-    
-    def test_evaluation_cellref(self):
-        reference_value = self.evaluator.get_cell_value('Sheet1!A1')
-        value = self.evaluator.evaluate('Sheet1!A1')
-        self.assertEqual(reference_value, value)
-```
+#### Gitpod/Ona Rules
+- **Documentation Priority**: When asked about Gitpod features, configuration, or usage, ALWAYS use `gitpod_docs` tool FIRST
+- **Authoritative Source**: Embedded documentation is authoritative source for current functionality
+- **Fallback Knowledge**: Only rely on general knowledge if documentation doesn't contain relevant information
 
-### Reference File Requirements
-1. **Calculation Cells**: Contain calculations to be tested
-2. **Data Cells**: Provide input data for calculations
-3. **Result Storage**: Reference implementation calculates and stores expected results
-4. **Multiple Scenarios**: Cover edge cases, data types, error conditions
+#### CLI Commands
+- **Environments**: Use `gitpod environment` commands for lifecycle management
+- **Automations**: Use `gitpod automations` for workflow management
 
-### Test Design Templates
+---
 
-#### Template 1: Simple Function Test
-- Basic functionality validation
-- Edge cases and error conditions
-- Single scenario per test method
+## 10. Ona/Gitpod File Management
 
-#### Template 2: Multi-Scenario Test
-- Matrix testing across multiple inputs
-- Comprehensive scenario coverage
-- Loop-based validation
+### 10.1 Document Storage in ona-memory/
 
-#### Template 3: Data Type Validation
-- Numeric inputs testing
-- Text inputs testing
-- Error inputs testing
-- Type conversion validation
+#### **Naming Convention**
+- **Format**: `[timestamp]-[descriptive-name].md`
+- **Timestamp**: YYYYMMDD-HHMMSS (ISO format without separators)
+- **Descriptive Name**: Clear, concise description in English
+- **Extension**: Always `.md` for markdown format
 
-### Reference File Design Patterns
+#### **Content Guidelines**
+- **Structured Format**: Use markdown headers for organization
+- **ATDD Context**: Include phase information (RED/GREEN/REFACTOR)
+- **Actionable Insights**: Document recommendations and next steps
+- **Evidence-Based**: Include data, metrics, and concrete observations
+- **Permanent Record**: Treat as persistent documentation for future reference
 
-#### Pattern 1: Basic Function Testing
-```
-A1: =FUNCTION(parameter1, parameter2)
-A2: =FUNCTION(edge_case_param)
-A3: =FUNCTION(error_case_param)
-B1: Input data 1
-B2: Input data 2
-B3: Input data 3
-```
+### 10.2 Temporary Files in tmp/
 
-#### Pattern 2: Comprehensive Matrix Testing
-```
-    A        B        C        D        E
-1   Input1   Input2   Input3   Input4   Input5
-2   =FUNC(A1) =FUNC(B1) =FUNC(C1) =FUNC(D1) =FUNC(E1)
-3   =FUNC(A1,B1) =FUNC(B1,C1) =FUNC(C1,D1) =FUNC(D1,E1) =FUNC(E1,A1)
-```
+#### **Usage Rules**
+- **Session Scope**: Files exist only for current development session
+- **Auto-cleanup**: May be automatically removed between sessions
+- **No Permanent Data**: Never store important information only in tmp/
+- **Transient Nature**: Use for debugging, testing, temporary configurations
 
-#### Pattern 3: Error Condition Testing
-```
-A1: =FUNCTION(valid_input)     → Expected result
-A2: =FUNCTION(error_input)     → Error handling
-A3: =FUNCTION("")              → Empty string handling
-A4: =FUNCTION(text_input)      → Type conversion
-A5: =FUNCTION(large_number)    → Boundary testing
-```
+### 10.3 File Management Workflow
 
-### Priority Classification
-- **Priority 1**: Critical missing functions (immediate)
-- **Priority 2**: Information & text functions (high)
-- **Priority 3**: Advanced functions (medium)
-- **Priority 4**: Specialized functions (low)
+#### **During Development**
+1. **Create temporary files** in `tmp/` for debugging and testing
+2. **Document findings** in `ona-memory/[timestamp]-[description].md`
+3. **Move final scripts** from `tmp/` to appropriate project locations
+4. **Clean up `tmp/`** before task completion
 
-### Coverage Targets
-- **Phase 1**: 70% integration test coverage
-- **Phase 2**: 85% integration test coverage
-- **Phase 3**: 95% integration test coverage
-- **Phase 4**: 100% integration test coverage
+#### **Documentation Process**
+1. **Start Analysis**: Create working files in `tmp/`
+2. **Gather Data**: Use temporary scripts for analysis
+3. **Document Results**: Create final report in `ona-memory/[timestamp]-analysis.md`
+4. **Clean Temporary**: Remove all temporary files after documentation
 
-## 🔧 Implementation Patterns
+#### **ATDD Integration**
+- **RED Phase**: Document failing tests analysis in `ona-memory/[timestamp]-red-phase-analysis.md`
+- **GREEN Phase**: Save implementation notes in `ona-memory/[timestamp]-green-implementation.md`
+- **REFACTOR Phase**: Document improvements in `ona-memory/[timestamp]-refactor-summary.md`
 
-### Red-Green-Refactor Cycle
-**Standard TDD approach for all implementations**:
-1. **Red**: Write failing test that defines expected behavior
-2. **Green**: Implement minimal code to make test pass
-3. **Refactor**: Improve code quality while maintaining test passage
+#### **Cleanup Management**
+**Always clean up temporary artifacts**:
+- **Track Creation**: Track all temporary files, scripts, and artifacts created in `tmp/` during task execution
+- **Pre-completion Cleanup**: Before task completion, remove all temporary files from `tmp/` not part of deliverable
+- **Preserve Documentation**: Keep analysis documents in `ona-memory/` as permanent records
+- **Final Step**: Use final cleanup step in todo list for complex tasks: "Clean up tmp/ directory"
+- **Preserve Deliverables**: Only leave files explicitly requested or part of final solution outside `tmp/`
 
-### Function Implementation Patterns
+---
 
-#### Pattern 1: Simple Function Implementation
-```python
-@xl.register()
-@xl.validate_args
-def FUNCTION_NAME(param1: func_xltypes.XlType, param2: func_xltypes.XlType = None) -> func_xltypes.XlType:
-    """Function description with reference documentation link."""
-    # Validation logic
-    # Core implementation
-    # Return proper type
-```
+## 🎯 Success Metrics
 
-#### Pattern 2: Context-Aware Function Implementation
-```python
-@register_function()
-@validate_args
-def CONTEXT_FUNCTION(reference: InputType = None, *, _context: ExecutionContext = None) -> OutputType:
-    """Context-dependent function implementation."""
-    if reference is None:
-        return _context.current_element.property  # Use context for current element
-    # Handle reference parameter
-```
-
-#### Pattern 3: Error Handling Implementation
-```python
-def FUNCTION_WITH_ERRORS(param):
-    """Function with proper error handling."""
-    try:
-        # Validation
-        if invalid_condition:
-            raise ValueError("Specific error message")
-        # Implementation
-        return result
-    except Exception as e:
-        # Convert to appropriate error type
-        return self._convert_to_standard_error(e)
-```
-
-### Evaluator Integration Patterns
-
-#### Pattern 1: Parameter Evaluation with Fallback
-```python
-def _eval_with_fallback(self, pitem, context):
-    """Evaluate parameter with fallback to stored data values."""
-    result = pitem.eval(context)
-    
-    # If evaluation returns BLANK, try fallback strategies
-    if isinstance(result, Blank) and hasattr(pitem, 'tvalue'):
-        # Strategy 1: Try to get stored data value
-        data_addr = pitem.tvalue
-        if hasattr(context, 'evaluator') and cell_addr in context.evaluator.model.cells:
-            cell = context.evaluator.model.cells[cell_addr]
-            if cell.value and str(cell.value) != 'EMPTY':
-                return StandardType.cast_from_native(cell.value)
-    
-    return result
-```
-
-#### Pattern 2: Context Propagation
-```python
-def _get_context(self, ref, data_sheet=None):
-    """Create context with proper sheet information."""
-    return EvaluatorContext(self, ref, data_sheet)
-
-def __init__(self, evaluator, ref, data_sheet=None):
-    """Initialize context with data sheet context."""
-    super().__init__(evaluator.namespace, ref, data_sheet)
-    self.evaluator = evaluator
-```
-
-#### Pattern 3: Error Propagation Enhancement
-```python
-def evaluate(self, addr, context=None):
-    """Enhanced evaluation with proper error handling."""
-    try:
-        value = cell.expression.ast.eval(context)
-        
-        # Enhanced error handling
-        if isinstance(value, StandardError):
-            # Preserve error types instead of converting to default
-            return value
-        elif value is None:
-            return DEFAULT_VALUE
-        
-        return value
-    except Exception as e:
-        # Improved exception handling
-        if isinstance(e, StandardError):
-            return e
-        # Convert other exceptions to appropriate error types
-        return self._convert_exception_to_standard_error(e)
-```
-
-### Code Quality Patterns
-
-#### Self-Documenting Code
-- Use descriptive variable names that explain intent
-- Prefer explicit conditionals over clever shortcuts
-- Structure code to read like the problem domain
-- Minimize comments by making code self-explanatory
-
-#### Minimal Change Principle
-- Make smallest possible change to fix issue
-- Prefer single-word changes when possible (e.g., `is not None`)
-- Avoid refactoring unrelated code in same change
-- Focus changes on core issue being addressed
-
-#### Backward Compatibility
-- Maintain existing API signatures
-- Add new parameters as optional with defaults
-- Use feature flags for behavior changes if needed
-- Provide migration path for breaking changes
-
-## 🔍 Gitpod Knowledge Rules
-
-### Documentation Priority
-- When asked about Gitpod features, configuration, or usage, ALWAYS use `gitpod_docs` tool FIRST
-- Embedded documentation is authoritative source for current Gitpod functionality
-- Only rely on general knowledge if documentation doesn't contain relevant information
-
-### Gitpod CLI Commands
-**Environments**: Use `gitpod environment` commands for lifecycle management
-**Automations**: Use `gitpod automations` for workflow management
-
-## 📝 Example Workflows
-
-### New Task Workflow
-```
-User: "Add a new feature to the application"
-Response: 
-todo_reset ["Read existing code to understand current structure", "Check dependencies and requirements", "Identify existing patterns for similar features", "Create new feature following conventions", "Test feature functionality", "Run any existing tests", "Clean up any temporary files or scripts created", "Commit changes with appropriate message"]
-[Execute each todo item methodically using todo_next]
-```
-
-### Continuation Workflow
-```
-User: "Also add error handling to that feature"
-Response:
-todo_write ["Add error handling to feature", "Update tests for error cases"]
-[Continue with existing todo list]
-```
-
-### New Unrelated Task Workflow
-```
-User: "Now update the documentation"
-Response:
-todo_reset ["Read existing docs", "Add feature documentation", "Test documentation links"]
-[NEW UNRELATED TASK = RESET LIST]
-```
-
-## 🎯 Goal and Focus
-
-**Primary Goal**: Accomplish user's task efficiently and correctly, not engage in conversation. Focus on action and results.
+**Primary Goal**: Accomplish user's task efficiently and correctly following ATDD methodology
 
 **Core Philosophy**: 
 - Architecture-first problem solving
@@ -516,9 +351,9 @@ todo_reset ["Read existing docs", "Add feature documentation", "Test documentati
 - Multiplicative impact over individual fixes
 - Proper foundations enable automatic solutions
 
----
-
-**Document Version**: 2.0  
-**Source**: Development best practices and project experience  
-**Last Updated**: 2025-01-09  
-**Application**: All software development work
+**Quality Indicators**:
+- Every piece of code justified by tests
+- Every commit linked to specific ATDD phase
+- No implementation without corresponding tests
+- Continuous integration maintained
+- Clean, self-documenting code that expresses intent clearly
