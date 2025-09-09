@@ -9,15 +9,15 @@ from .. import testing
 from xlcalculator.xlfunctions import xlerrors
 from xlcalculator.xlfunctions.func_xltypes import Array, Number, Text, Boolean
 
-class IndirectFundamentalsTest(testing.FunctionalTestCase):
+class IndirectStaticReferencesTest(testing.FunctionalTestCase):
     """
     INDIRECT integration tests.
     
     Tests: 4 cases across 1 levels
-    Category: indirect_fundamentals
+    Category: indirect_static_references
     Source: DYNAMIC_RANGES_DESIGN.md
     """
-    filename = "indirect_fundamentals.xlsx"
+    filename = "indirect_static_references.xlsx"
 
     def test_2g(self):
         """INDIRECT - Casos Fundamentales: Referencias directas"""

@@ -9,15 +9,15 @@ from .. import testing
 from xlcalculator.xlfunctions import xlerrors
 from xlcalculator.xlfunctions.func_xltypes import Array, Number, Text, Boolean
 
-class FunctionsWithAggregationTest(testing.FunctionalTestCase):
+class IndexOffsetAggregationTest(testing.FunctionalTestCase):
     """
     Funciones con Agregación integration tests.
     
     Tests: 4 cases across 1 levels
-    Category: functions_with_aggregation
+    Category: index_offset_aggregation
     Source: DYNAMIC_RANGES_DESIGN.md
     """
-    filename = "functions_with_aggregation.xlsx"
+    filename = "index_offset_aggregation.xlsx"
 
     def test_4o(self):
         """Funciones con Agregación: Uso con funciones de agregado"""

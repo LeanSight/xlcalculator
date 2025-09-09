@@ -9,15 +9,15 @@ from .. import testing
 from xlcalculator.xlfunctions import xlerrors
 from xlcalculator.xlfunctions.func_xltypes import Array, Number, Text, Boolean
 
-class DynamicArraysTest(testing.FunctionalTestCase):
+class IndexOffsetArraysTest(testing.FunctionalTestCase):
     """
     Arrays Dinámicos integration tests.
     
     Tests: 2 cases across 1 levels
-    Category: dynamic_arrays
+    Category: index_offset_arrays
     Source: DYNAMIC_RANGES_DESIGN.md
     """
-    filename = "dynamic_arrays.xlsx"
+    filename = "index_offset_arrays.xlsx"
 
     def test_5r(self):
         """Arrays Dinámicos: Comportamiento con arrays dinámicos"""

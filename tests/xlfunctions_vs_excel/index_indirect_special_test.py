@@ -9,15 +9,15 @@ from .. import testing
 from xlcalculator.xlfunctions import xlerrors
 from xlcalculator.xlfunctions.func_xltypes import Array, Number, Text, Boolean
 
-class SpecialReferencesTest(testing.FunctionalTestCase):
+class IndexIndirectSpecialTest(testing.FunctionalTestCase):
     """
     Referencias Especiales integration tests.
     
     Tests: 3 cases across 1 levels
-    Category: special_references
+    Category: index_indirect_special
     Source: DYNAMIC_RANGES_DESIGN.md
     """
-    filename = "special_references.xlsx"
+    filename = "index_indirect_special.xlsx"
 
     def test_5q(self):
         """Referencias Especiales: Referencias especiales y complejas"""

@@ -9,15 +9,15 @@ from .. import testing
 from xlcalculator.xlfunctions import xlerrors
 from xlcalculator.xlfunctions.func_xltypes import Array, Number, Text, Boolean
 
-class ReferenceFormCasesTest(testing.FunctionalTestCase):
+class IndexMultipleAreasTest(testing.FunctionalTestCase):
     """
     Forma de Referencia vs Array integration tests.
     
     Tests: 2 cases across 1 levels
-    Category: reference_form_cases
+    Category: index_multiple_areas
     Source: DYNAMIC_RANGES_DESIGN.md
     """
-    filename = "reference_form_cases.xlsx"
+    filename = "index_multiple_areas.xlsx"
 
     def test_5s(self):
         """Forma de Referencia vs Array: Casos edge de formas de referencia"""

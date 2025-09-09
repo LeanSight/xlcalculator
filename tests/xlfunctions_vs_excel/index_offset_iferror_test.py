@@ -9,15 +9,15 @@ from .. import testing
 from xlcalculator.xlfunctions import xlerrors
 from xlcalculator.xlfunctions.func_xltypes import Array, Number, Text, Boolean
 
-class ErrorHandlingTest(testing.FunctionalTestCase):
+class IndexOffsetIferrorTest(testing.FunctionalTestCase):
     """
     Manejo de Errores integration tests.
     
     Tests: 3 cases across 1 levels
-    Category: error_handling
+    Category: index_offset_iferror
     Source: DYNAMIC_RANGES_DESIGN.md
     """
-    filename = "error_handling.xlsx"
+    filename = "index_offset_iferror.xlsx"
 
     def test_4p(self):
         """Manejo de Errores: Manejo de errores con IFERROR/ISERROR"""

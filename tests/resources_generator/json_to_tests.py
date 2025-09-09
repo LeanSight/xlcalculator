@@ -142,7 +142,7 @@ def get_category_class_name(category: str) -> str:
 
 def get_category_test_filename(category: str) -> str:
     """Generate test filename from category."""
-    return f"test_{category}.py"
+    return f"{category}_test.py"
 
 
 def get_category_excel_filename(category: str) -> str:

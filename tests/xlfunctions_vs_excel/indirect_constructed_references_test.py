@@ -9,15 +9,15 @@ from .. import testing
 from xlcalculator.xlfunctions import xlerrors
 from xlcalculator.xlfunctions.func_xltypes import Array, Number, Text, Boolean
 
-class IndirectDynamicTest(testing.FunctionalTestCase):
+class IndirectConstructedReferencesTest(testing.FunctionalTestCase):
     """
     INDIRECT integration tests.
     
     Tests: 4 cases across 1 levels
-    Category: indirect_dynamic
+    Category: indirect_constructed_references
     Source: DYNAMIC_RANGES_DESIGN.md
     """
-    filename = "indirect_dynamic.xlsx"
+    filename = "indirect_constructed_references.xlsx"
 
     def test_2h(self):
         """INDIRECT - Referencias Dinámicas: Referencias construidas"""

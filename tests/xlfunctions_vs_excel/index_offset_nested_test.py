@@ -9,15 +9,15 @@ from .. import testing
 from xlcalculator.xlfunctions import xlerrors
 from xlcalculator.xlfunctions.func_xltypes import Array, Number, Text, Boolean
 
-class ComplexCombinationsTest(testing.FunctionalTestCase):
+class IndexOffsetNestedTest(testing.FunctionalTestCase):
     """
     Combinaciones Complejas integration tests.
     
     Tests: 4 cases across 1 levels
-    Category: complex_combinations
+    Category: index_offset_nested
     Source: DYNAMIC_RANGES_DESIGN.md
     """
-    filename = "complex_combinations.xlsx"
+    filename = "index_offset_nested.xlsx"
 
     def test_3n(self):
         """Combinaciones Complejas: Funciones anidadas complejas"""

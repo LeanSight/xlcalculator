@@ -319,7 +319,7 @@
       "title": "INDIRECT - Casos Fundamentales",
       "description": "Referencias directas",
       "cell_range": "G1:G4",
-      "category": "indirect_fundamentals",
+      "category": "indirect_static_references",
       "test_cases": [
         {
           "cell": "G1",
@@ -356,7 +356,7 @@
       "title": "INDIRECT - Referencias Dinámicas",
       "description": "Referencias construidas",
       "cell_range": "H1:H4",
-      "category": "indirect_dynamic",
+      "category": "indirect_constructed_references",
       "test_cases": [
         {
           "cell": "H1",
@@ -578,7 +578,7 @@
       "title": "Combinaciones Complejas",
       "description": "Funciones anidadas complejas",
       "cell_range": "N1:N4",
-      "category": "complex_combinations",
+      "category": "index_offset_nested",
       "test_cases": [
         {
           "cell": "N1",
@@ -615,7 +615,7 @@
       "title": "Funciones con Agregación",
       "description": "Uso con funciones de agregado",
       "cell_range": "O1:O4",
-      "category": "functions_with_aggregation",
+      "category": "index_offset_aggregation",
       "test_cases": [
         {
           "cell": "O1",
@@ -652,7 +652,7 @@
       "title": "Manejo de Errores",
       "description": "Manejo de errores con IFERROR/ISERROR",
       "cell_range": "P1:P3",
-      "category": "error_handling",
+      "category": "index_offset_iferror",
       "test_cases": [
         {
           "cell": "P1",
@@ -682,7 +682,7 @@
       "title": "Referencias Especiales",
       "description": "Referencias especiales y complejas",
       "cell_range": "Q1:Q3",
-      "category": "special_references",
+      "category": "index_indirect_special",
       "test_cases": [
         {
           "cell": "Q1",
@@ -712,7 +712,7 @@
       "title": "Arrays Dinámicos",
       "description": "Comportamiento con arrays dinámicos",
       "cell_range": "R1:R2",
-      "category": "dynamic_arrays",
+      "category": "index_offset_arrays",
       "test_cases": [
         {
           "cell": "R1",
@@ -735,7 +735,7 @@
       "title": "Forma de Referencia vs Array",
       "description": "Casos edge de formas de referencia",
       "cell_range": "S1:S2",
-      "category": "reference_form_cases",
+      "category": "index_multiple_areas",
       "test_cases": [
         {
           "cell": "S1",
