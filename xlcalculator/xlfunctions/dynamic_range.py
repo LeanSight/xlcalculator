@@ -806,9 +806,10 @@ def OFFSET(reference, rows, cols, height=None, width=None, *, _context=None):
     
     # Parse the starting reference using our reference objects
     try:
-        if isinstance(reference, str):
+        if isinstance(reference, (str, func_xltypes.Text)):
             # String reference like "Data!A1"
-            start_ref = CellReference.parse(reference)
+            ref_string = str(reference)  # Convert Text to string
+            start_ref = CellReference.parse(ref_string)
         else:
             # Convert other types to string and parse
             ref_string = str(reference)
@@ -886,11 +887,8 @@ def INDIRECT(
     if isinstance(ref_text, xlerrors.ExcelError):
         return ref_text
     
-    # Convert to string
-    if not isinstance(ref_text, str):
-        ref_string = str(ref_text)
-    else:
-        ref_string = ref_text
+    # Convert to string (handle func_xltypes.Text)
+    ref_string = str(ref_text)
     
     # Check A1 style parameter (R1C1 not supported yet)
     if not a1:
@@ -953,6 +951,7 @@ def ROW(reference: func_xltypes.XlAnything = None, *, _context=None) -> func_xlt
     """
     from ..reference_objects import CellReference, RangeReference
     
+    
     if reference is None:
         # Return row number of current cell - use context injection
         if _context is not None:
@@ -963,11 +962,13 @@ def ROW(reference: func_xltypes.XlAnything = None, *, _context=None) -> func_xlt
             raise xlerrors.ValueExcelError("ROW() without reference requires current cell context")
 
     # Handle string references (this is the key fix for ROW("A1"))
-    if isinstance(reference, str):
+    # Note: @xl.validate_args converts strings to func_xltypes.Text
+    if isinstance(reference, (str, func_xltypes.Text)):
+        ref_string = str(reference)  # Convert Text to string
         try:
-            if ':' in reference:
+            if ':' in ref_string:
                 # Range reference like "A1:A3"
-                range_ref = RangeReference.parse(reference)
+                range_ref = RangeReference.parse(ref_string)
                 start_row = range_ref.start_cell.row
                 end_row = range_ref.end_cell.row
                 # Return array of row numbers
@@ -975,7 +976,7 @@ def ROW(reference: func_xltypes.XlAnything = None, *, _context=None) -> func_xlt
                 return func_xltypes.Array(row_numbers)
             else:
                 # Single cell reference like "A1"
-                cell_ref = CellReference.parse(reference)
+                cell_ref = CellReference.parse(ref_string)
                 return cell_ref.row
         except Exception as e:
             # Invalid reference format
@@ -1024,12 +1025,14 @@ def COLUMN(reference: func_xltypes.XlAnything = None, *, _context=None) -> func_
         return reference
     
     # Handle string references (this is the key fix for COLUMN("A1"))
-    if isinstance(reference, str):
+    # Note: @xl.validate_args converts strings to func_xltypes.Text
+    if isinstance(reference, (str, func_xltypes.Text)):
         from ..reference_objects import CellReference, RangeReference
+        ref_string = str(reference)  # Convert Text to string
         try:
-            if ':' in reference:
+            if ':' in ref_string:
                 # Range reference like "A1:C1"
-                range_ref = RangeReference.parse(reference)
+                range_ref = RangeReference.parse(ref_string)
                 start_col = range_ref.start_cell.column
                 end_col = range_ref.end_cell.column
                 # Return array of column numbers
@@ -1037,7 +1040,7 @@ def COLUMN(reference: func_xltypes.XlAnything = None, *, _context=None) -> func_
                 return func_xltypes.Array(col_numbers)
             else:
                 # Single cell reference like "A1"
-                cell_ref = CellReference.parse(reference)
+                cell_ref = CellReference.parse(ref_string)
                 return cell_ref.column
         except Exception as e:
             # Invalid reference format

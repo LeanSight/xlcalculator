@@ -5,7 +5,7 @@ These tests validate FAITHFUL Excel behavior of INDEX, OFFSET, and INDIRECT func
 Generated from JSON test configuration.
 """
 
-from .. import testing
+from tests import testing
 from xlcalculator.xlfunctions import xlerrors
 from xlcalculator.xlfunctions.func_xltypes import Array, Number, Text, Boolean
 
