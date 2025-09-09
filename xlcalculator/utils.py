@@ -7,6 +7,11 @@ from openpyxl.utils.cell import range_boundaries, get_column_letter
 MAX_COL = 18278
 MAX_ROW = 1048576
 
+# Smart range resolution defaults - prevent full column/row expansion
+DEFAULT_MAX_DATA_ROW = 1000    # Reasonable default for most data
+DEFAULT_MAX_DATA_COL = 100     # Reasonable default for most data
+SMART_RANGE_ENABLED = True     # Feature flag for smart range resolution
+
 
 def resolve_sheet(sheet_str):
     sheet_str = sheet_str.strip()

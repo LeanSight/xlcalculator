@@ -271,8 +271,9 @@ class ModelCompiler:
                             self.model.cells[cell_address]
 
             else:
-                self.model.defined_names[name] = xltypes.XLRange(
-                    cell_address, name=name)
+                from .lazy_loading import create_excel_compliant_lazy_range
+                self.model.defined_names[name] = create_excel_compliant_lazy_range(
+                    cell_address, self.model, name=name)
                 self.model.ranges[cell_address] = \
                     self.model.defined_names[name]
 
@@ -310,18 +311,32 @@ class ModelCompiler:
                 raise ValueError(message)
 
     def build_ranges(self, default_sheet=None):
+        from .lazy_loading import create_excel_compliant_lazy_range, is_full_range
+        
         for formula in self.model.formulae:
             associated_cells = set()
             for range in self.model.formulae[formula].terms:
                 if ":" in range:
                     if "!" not in range:
                         range = "{}!{}".format(default_sheet, range)
-                    self.model.ranges[range] = xltypes.XLRange(range, range)
-                    associated_cells.update([
-                        cell
-                        for row in self.model.ranges[range].cells
-                            for cell in row  # noqa: E131
-                    ])
+                    
+                    # Use Excel-compliant lazy loading for full ranges
+                    if is_full_range(range):
+                        logging.info(f"Using Excel-compliant lazy loading for full range: {range}")
+                        self.model.ranges[range] = create_excel_compliant_lazy_range(range, self.model, range)
+                        # For lazy ranges, add actual cells based on Excel data
+                        lazy_range = self.model.ranges[range]
+                        for row in lazy_range.cells:
+                            for cell in row:
+                                associated_cells.add(cell)
+                    else:
+                        # Use standard XLRange for normal ranges
+                        self.model.ranges[range] = xltypes.XLRange(range, range)
+                        associated_cells.update([
+                            cell
+                            for row in self.model.ranges[range].cells
+                                for cell in row  # noqa: E131
+                        ])
                 else:
                     associated_cells.add(range)
 

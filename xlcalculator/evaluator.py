@@ -39,6 +39,7 @@ class Evaluator:
         self.namespace = namespace \
             if namespace is not None else xl.FUNCTIONS.copy()
         self.cache_count = 0
+        self._lazy_manager = None
 
     def _get_context(self, ref, formula_sheet=None):
         return EvaluatorContext(self, ref, formula_sheet)
@@ -161,3 +162,26 @@ class Evaluator:
             values.append(row_values)
         
         return values
+    
+    def enable_lazy_loading(self):
+        """Enable lazy loading for this evaluator."""
+        from .lazy_loading import patch_evaluator_with_lazy_loading
+        self._lazy_manager = patch_evaluator_with_lazy_loading(self)
+        return self._lazy_manager
+
+
+def create_evaluator_with_lazy_loading(excel_file_path, ignore_sheets=[], ignore_hidden=False):
+    """Factory function to create an evaluator with Excel-compliant lazy loading enabled."""
+    from .model import ModelCompiler
+    
+    compiler = ModelCompiler()
+    model = compiler.read_and_parse_archive(
+        excel_file_path, 
+        ignore_sheets=ignore_sheets, 
+        ignore_hidden=ignore_hidden
+    )
+    
+    evaluator = Evaluator(model)
+    evaluator.enable_lazy_loading()
+    
+    return evaluator
