@@ -13,9 +13,15 @@ This directory contains strategic documentation for xlcalculator development and
 ### Architecture
 - **[Current Architecture Analysis](ARCHITECTURE_ANALYSIS.md)** - Analysis of current xlcalculator architecture and identified gaps
 - **[Reference System Design](REFERENCE_SYSTEM_DESIGN.md)** - Design for Excel-compatible reference objects and context system
+- **[Context System Architecture](CONTEXT_SYSTEM_ARCHITECTURE.md)** - Technical architecture and design of the optimized context injection system
 
 ### Implementation Guides
 - **[Function Implementation Guide](FUNCTION_IMPLEMENTATION_GUIDE.md)** - Outside-In ATDD methodology for implementing Excel functions
+- **[Context Injection System Guide](CONTEXT_INJECTION_GUIDE.md)** - Complete guide to the optimized context injection system for Excel functions
+
+### Context System Documentation
+- **[Context Optimization Benchmarks](CONTEXT_OPTIMIZATION_BENCHMARKS.md)** - Performance benchmark results for context injection optimizations
+- **[Context Code Cleanup](CONTEXT_CODE_CLEANUP.md)** - Summary of code cleanup and maintainability improvements
 
 
 ## 🎯 Current Focus

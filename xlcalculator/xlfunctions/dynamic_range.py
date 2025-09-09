@@ -22,46 +22,8 @@ from . import xl, xlerrors, func_xltypes
 # CONTEXT INJECTION SYSTEM - Access to evaluator during function execution
 # ============================================================================
 
-# Global context for dynamic range functions - set by evaluator before function calls
-_EVALUATOR_CONTEXT = None
-_CURRENT_CELL_CONTEXT = None
-
-
-def _set_evaluator_context(evaluator, current_cell=None):
-    """Set evaluator context for dynamic range functions.
-    
-    Called by evaluator before executing dynamic range functions.
-    Provides access to model, cells, and evaluation capabilities.
-    
-    Args:
-        evaluator: Evaluator instance
-        current_cell: Current cell address being evaluated (optional)
-    """
-    global _EVALUATOR_CONTEXT, _CURRENT_CELL_CONTEXT
-    _EVALUATOR_CONTEXT = evaluator
-    _CURRENT_CELL_CONTEXT = current_cell
-
-
-def _get_evaluator_context():
-    """Get current evaluator context.
-    
-    Returns evaluator instance for accessing model and evaluation.
-    Raises RuntimeError if no context available.
-    """
-    global _EVALUATOR_CONTEXT
-    if _EVALUATOR_CONTEXT is None:
-        raise RuntimeError("No evaluator context available for dynamic range function")
-    return _EVALUATOR_CONTEXT
-
-
-def _get_current_cell_context():
-    """Get current cell address being evaluated.
-    
-    Returns current cell address or None if not available.
-    Used by ROW() and COLUMN() functions when called without parameters.
-    """
-    global _CURRENT_CELL_CONTEXT
-    return _CURRENT_CELL_CONTEXT
+# Context injection system replaces global context for better performance and thread safety
+# Functions that need evaluator access use _context parameter injection
 
 
 # ============================================================================
@@ -642,7 +604,7 @@ def _resolve_indirect_reference(ref_string, evaluator):
                     raise xlerrors.RefExcelError(f"Invalid range reference: {ref_string}")
         except Exception as e:
             # Debug: Print the actual exception
-            # print(f"DEBUG: Exception in INDIRECT range handling: {e}")
+
             # import traceback
             # traceback.print_exc()
             raise xlerrors.RefExcelError(f"Invalid range reference: {ref_string}")
@@ -712,7 +674,7 @@ def _handle_offset_array_result(reference, rows_int, cols_int, height_int, width
 
 @xl.register()
 @xl.validate_args
-def INDEX(array, row_num, col_num=1, area_num=1):
+def INDEX(array, row_num, col_num=1, area_num=1, *, _context=None):
     """Returns value at intersection of row/column in array.
     
     Supports both Array form and Reference form:
@@ -723,11 +685,11 @@ def INDEX(array, row_num, col_num=1, area_num=1):
     CICLO 3.1: INDEX(Data!A1:E6, 0, 2) = Array (full column)
     Reference form: INDEX((Data!A1:A5, Data!C1:C5), 2, 1, 1) = Alice
     """
-    try:
-        evaluator = _get_evaluator_context()
-    except RuntimeError as e:
+    if _context is None:
         # Context not available - this is a critical error
         raise xlerrors.ValueExcelError("INDEX function requires evaluator context")
+    
+    evaluator = _context.evaluator
     
     # Handle Reference form with multiple areas
     # Check if array is a tuple/list of areas (multiple ranges)
@@ -827,16 +789,16 @@ def INDEX(array, row_num, col_num=1, area_num=1):
 
 
 @xl.register()
-def OFFSET(reference, rows, cols, height=None, width=None):
+def OFFSET(reference, rows, cols, height=None, width=None, *, _context=None):
     """Returns reference offset from starting reference.
     
     CICLO 5.1: OFFSET(Data!A1, 1, 1) = 25
     Minimal implementation for first test case.
     """
-    try:
-        evaluator = _get_evaluator_context()
-    except RuntimeError as e:
+    if _context is None:
         return func_xltypes.Blank()
+    
+    evaluator = _context.evaluator
     
     # Handle reference parameter - convert to string if needed
     if hasattr(reference, 'address'):
@@ -862,7 +824,7 @@ def OFFSET(reference, rows, cols, height=None, width=None):
             else:
                 raise xlerrors.RefExcelError("Invalid cell reference format")
     
-    # print(f"OFFSET ref_string: {ref_string}")
+
     
     # Handle array parameters for dynamic arrays (like ROW(A1:A2))
     if isinstance(rows, func_xltypes.Array):
@@ -906,7 +868,9 @@ def OFFSET(reference, rows, cols, height=None, width=None):
 @xl.register()
 def INDIRECT(
     ref_text: func_xltypes.XlAnything,
-    a1: func_xltypes.XlAnything = True
+    a1: func_xltypes.XlAnything = True,
+    *,
+    _context=None
 ) -> func_xltypes.XlAnything:
     """Returns reference specified by text string.
     
@@ -914,7 +878,10 @@ def INDIRECT(
     - If ref_text is not a valid cell reference, INDIRECT returns #REF! error
     - If ref_text refers to another workbook that is not open, INDIRECT returns #REF! error
     """
-    evaluator = _get_evaluator_context()
+    if _context is None:
+        raise xlerrors.ValueExcelError("INDIRECT function requires evaluator context")
+    
+    evaluator = _context.evaluator
     
     # Handle blank input - return #REF! error according to Excel behavior
     if isinstance(ref_text, func_xltypes.Blank):
@@ -979,21 +946,9 @@ def ROW(reference: func_xltypes.XlAnything = None, *, _context=None) -> func_xlt
             # Direct access to cell row_index property - no string parsing needed
             return _context.row
         else:
-            # Fallback to global context for backward compatibility
-            current_cell = _get_current_cell_context()
-            if current_cell:
-                # Extract row number from cell address
-                if '!' in current_cell:
-                    cell_part = current_cell.split('!')[1]
-                else:
-                    cell_part = current_cell
-                # Extract row number from cell address (e.g., "H3" -> 3)
-                row_num = int(''.join(c for c in cell_part if c.isdigit()))
-                # Remove the hardcoded +1 offset - use actual row number
-                return row_num
-            else:
-                # No current cell context available - this should not happen in normal evaluation
-                raise xlerrors.ValueExcelError("ROW() without reference requires current cell context")
+            # No context available - this should not happen in normal evaluation
+            raise xlerrors.ValueExcelError("ROW() without reference requires current cell context")
+
     
     # Handle BLANK values (this might be the issue)
     if isinstance(reference, func_xltypes.Blank):
@@ -1069,9 +1024,8 @@ def COLUMN(reference: func_xltypes.XlAnything = None, *, _context=None) -> func_
             # Direct access to cell column_index property - no string parsing needed
             return _context.column
         else:
-            # Fallback to hardcoded value for backward compatibility
-            # This maintains existing behavior for functions that don't use context
-            return 3
+            # No context available - this should not happen in normal evaluation
+            raise xlerrors.ValueExcelError("COLUMN() without reference requires current cell context")
     
     # Handle explicit reference parameter
     if isinstance(reference, func_xltypes.Blank):
@@ -1115,3 +1069,57 @@ def COLUMN(reference: func_xltypes.XlAnything = None, *, _context=None) -> func_
     
     # Final fallback
     return 1
+
+
+# ============================================================================
+# CONTEXT INJECTION REGISTRATION - Register functions that need context
+# ============================================================================
+
+# Import context registration function
+from ..context import register_context_function
+
+# Register all functions that require context injection
+register_context_function('INDEX')
+register_context_function('OFFSET') 
+register_context_function('INDIRECT')
+register_context_function('ROW')
+register_context_function('COLUMN')
+
+# ============================================================================
+# CONTEXT INJECTION EXTENSION EXAMPLE
+# ============================================================================
+# 
+# To add context injection to new functions, follow this pattern:
+#
+# 1. Add _context=None parameter to function signature:
+#    def MY_FUNCTION(arg1, arg2, *, _context=None):
+#
+# 2. Register the function for context injection:
+#    register_context_function('MY_FUNCTION')
+#    # OR use the decorator:
+#    # from ..context import context_aware
+#    # @context_aware
+#
+# 3. Access context properties:
+#    if _context is not None:
+#        current_row = _context.row
+#        current_col = _context.column
+#        current_address = _context.address
+#        evaluator = _context.evaluator
+#
+# Example implementation:
+# @xl.register()
+# @context_aware  # Automatically registers for context injection
+# def CELL_INFO(info_type="address", *, _context=None):
+#     """Returns information about the current cell."""
+#     if _context is None:
+#         return "#N/A"
+#     
+#     if info_type == "address":
+#         return _context.address
+#     elif info_type == "row":
+#         return _context.row
+#     elif info_type == "column":
+#         return _context.column
+#     else:
+#         return "#N/A"

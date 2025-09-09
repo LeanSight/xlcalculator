@@ -1,4 +1,4 @@
-# Excel File Generation Requirements
+-# Excel File Generation Requirements
 # 
 # These dependencies are needed for generating Excel files with real Excel calculations
 # using the xlwings-based generators in this directory.

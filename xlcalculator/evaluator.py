@@ -85,9 +85,7 @@ class Evaluator:
         formula_sheet = cell.formula.sheet_name if cell.formula else None
         context = context if context is not None else self._get_context(addr, formula_sheet)
         
-        # Set evaluator context for dynamic range functions
-        from xlcalculator.xlfunctions.dynamic_range import _set_evaluator_context
-        _set_evaluator_context(self, addr)
+        # Context injection now handles evaluator access for dynamic range functions
         
         try:
             value = cell.formula.ast.eval(context)
@@ -162,6 +160,11 @@ class Evaluator:
             values.append(row_values)
         
         return values
+    
+    def clear_context_cache(self):
+        """Clear context cache to free memory after evaluation cycles."""
+        from .context import clear_context_cache
+        clear_context_cache()
     
     def enable_lazy_loading(self):
         """Enable lazy loading for this evaluator."""
