@@ -5,8 +5,11 @@ This directory contains strategic documentation for xlcalculator development and
 ## 📋 Documents
 
 ### Development Framework
-- **[Development Methodology](DEVELOPMENT_METHODOLOGY.md)** - Comprehensive development methodology, problem resolution framework, and coding standards
+- **[Development Methodology](DEVELOPMENT_METHODOLOGY.md)** - Project-agnostic development methodology, problem resolution framework, and coding standards
 - **[Excel Compliance Strategy](EXCEL_COMPLIANCE_STRATEGY.md)** - Strategic approach for achieving full Excel compliance in dynamic range functions
+
+### Project Goals
+- **[Excel Compliance Project Goals](PROJECT_GOALS_EXCEL_COMPLIANCE.md)** - Specific objectives, success criteria, and implementation details for Excel compliance project
 
 ### Architecture
 - **[Current Architecture Analysis](ARCHITECTURE_ANALYSIS.md)** *(Coming Soon)* - Analysis of current xlcalculator architecture
@@ -20,14 +23,17 @@ This directory contains strategic documentation for xlcalculator development and
 
 The primary focus is on **Excel Compliance Strategy** which outlines the architectural approach to fix dynamic range function issues (ROW, COLUMN, OFFSET, INDIRECT) by implementing proper Excel-like foundations rather than function-specific workarounds.
 
-The **Development Methodology** document provides the comprehensive foundational framework for all development work, including ATDD compliance, task management, problem resolution approaches, integration testing patterns, implementation strategies, and code quality standards. This document consolidates all development rules and patterns from the Excel compliance project and previous work.
+The **Development Methodology** document provides a project-agnostic foundational framework for all development work, including ATDD compliance, task management, problem resolution approaches, integration testing patterns, implementation strategies, and code quality standards.
+
+The **Excel Compliance Project Goals** document contains the specific objectives, architectural gaps, success criteria, and Excel-specific implementation details for the current Excel compliance initiative.
 
 ## 📊 Status
 
 | Document | Status | Priority | Last Updated |
 |----------|--------|----------|--------------|
-| Development Methodology | ✅ Enhanced | Critical | 2025-01-09 |
+| Development Methodology | ✅ Refactored | Critical | 2025-01-09 |
 | Excel Compliance Strategy | ✅ Complete | Critical | 2025-01-09 |
+| Excel Compliance Project Goals | ✅ Complete | Critical | 2025-01-09 |
 | Architecture Analysis | 📝 Planned | High | - |
 | Reference System Design | 📝 Planned | High | - |
 | Function Implementation Guide | 📝 Planned | Medium | - |

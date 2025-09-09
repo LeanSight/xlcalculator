@@ -254,6 +254,8 @@ gantt
 
 ## 📚 References
 
+- [Excel Compliance Project Goals](PROJECT_GOALS_EXCEL_COMPLIANCE.md) - Detailed project objectives and success criteria
+- [Development Methodology](DEVELOPMENT_METHODOLOGY.md) - Project-agnostic development framework
 - [Microsoft Excel Function Reference](https://support.microsoft.com/en-us/office/excel-functions-alphabetical-b3944572-255d-4efb-bb96-c6d90033e188)
 - [ATDD Principles and Practices](https://en.wikipedia.org/wiki/Acceptance_test-driven_development)
 - [xlcalculator Current Architecture](../xlcalculator/)

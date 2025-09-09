@@ -45,7 +45,7 @@ This document captures the development methodology, problem resolution approach,
 
 **New Task Pattern**:
 ```
-todo_reset ["Read server.js to understand current structure", "Check package.json for installed dependencies", "Identify existing API endpoint patterns", "Create new endpoint following conventions", "Test endpoint with curl command", "Run any existing tests", "Clean up any temporary files or scripts created", "Commit changes with appropriate message"]
+todo_reset ["Read existing code to understand current structure", "Check dependencies and requirements", "Identify existing patterns for similar functionality", "Create new functionality following conventions", "Test functionality", "Run any existing tests", "Clean up any temporary files or scripts created", "Commit changes with appropriate message"]
 ```
 
 **Continuation vs New Task**:
@@ -159,11 +159,11 @@ todo_reset ["Read server.js to understand current structure", "Check package.jso
 
 ### ATDD Methodology Rules
 - **Test-Driven**: Implementation follows test expectations exactly
-- **Excel Behavior**: Match Excel behavior as defined by official documentation
+- **Specification Compliance**: Match expected behavior as defined by official documentation
 - **No Hardcoded Values**: Dynamic context-based calculation
 - **Proper Error Handling**: Meaningful errors when context unavailable
-- **No Fallbacks**: Avoid fallbacks that violate Excel behavior
-- **Return Actual Data**: Return actual Excel data or proper Excel errors
+- **No Fallbacks**: Avoid fallbacks that violate expected behavior
+- **Return Actual Data**: Return actual data or proper error responses
 - **Performance Without Compromise**: Optimization without compromising compatibility
 
 ### ATDD Strict Compliance
@@ -171,13 +171,13 @@ todo_reset ["Read server.js to understand current structure", "Check package.jso
 - Hardcoding specific values for test cases
 - Changing tests to match incorrect implementation
 - Modifying data to make formulas work
-- Fallbacks that mask Excel errors
+- Fallbacks that mask expected errors
 
 **✅ Permitted**:
 - Correcting implementation if there's a real bug
-- Implementing missing Excel functionality
+- Implementing missing functionality from reference specification
 - Documenting limitations for incorrect formula design
-- Using Excel's pre-calculated values for compatibility
+- Using reference implementation's pre-calculated values for compatibility
 
 ### Problem Resolution Approach
 1. **Root Cause Analysis**: Identify fundamental architectural gaps, not symptoms
@@ -197,9 +197,9 @@ todo_reset ["Read server.js to understand current structure", "Check package.jso
 
 ### Design Pattern Priorities
 1. **Context-Aware Function Execution**: Functions receive proper context, not global state
-2. **Reference Object Preservation**: Maintain Excel's lazy evaluation semantics
-3. **Hierarchical Model Structure**: Mirror Excel's actual object model
-4. **Coordinate-First API Design**: Work with coordinate objects, not strings
+2. **Reference Object Preservation**: Maintain lazy evaluation semantics where appropriate
+3. **Hierarchical Model Structure**: Mirror reference implementation's object model
+4. **Coordinate-First API Design**: Work with structured objects, not string parsing
 5. **Error Propagation Consistency**: Maintain error types through evaluation chain
 6. **Parameter Evaluation Pipeline**: Proper handling of nested function calls
 
@@ -263,7 +263,7 @@ todo_reset ["Read server.js to understand current structure", "Check package.jso
 ## 🧪 Integration Testing Framework
 
 ### Integration Test Architecture
-**Purpose**: Validate xlcalculator functions against actual Excel behavior by comparing results from real Excel files.
+**Purpose**: Validate implementation against reference behavior by comparing results from reference files.
 
 **Test Structure Pattern**:
 ```python
@@ -278,10 +278,10 @@ class FunctionNameTest(testing.FunctionalTestCase):
         self.assertEqual(excel_value, value)
 ```
 
-### Excel File Requirements
-1. **Formula Cells**: Contain Excel formulas to be tested
+### Reference File Requirements
+1. **Formula Cells**: Contain formulas to be tested
 2. **Data Cells**: Provide input data for formulas
-3. **Result Storage**: Excel calculates and stores expected results
+3. **Result Storage**: Reference implementation calculates and stores expected results
 4. **Multiple Scenarios**: Cover edge cases, data types, error conditions
 
 ### Test Design Templates
@@ -325,7 +325,7 @@ B3: Input data 3
 #### Pattern 3: Error Condition Testing
 ```
 A1: =FUNCTION(valid_input)     → Expected result
-A2: =FUNCTION(#DIV/0!)         → Error handling
+A2: =FUNCTION(error_input)     → Error handling
 A3: =FUNCTION("")              → Empty string handling
 A4: =FUNCTION(text_input)      → Type conversion
 A5: =FUNCTION(large_number)    → Boundary testing
@@ -366,28 +366,28 @@ def FUNCTION_NAME(param1: func_xltypes.XlType, param2: func_xltypes.XlType = Non
 
 #### Pattern 2: Context-Aware Function Implementation
 ```python
-@xl.register()
-@xl.validate_args
-def CONTEXT_FUNCTION(reference: func_xltypes.XlAnything = None, *, _context: CellContext = None) -> func_xltypes.XlType:
-    """Context-dependent function (ROW, COLUMN, etc.)."""
+@register_function()
+@validate_args
+def CONTEXT_FUNCTION(reference: InputType = None, *, _context: ExecutionContext = None) -> OutputType:
+    """Context-dependent function implementation."""
     if reference is None:
-        return _context.cell.property  # Use context for current cell
+        return _context.current_element.property  # Use context for current element
     # Handle reference parameter
 ```
 
 #### Pattern 3: Error Handling Implementation
 ```python
 def FUNCTION_WITH_ERRORS(param):
-    """Function with proper Excel error handling."""
+    """Function with proper error handling."""
     try:
         # Validation
         if invalid_condition:
-            raise xlerrors.ValueExcelError("Specific error message")
+            raise ValueError("Specific error message")
         # Implementation
         return result
     except Exception as e:
-        # Convert to appropriate Excel error
-        return self._convert_to_excel_error(e)
+        # Convert to appropriate error type
+        return self._convert_to_standard_error(e)
 ```
 
 ### Evaluator Integration Patterns
@@ -404,8 +404,8 @@ def _eval_with_fallback(self, pitem, context):
         cell_addr = pitem.tvalue
         if hasattr(context, 'evaluator') and cell_addr in context.evaluator.model.cells:
             cell = context.evaluator.model.cells[cell_addr]
-            if cell.value and str(cell.value) != 'BLANK':
-                return func_xltypes.ExcelType.cast_from_native(cell.value)
+            if cell.value and str(cell.value) != 'EMPTY':
+                return StandardType.cast_from_native(cell.value)
     
     return result
 ```
@@ -430,19 +430,19 @@ def evaluate(self, addr, context=None):
         value = cell.formula.ast.eval(context)
         
         # Enhanced error handling
-        if isinstance(value, xlerrors.ExcelError):
-            # Preserve error types instead of converting to BLANK
+        if isinstance(value, StandardError):
+            # Preserve error types instead of converting to default
             return value
         elif value is None:
-            return func_xltypes.BLANK
+            return DEFAULT_VALUE
         
         return value
     except Exception as e:
         # Improved exception handling
-        if isinstance(e, xlerrors.ExcelError):
+        if isinstance(e, StandardError):
             return e
-        # Convert other exceptions to appropriate Excel errors
-        return self._convert_exception_to_excel_error(e)
+        # Convert other exceptions to appropriate error types
+        return self._convert_exception_to_standard_error(e)
 ```
 
 ### Code Quality Patterns
@@ -480,17 +480,17 @@ def evaluate(self, addr, context=None):
 
 ### New Task Workflow
 ```
-User: "Add a new API endpoint to the Express app"
+User: "Add a new feature to the application"
 Response: 
-todo_reset ["Read server.js to understand current structure", "Check package.json for installed dependencies", "Identify existing API endpoint patterns", "Create new endpoint following conventions", "Test endpoint with curl command", "Run any existing tests", "Clean up any temporary files or scripts created", "Commit changes with appropriate message"]
+todo_reset ["Read existing code to understand current structure", "Check dependencies and requirements", "Identify existing patterns for similar features", "Create new feature following conventions", "Test feature functionality", "Run any existing tests", "Clean up any temporary files or scripts created", "Commit changes with appropriate message"]
 [Execute each todo item methodically using todo_next]
 ```
 
 ### Continuation Workflow
 ```
-User: "Also add error handling to that endpoint"
+User: "Also add error handling to that feature"
 Response:
-todo_write ["Add error handling to endpoint", "Update tests for error cases"]
+todo_write ["Add error handling to feature", "Update tests for error cases"]
 [Continue with existing todo list]
 ```
 
@@ -498,7 +498,7 @@ todo_write ["Add error handling to endpoint", "Update tests for error cases"]
 ```
 User: "Now update the documentation"
 Response:
-todo_reset ["Read existing docs", "Add API endpoint documentation", "Test documentation links"]
+todo_reset ["Read existing docs", "Add feature documentation", "Test documentation links"]
 [NEW UNRELATED TASK = RESET LIST]
 ```
 
@@ -515,7 +515,7 @@ todo_reset ["Read existing docs", "Add API endpoint documentation", "Test docume
 
 ---
 
-**Document Version**: 1.0  
-**Source**: Excel Compliance Project Conversation  
+**Document Version**: 2.0  
+**Source**: Development best practices and project experience  
 **Last Updated**: 2025-01-09  
-**Application**: All xlcalculator development work
+**Application**: All software development work
