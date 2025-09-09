@@ -87,7 +87,7 @@ class Evaluator:
         
         # Set evaluator context for dynamic range functions
         from xlcalculator.xlfunctions.dynamic_range import _set_evaluator_context
-        _set_evaluator_context(self)
+        _set_evaluator_context(self, addr)
         
         try:
             value = cell.formula.ast.eval(context)
