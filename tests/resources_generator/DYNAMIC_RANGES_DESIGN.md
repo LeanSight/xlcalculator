@@ -70,8 +70,8 @@ E5: =OFFSET(Data!A1, 1, 0, 3, 1) → Array 3x1 desde A2
 ```
 F1: =OFFSET(Data!A1, -2, 0)      → #REF! (antes del inicio de hoja)
 F2: =OFFSET(Data!A1, 0, -2)      → #REF! (antes del inicio de hoja)
-F3: =OFFSET(Data!A1, 100, 0)     → #REF! (más allá de hoja)
-F4: =OFFSET(Data!A1, 0, 100)     → #REF! (más allá de hoja)
+F3: =OFFSET(Data!A1, 1048576, 0) → #REF! (más allá de límites Excel - fila)
+F4: =OFFSET(Data!A1, 0, 16384)   → #REF! (más allá de límites Excel - columna)
 F5: =OFFSET(Data!A1, 1, 1, 0, 1) → #VALUE! (altura cero)
 F6: =OFFSET(Data!A1, 1, 1, 1, 0) → #VALUE! (ancho cero)
 ```

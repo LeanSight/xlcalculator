@@ -84,6 +84,53 @@ if offset > 1048576:  # Documented Excel row limit
 if not sheet_context:  # Excel behavior for missing context
     raise ValueExcelError("Function requires sheet context")
 ```
+
+### CRITICAL RULE: TEST CASE VALIDATION BEFORE IMPLEMENTATION CHANGES
+
+**When encountering test failures, ALWAYS validate test case correctness against Excel documentation BEFORE modifying implementation:**
+
+#### **Test Case Validation Process**
+1. **Check Excel Documentation**: Verify the test case represents legitimate Excel behavior
+2. **Validate Test Intent**: Ensure the test case correctly captures the intended Excel functionality
+3. **Cross-Reference Design Documents**: Confirm test aligns with design specifications (e.g., DYNAMIC_RANGES_DESIGN.md)
+4. **Excel Behavior Verification**: If possible, test the exact formula in actual Excel
+
+#### **When Test Cases Are Correct (Most Common)**
+- **Fix Implementation**: The test case is valid, implementation must be corrected
+- **Follow TDD**: Use Red-Green-Refactor to fix the broken functionality
+- **Document Findings**: Update documentation with implementation insights
+
+#### **When Test Cases Are Incorrect (Rare)**
+- **Document the Issue**: Clearly explain why the test case doesn't match Excel behavior
+- **Reference Official Documentation**: Provide Excel documentation links supporting the correction
+- **Update Design Document**: Modify the source design document (e.g., DYNAMIC_RANGES_DESIGN.md)
+- **Regenerate Test Cases**: Update JSON and regenerate Excel files and test classes
+- **Verify Consistency**: Ensure all related test cases are updated consistently
+
+#### **Example: INDIRECT Function Test Case Validation**
+
+**Test Case**: `=INDIRECT(P1)` where P1 contains `"Data!B2"`
+**Expected**: Should return the value at Data!B2 (25)
+
+**Validation Process**:
+1. **Excel Documentation Check**: INDIRECT function should evaluate cell references to get their content ✅
+2. **Excel Behavior**: In Excel, INDIRECT(P1) where P1="Data!B2" returns the value at Data!B2 ✅
+3. **Test Case Verdict**: CORRECT - Implementation must be fixed, not test case
+
+**Result**: Fix INDIRECT implementation to properly evaluate cell references before using them as reference strings.
+
+#### **Red Flags for Invalid Test Cases**
+- Test expects behavior not documented in Excel specification
+- Test case uses non-standard Excel syntax or functions
+- Expected results don't match actual Excel behavior
+- Test assumes implementation-specific behavior rather than Excel behavior
+
+#### **Documentation Requirements**
+When correcting test cases, document:
+- **Why the original test was incorrect**
+- **What Excel behavior should actually be**
+- **References to official Excel documentation**
+- **Impact on related test cases**
 ---
 
 ## 🧩 Function Implementation Methodology
