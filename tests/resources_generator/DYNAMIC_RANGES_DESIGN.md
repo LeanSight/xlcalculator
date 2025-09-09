@@ -148,7 +148,7 @@ M3: =OFFSET(INDIRECT("Data!A1"), 1, 1, 2, 2) → Array 2x2
 ### 3N. Combinaciones Complejas - 4 Cases
 ```
 N1: =INDEX(OFFSET(Data!A1, 0, 0, 3, 3), 2, 2)     → 25 (INDEX+OFFSET)
-N2: =OFFSET(INDEX(Data!A1:E6, 2, 1), 1, 1)        → 30 (OFFSET+INDEX)
+N2: =OFFSET(INDEX(Data!A1:E6, 2, 1), 1, 1)        → 30 (OFFSET+INDEX - válido según MS docs)
 N3: =INDIRECT("Data!A" & 2)                       → "Alice" (Dynamic reference)
 N4: =INDIRECT("Data!" & CHAR(66) & "2")           → 25 (CHAR-based reference)
 ```

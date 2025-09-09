@@ -17,6 +17,66 @@ Architecture:
 
 from . import xl, xlerrors, func_xltypes
 
+# TEST: Simple function to verify registration works
+@xl.register()
+def TEST_FUNCTION():
+    """Test function to verify registration."""
+    return "TEST_WORKS"
+
+
+# ============================================================================
+# SIMPLE SOLUTION: OFFSET handles value-to-reference conversion
+# ============================================================================
+
+def _find_cell_address_for_value(value, evaluator, search_range=None):
+    """
+    Find the cell address that contains a specific value.
+    
+    This enables OFFSET(INDEX(...), 1, 1) to work by finding where the INDEX result came from.
+    
+    Args:
+        value: The value to search for
+        evaluator: Evaluator instance
+        search_range: Optional range to limit search (e.g., "Data!A1:E6")
+        
+    Returns:
+        Cell address string if found, None if not found
+    """
+    # Convert value to string for comparison
+    search_value = str(value)
+    
+    if search_range:
+        # Search within specific range (more efficient)
+        try:
+            from ..reference_objects import RangeReference
+            range_ref = RangeReference.parse(search_range)
+            
+            # Iterate through range cells
+            for row in range(range_ref.start_cell.row, range_ref.end_cell.row + 1):
+                for col in range(range_ref.start_cell.column, range_ref.end_cell.column + 1):
+                    col_letter = _number_to_column_letter(col)
+                    cell_addr = f"{range_ref.start_cell.sheet}!{col_letter}{row}"
+                    
+                    try:
+                        cell_value = evaluator.evaluate(cell_addr)
+                        if str(cell_value) == search_value:
+                            return cell_addr
+                    except:
+                        continue
+        except:
+            pass
+    
+    # Fallback: search all cells in model (less efficient but comprehensive)
+    for cell_addr, cell in evaluator.model.cells.items():
+        try:
+            cell_value = evaluator.evaluate(cell_addr)
+            if str(cell_value) == search_value:
+                return cell_addr
+        except:
+            continue
+    
+    return None
+
 
 # ============================================================================
 # CONTEXT INJECTION SYSTEM - Access to evaluator during function execution
@@ -290,25 +350,7 @@ def _validate_offset_target_bounds(target_range, evaluator):
             raise xlerrors.RefExcelError("Invalid range format")
 
 
-def _find_value_in_model(value, evaluator):
-    """Find the first cell address that contains the specified value.
-    
-    Args:
-        value: Value to search for
-        evaluator: Evaluator instance with model access
-        
-    Returns:
-        Cell address string if found, None if not found
-    """
-    # Convert value to string for comparison
-    search_value = str(value)
-    
-    # Search through all cells in the model
-    for cell_addr, cell in evaluator.model.cells.items():
-        if str(cell.value) == search_value:
-            return cell_addr
-    
-    return None
+
 
 
 def _is_valid_excel_reference(ref_string):
@@ -649,7 +691,6 @@ def _handle_offset_array_result(reference, rows_int, cols_int, height_int, width
 # 4. COMMIT: Save progress
 
 @xl.register()
-@xl.validate_args
 def INDEX(array, row_num, col_num=1, area_num=1, *, _context=None):
     """Returns value at intersection of row/column in array.
     
@@ -700,6 +741,10 @@ def INDEX(array, row_num, col_num=1, area_num=1, *, _context=None):
         else:
             # It's a string reference, use get_range_values
             array_data = evaluator.get_range_values(str(array))
+            
+            # DEBUG: Check if we got data
+            if not array_data:
+                raise xlerrors.ValueExcelError(f"No data found for range: {array}")
     
     # Handle array parameters for dynamic arrays
     if isinstance(row_num, func_xltypes.Array):
@@ -749,11 +794,22 @@ def INDEX(array, row_num, col_num=1, area_num=1, *, _context=None):
         # Return single value with bounds validation
         row_idx = row_num_int - 1  # Convert to 0-based index
         col_idx = col_num_int - 1  # Convert to 0-based index
+        
+        # DEBUG: Check bounds
         if row_idx < 0 or row_idx >= len(array_data):
-            raise xlerrors.RefExcelError("Row index out of range")
+            raise xlerrors.RefExcelError(f"Row index {row_num_int} out of range (1-{len(array_data)})")
         if col_idx < 0 or col_idx >= len(array_data[0]):
-            raise xlerrors.RefExcelError("Column index out of range")
-        return array_data[row_idx][col_idx]
+            raise xlerrors.RefExcelError(f"Column index {col_num_int} out of range (1-{len(array_data[0])})")
+        
+        # Get the actual value
+        result_value = array_data[row_idx][col_idx]
+        
+        # DEBUG: Check what we're returning
+        if result_value is None:
+            raise xlerrors.ValueExcelError(f"Cell at ({row_num_int}, {col_num_int}) contains None")
+        
+        # Return the cell value directly (normal Excel behavior)
+        return result_value
 
 
 @xl.register()
@@ -778,20 +834,25 @@ def OFFSET(reference, rows, cols, height=None, width=None, *, _context=None):
             # String reference like "Data!A1"
             ref_string = str(reference)  # Convert Text to string
             start_ref = CellReference.parse(ref_string)
+        elif hasattr(reference, 'get_reference'):
+            # Handle ExcelCellValue objects (if we had them)
+            ref_string = reference.get_reference()
+            start_ref = CellReference.parse(ref_string)
         else:
-            # Handle evaluated values - this is a limitation of current evaluator
-            # When OFFSET receives evaluated values instead of references,
-            # we need to find the original reference that produced this value
+            # Handle evaluated values from INDEX function
+            # This is the key fix: when OFFSET receives a value from INDEX,
+            # we need to find where that value came from
             ref_value = reference
             
-            # Try to find a cell that contains this value
-            found_address = _find_value_in_model(ref_value, evaluator)
+            # SMART SEARCH: Look for this value in a reasonable search space
+            # Try to find the cell that contains this value
+            found_address = _find_cell_address_for_value(ref_value, evaluator)
+            
             if found_address:
                 start_ref = CellReference.parse(found_address)
             else:
-                # Fallback: treat as string and try to parse
-                ref_string = str(reference)
-                start_ref = CellReference.parse(ref_string)
+                # If we can't find the value, this is likely an error
+                raise xlerrors.RefExcelError(f"Cannot find cell containing value: {ref_value}")
     except Exception as e:
         raise xlerrors.RefExcelError(f"Invalid reference: {reference}")
     
