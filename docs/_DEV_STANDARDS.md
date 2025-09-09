@@ -53,6 +53,37 @@
 - **refactor never adds new behaviour**: the tests should be always in the same state before and after refactor
 
 ### NEVER MOVE FORWARD TO A NEW ACCEPTANCE TEST WITHOUT ALL TESTS IN GREEN
+
+### ELIMINATE ALL MAGIC VALUES, HARDCODED MAPPINGS, AND NON-EXCEL FALLBACKS
+
+**Code must eliminate and never use:**
+- **Magic Values**: Arbitrary numbers, thresholds, or limits not documented in Excel specification
+- **Hardcoded Test Data**: Specific test values, sheet names, or cell addresses embedded in functions
+- **Non-Excel Fallbacks**: Default behaviors not documented in official Excel documentation
+- **"Smart" or "Intelligent" Hacks**: Heuristics, guessing logic, or "test compatibility" workarounds
+
+**Excel-Compliant Requirements:**
+- **Only Documented Behavior**: All function behavior must match Excel official documentation
+- **Universal Data Compatibility**: Functions must work with any data, not specific test values
+- **Proper Error Handling**: Use Excel-specified errors (#VALUE!, #REF!, etc.) for invalid cases
+- **Real Excel Limits**: Use documented Excel bounds (1,048,576 rows × 16,384 columns)
+- **No Assumptions**: Never assume sheet names, data patterns, or test-specific contexts
+
+**Examples of Violations:**
+```python
+# ❌ WRONG: Magic values and hardcoded mappings
+if offset > 50:  # Magic threshold
+    return error
+value_map = {"Name": "Data!A1", 25: "Data!B2"}  # Hardcoded test data
+return "Sheet1"  # Non-Excel default
+
+# ✅ CORRECT: Excel-compliant behavior
+if offset > 1048576:  # Documented Excel row limit
+    raise RefExcelError("Row index out of Excel bounds")
+# Functions work with any data, no hardcoded mappings
+if not sheet_context:  # Excel behavior for missing context
+    raise ValueExcelError("Function requires sheet context")
+```
 ---
 
 ## 🧩 Function Implementation Methodology
