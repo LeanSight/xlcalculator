@@ -1,143 +1,40 @@
-import collections
-import re
-from dataclasses import dataclass
-from openpyxl.utils.cell import COORD_RE, SHEET_TITLE
-from openpyxl.utils.cell import range_boundaries, get_column_letter
+# DEPRECATED: This module's range functionality has been moved to xlcalculator.range
+# Import from the new range module for backward compatibility
 
-MAX_COL = 18278
-MAX_ROW = 1048576
-
-# Smart range resolution defaults - prevent full column/row expansion
-DEFAULT_MAX_DATA_ROW = 1000    # Reasonable default for most data
-DEFAULT_MAX_DATA_COL = 100     # Reasonable default for most data
-SMART_RANGE_ENABLED = True     # Feature flag for smart range resolution
-
-
-def resolve_sheet(sheet_str):
-    sheet_str = sheet_str.strip()
-    sheet_match = re.match(SHEET_TITLE.strip(), sheet_str + '!')
-    if sheet_match is None:
-        # Internally, sheets are not properly quoted, so consider the entire
-        # string.
-        return sheet_str
-
-    return sheet_match.group("quoted") or sheet_match.group("notquoted")
-
-
-@dataclass(frozen=True)
-class CellReference:
-    """Represents a cell reference with proper Excel context.
+from .range import (
+    # Core dataclasses
+    CellReference,
+    ParsedAddress, 
+    RangeReference,
     
-    Captures both explicit sheet references (Sheet1!A1) and 
-    implicit references (A1) with their evaluation context.
+    # Utility functions
+    resolve_sheet,
+    parse_sheet_and_address,
+    resolve_address,
+    resolve_ranges,
+    is_full_range,
     
-    Attributes:
-        sheet: Resolved sheet name
-        address: Cell/range address (A1, A1:B2, etc.)
-        is_sheet_explicit: Whether sheet was explicitly specified in original reference
-    """
-    sheet: str
-    address: str
-    is_sheet_explicit: bool
-    
-    @classmethod
-    def parse(cls, ref: str, current_sheet: str) -> 'CellReference':
-        """Parse reference string with proper sheet context.
-        
-        Args:
-            ref: Reference string (e.g., 'Sheet1!A1' or 'A1')
-            current_sheet: Current sheet context for implicit references
-            
-        Returns:
-            CellReference object with resolved sheet and address
-            
-        Examples:
-            CellReference.parse('Sheet1!A1', 'Sheet2') -> CellReference(sheet='Sheet1', address='A1', is_sheet_explicit=True)
-            CellReference.parse('A1', 'Sheet2') -> CellReference(sheet='Sheet2', address='A1', is_sheet_explicit=False)
-        """
-        if '!' in ref:
-            # Explicit sheet reference
-            parts = ref.split('!', 1)
-            return cls(sheet=parts[0], address=parts[1], is_sheet_explicit=True)
-        else:
-            # Implicit reference - use current sheet context
-            return cls(sheet=current_sheet, address=ref, is_sheet_explicit=False)
-    
-    def __str__(self) -> str:
-        """Return full sheet!address format."""
-        return f"{self.sheet}!{self.address}"
-    
-    def is_same_sheet_as_context(self, context_sheet: str) -> bool:
-        """Check if reference is in the same sheet as given context."""
-        return self.sheet == context_sheet
+    # Constants
+    MAX_COL,
+    MAX_ROW,
+    DEFAULT_MAX_DATA_ROW,
+    DEFAULT_MAX_DATA_COL,
+    SMART_RANGE_ENABLED,
+)
 
-
-def parse_sheet_and_address(ref, default_sheet='Sheet1'):
-    """Parse reference into sheet name and address part.
-    
-    DEPRECATED: Use CellReference.parse() instead for better semantics.
-    
-    Args:
-        ref: Reference string (e.g., 'Sheet1!A1' or 'A1')
-        default_sheet: Default sheet name when no sheet prefix provided
-        
-    Returns:
-        Tuple of (sheet_name, address_part)
-        
-    Examples:
-        parse_sheet_and_address('Sheet1!A1') -> ('Sheet1', 'A1')
-        parse_sheet_and_address('A1') -> ('Sheet1', 'A1')
-        parse_sheet_and_address('Data!B2:C3') -> ('Data', 'B2:C3')
-    """
-    # Use CellReference internally for consistency
-    cell_ref = CellReference.parse(ref, current_sheet=default_sheet)
-    return cell_ref.sheet, cell_ref.address
-
-
-def resolve_address(addr):
-    # Addresses without sheet name are not supported.
-    sheet_str, addr_str = addr.split('!')
-    sheet = resolve_sheet(sheet_str)
-    coord_match = COORD_RE.split(addr_str)
-    col, row = coord_match[1:3]
-    return sheet, col, row
-
-
-def resolve_ranges(ranges, default_sheet='Sheet1'):
-    sheet = None
-    range_cells = collections.defaultdict(set)
-    for rng in ranges.split(','):
-        # Handle sheets in range.
-        if '!' in rng:
-            sheet_str, rng = rng.split('!')
-            rng_sheet = resolve_sheet(sheet_str)
-            if sheet is not None and sheet != rng_sheet:
-                raise ValueError(
-                    f'Got multiple different sheets in ranges: '
-                    f'{sheet}, {rng_sheet}'
-                )
-            sheet = rng_sheet
-        min_col, min_row, max_col, max_row = range_boundaries(rng)
-
-        # Unbound ranges (e.g., A:A) might not have these set!
-        min_col = min_col or 1
-        min_row = min_row or 1
-        max_col = max_col or MAX_COL
-        max_row = max_row or MAX_ROW
-
-        # Excel ranges are boundaries inclusive!
-        for row_idx in range(min_row or 1, max_row + 1):
-            row_cells = range_cells[row_idx]
-            for col_idx in range(min_col, max_col + 1):
-                row_cells.add(col_idx)
-
-    # Now convert the internal structure to a matrix of cell addresses.
-    sheet = default_sheet if sheet is None else sheet
-    sheet_str = sheet + '!' if sheet else ''
-    return sheet, [
-        [
-            f'{sheet_str}{get_column_letter(col_idx)}{row_idx}'
-            for col_idx in sorted(row_cells)
-        ]
-        for row_idx, row_cells in sorted(range_cells.items())
-    ]
+# Re-export everything for backward compatibility
+__all__ = [
+    'CellReference',
+    'ParsedAddress',
+    'RangeReference', 
+    'resolve_sheet',
+    'parse_sheet_and_address',
+    'resolve_address',
+    'resolve_ranges',
+    'is_full_range',
+    'MAX_COL',
+    'MAX_ROW',
+    'DEFAULT_MAX_DATA_ROW',
+    'DEFAULT_MAX_DATA_COL',
+    'SMART_RANGE_ENABLED',
+]

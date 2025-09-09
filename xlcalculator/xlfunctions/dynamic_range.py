@@ -166,7 +166,7 @@ def _parse_cell_coordinates(cell_address):
     Used by: OFFSET utilities
     Returns: Tuple of (sheet, col_letter, row_num)
     """
-    from ..utils import CellReference
+    from ..range import CellReference
     # Use Sheet1 as default context for OFFSET operations
     cell_ref = CellReference.parse(cell_address, current_sheet='Sheet1')
     col_letter = ''.join(c for c in cell_ref.address if c.isalpha())
@@ -394,7 +394,7 @@ def _validate_sheet_exists(ref_string, evaluator):
     Returns:
         RefExcelError if sheet doesn't exist, None if valid
     """
-    from ..utils import CellReference
+    from ..range import CellReference
     # Use Sheet1 as default context for validation
     ref_obj = CellReference.parse(ref_string, current_sheet='Sheet1')
     sheet_name = ref_obj.sheet
@@ -958,19 +958,16 @@ def ROW(reference: func_xltypes.XlAnything = None) -> func_xltypes.XlAnything:
     # Handle string references using existing parsing logic
     ref_string = str(reference)
     if ':' in ref_string:
-        # Range reference like A1:A3 - use openpyxl's range_boundaries
-        from openpyxl.utils.cell import range_boundaries
-        from xlcalculator.utils import parse_sheet_and_address
+        # Range reference like A1:A3 - use RangeReference for robust parsing
+        from xlcalculator.range import RangeReference
         
         try:
-            sheet, range_part = parse_sheet_and_address(ref_string)
-            min_col, min_row, max_col, max_row = range_boundaries(range_part)
-            
-            if min_row and max_row:
-                row_numbers = [[i] for i in range(min_row, max_row + 1)]
+            range_ref = RangeReference.parse(ref_string)
+            if range_ref.min_row and range_ref.max_row:
+                row_numbers = [[i] for i in range(range_ref.min_row, range_ref.max_row + 1)]
                 return func_xltypes.Array(row_numbers)
         except Exception:
-            pass  # Fall back to regex if openpyxl parsing fails
+            pass  # Fall back to regex if parsing fails
         
         # Fallback regex for edge cases
         match = re.search(r'([A-Z]+)(\d+):([A-Z]+)(\d+)', ref_string)
@@ -980,18 +977,14 @@ def ROW(reference: func_xltypes.XlAnything = None) -> func_xltypes.XlAnything:
             row_numbers = [[i] for i in range(start_row, end_row + 1)]
             return func_xltypes.Array(row_numbers)
     else:
-        # Single cell reference - use openpyxl's COORD_RE
-        from openpyxl.utils.cell import COORD_RE
-        from xlcalculator.utils import parse_sheet_and_address
+        # Single cell reference - use ParsedAddress for robust parsing
+        from xlcalculator.range import ParsedAddress
         
         try:
-            sheet, address_part = parse_sheet_and_address(ref_string)
-            coord_match = COORD_RE.split(address_part)
-            if len(coord_match) >= 3:
-                col, row = coord_match[1:3]
-                return int(row)
+            parsed = ParsedAddress.parse(ref_string)
+            return parsed.row
         except Exception:
-            pass  # Fall back to regex if openpyxl parsing fails
+            pass  # Fall back to regex if parsing fails
         
         # Fallback regex for edge cases
         match = re.search(r'([A-Z]+)(\d+)', ref_string)

@@ -61,9 +61,13 @@ class XLCell(XLType):
     defined_names: list = field(compare=False, default_factory=list, repr=True)
 
     def __post_init__(self):
-        self.sheet, self.column, self.row = utils.resolve_address(self.address)
+        from .range import ParsedAddress
+        parsed = ParsedAddress.parse(self.address)
+        self.sheet = parsed.sheet
+        self.column = parsed.column
+        self.row = str(parsed.row)
         self.column_index = column_index_from_string(self.column)
-        self.row_index = int(self.row)
+        self.row_index = parsed.row
 
     def __float__(self):
         return float(self.value)
@@ -87,7 +91,8 @@ class XLRange(XLType):
     def __post_init__(self):
         if self.name is None:
             self.name = self.address_str
-        self.sheet, self.cells = utils.resolve_ranges(self.address_str)
+        from .range import resolve_ranges
+        self.sheet, self.cells = resolve_ranges(self.address_str)
 
     @property
     def address(self):
