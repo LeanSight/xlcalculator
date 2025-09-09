@@ -933,12 +933,12 @@ def ROW(reference: func_xltypes.XlAnything = None, *, _context=None) -> func_xlt
     If reference is omitted, returns the row number of the cell containing the ROW function.
     For ranges, returns an array of row numbers.
     
-    ATDD Implementation: Uses context injection for direct cell coordinate access.
+    ATDD Implementation: Uses reference objects for Excel-compatible parsing.
     
     https://support.microsoft.com/en-us/office/
         row-function-3a63b74a-c4d0-4093-b49a-e76eb49a6d8d
     """
-    import re
+    from ..reference_objects import CellReference, RangeReference
     
     if reference is None:
         # Return row number of current cell - use context injection
@@ -949,59 +949,38 @@ def ROW(reference: func_xltypes.XlAnything = None, *, _context=None) -> func_xlt
             # No context available - this should not happen in normal evaluation
             raise xlerrors.ValueExcelError("ROW() without reference requires current cell context")
 
+    # Handle string references (this is the key fix for ROW("A1"))
+    if isinstance(reference, str):
+        try:
+            if ':' in reference:
+                # Range reference like "A1:A3"
+                range_ref = RangeReference.parse(reference)
+                start_row = range_ref.start_cell.row
+                end_row = range_ref.end_cell.row
+                # Return array of row numbers
+                row_numbers = [[i] for i in range(start_row, end_row + 1)]
+                return func_xltypes.Array(row_numbers)
+            else:
+                # Single cell reference like "A1"
+                cell_ref = CellReference.parse(reference)
+                return cell_ref.row
+        except Exception as e:
+            # Invalid reference format
+            raise xlerrors.RefExcelError(f"Invalid reference: {reference}")
     
-    # Handle BLANK values (this might be the issue)
+    # Handle BLANK values
     if isinstance(reference, func_xltypes.Blank):
-        # If we get BLANK, it might mean the range wasn't evaluated properly
-        # For now, return BLANK to maintain the error
         return reference
     
-    # Handle different reference types
+    # Handle evaluated arrays (for backward compatibility)
     if hasattr(reference, 'values'):
         # It's an Array (evaluated range values) - extract row numbers from the range size
-        # For A1:A3, this should return [1, 2, 3] regardless of cell content
         num_rows = len(reference)
         row_numbers = [[i + 1] for i in range(num_rows)]
         return func_xltypes.Array(row_numbers)
     
-    # Handle string references using existing parsing logic
-    ref_string = str(reference)
-    if ':' in ref_string:
-        # Range reference like A1:A3 - use RangeReference for robust parsing
-        from xlcalculator.range import RangeReference
-        
-        try:
-            range_ref = RangeReference.parse(ref_string)
-            if range_ref.min_row and range_ref.max_row:
-                row_numbers = [[i] for i in range(range_ref.min_row, range_ref.max_row + 1)]
-                return func_xltypes.Array(row_numbers)
-        except Exception:
-            pass  # Fall back to regex if parsing fails
-        
-        # Fallback regex for edge cases
-        match = re.search(r'([A-Z]+)(\d+):([A-Z]+)(\d+)', ref_string)
-        if match:
-            start_row = int(match.group(2))
-            end_row = int(match.group(4))
-            row_numbers = [[i] for i in range(start_row, end_row + 1)]
-            return func_xltypes.Array(row_numbers)
-    else:
-        # Single cell reference - use ParsedAddress for robust parsing
-        from xlcalculator.range import ParsedAddress
-        
-        try:
-            parsed = ParsedAddress.parse(ref_string)
-            return parsed.row
-        except Exception:
-            pass  # Fall back to regex if parsing fails
-        
-        # Fallback regex for edge cases
-        match = re.search(r'([A-Z]+)(\d+)', ref_string)
-        if match:
-            return int(match.group(2))
-    
-    # Fallback
-    return 4
+    # Final fallback
+    return 1
 
 
 @xl.register()
@@ -1031,43 +1010,27 @@ def COLUMN(reference: func_xltypes.XlAnything = None, *, _context=None) -> func_
     if isinstance(reference, func_xltypes.Blank):
         return reference
     
-    # Handle string references
-    ref_string = str(reference)
-    if ':' in ref_string:
-        # Range reference like A1:C3 - return array of column numbers
-        from xlcalculator.range import RangeReference
-        
+    # Handle string references (this is the key fix for COLUMN("A1"))
+    if isinstance(reference, str):
+        from ..reference_objects import CellReference, RangeReference
         try:
-            range_ref = RangeReference.parse(ref_string)
-            if range_ref.min_col and range_ref.max_col:
-                col_numbers = [[i] for i in range(range_ref.min_col, range_ref.max_col + 1)]
+            if ':' in reference:
+                # Range reference like "A1:C1"
+                range_ref = RangeReference.parse(reference)
+                start_col = range_ref.start_cell.column
+                end_col = range_ref.end_cell.column
+                # Return array of column numbers
+                col_numbers = [[i] for i in range(start_col, end_col + 1)]
                 return func_xltypes.Array(col_numbers)
-        except Exception:
-            pass  # Fall back to regex if parsing fails
-        
-        # Fallback regex for edge cases
-        match = re.search(r'([A-Z]+)(\d+):([A-Z]+)(\d+)', ref_string)
-        if match:
-            start_col = _column_letter_to_number(match.group(1))
-            end_col = _column_letter_to_number(match.group(3))
-            col_numbers = [[i] for i in range(start_col, end_col + 1)]
-            return func_xltypes.Array(col_numbers)
-    else:
-        # Single cell reference
-        from xlcalculator.range import ParsedAddress
-        
-        try:
-            parsed = ParsedAddress.parse(ref_string)
-            return parsed.column_index
-        except Exception:
-            pass  # Fall back to regex if parsing fails
-        
-        # Fallback regex for edge cases
-        match = re.search(r'([A-Z]+)(\d+)', ref_string)
-        if match:
-            return _column_letter_to_number(match.group(1))
+            else:
+                # Single cell reference like "A1"
+                cell_ref = CellReference.parse(reference)
+                return cell_ref.column
+        except Exception as e:
+            # Invalid reference format
+            raise xlerrors.RefExcelError(f"Invalid reference: {reference}")
     
-    # Final fallback
+    # Final fallback for other types
     return 1
 
 

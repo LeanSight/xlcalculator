@@ -1,0 +1,214 @@
+{
+  "metadata": {
+    "title": "Reference System",
+    "description": "Test suite for Reference Object System with faithful Excel behavior",
+    "total_cases": 20,
+    "source": "REFERENCE_OBJECTS_DESIGN.md",
+    "levels": {
+      "1": "CASOS ESTRUCTURALES (Comportamiento Core)",
+      "2": "CASOS INTERMEDIOS (Integración con Funciones)", 
+      "3": "CASOS DE ERROR (Manejo de Errores Excel)"
+    }
+  },
+  "generation_config": {
+    "class_name": "ReferenceSystemTest",
+    "test_description": "Integration tests for reference system",
+    "class_docstring": "These tests validate Excel behavior of reference objects and string reference parsing",
+    "excel_filename": "reference_system.xlsx",
+    "label_row": 20,
+    "integrity_method_name": "test_data_integrity",
+    "integrity_method_description": "Verify test data integrity",
+    "consistency_method_name": "test_type_consistency", 
+    "consistency_method_description": "Verify data type consistency across test cases"
+  },
+  "data_sheet": {
+    "name": "Data",
+    "headers": ["Value_A", "Value_B", "Value_C"],
+    "rows": [
+      ["Value_A1", "Value_B1", "Value_C1"],
+      ["Value_A2", "Value_B2", "Value_C2"],
+      ["Value_A3", "Value_B3", "Value_C3"]
+    ]
+  },
+  "auxiliary_data": {
+    "Z1": "Value_Z1"
+  },
+  "levels": [
+    {
+      "level": "1A",
+      "title": "ROW Function - String References", 
+      "description": "ROW function with string reference parameters",
+      "cell_range": "A1:A5",
+      "category": "row_string_references",
+      "test_cases": [
+        {
+          "cell": "A1",
+          "formula": "=ROW(\"A1\")",
+          "expected_value": 1,
+          "expected_type": "number",
+          "description": "ROW with string reference A1"
+        },
+        {
+          "cell": "A2", 
+          "formula": "=ROW(\"A100\")",
+          "expected_value": 100,
+          "expected_type": "number",
+          "description": "ROW with string reference A100"
+        },
+        {
+          "cell": "A3",
+          "formula": "=ROW(\"Data!A5\")",
+          "expected_value": 5,
+          "expected_type": "number",
+          "description": "ROW with sheet reference"
+        },
+        {
+          "cell": "A4",
+          "formula": "=ROW(\"Z1\")",
+          "expected_value": 1,
+          "expected_type": "number",
+          "description": "ROW with column Z"
+        },
+        {
+          "cell": "A5",
+          "formula": "=ROW(\"$A$1\")",
+          "expected_value": 1,
+          "expected_type": "number",
+          "description": "ROW with absolute reference"
+        }
+      ]
+    },
+    {
+      "level": "1B",
+      "title": "COLUMN Function - String References",
+      "description": "COLUMN function with string reference parameters",
+      "cell_range": "B1:B5",
+      "category": "column_string_references",
+      "test_cases": [
+        {
+          "cell": "B1",
+          "formula": "=COLUMN(\"A1\")",
+          "expected_value": 1,
+          "expected_type": "number",
+          "description": "COLUMN with string reference A1"
+        },
+        {
+          "cell": "B2",
+          "formula": "=COLUMN(\"Z1\")",
+          "expected_value": 26,
+          "expected_type": "number",
+          "description": "COLUMN with column Z"
+        },
+        {
+          "cell": "B3",
+          "formula": "=COLUMN(\"AA1\")",
+          "expected_value": 27,
+          "expected_type": "number",
+          "description": "COLUMN with double letter column"
+        },
+        {
+          "cell": "B4",
+          "formula": "=COLUMN(\"Data!B1\")",
+          "expected_value": 2,
+          "expected_type": "number",
+          "description": "COLUMN with sheet reference"
+        },
+        {
+          "cell": "B5",
+          "formula": "=COLUMN(\"$B$1\")",
+          "expected_value": 2,
+          "expected_type": "number",
+          "description": "COLUMN with absolute reference"
+        }
+      ]
+    },
+    {
+      "level": "2A",
+      "title": "OFFSET Function - Reference Arithmetic",
+      "description": "OFFSET function with string references",
+      "cell_range": "C1:C5",
+      "category": "offset_string_references",
+      "test_cases": [
+        {
+          "cell": "C1",
+          "formula": "=OFFSET(\"Data!A1\", 1, 1)",
+          "expected_value": "Value_B2",
+          "expected_type": "text",
+          "description": "OFFSET basic with string reference"
+        },
+        {
+          "cell": "C2",
+          "formula": "=OFFSET(\"Data!A1\", 0, 0)",
+          "expected_value": "Value_A1",
+          "expected_type": "text",
+          "description": "OFFSET no movement"
+        },
+        {
+          "cell": "C3",
+          "formula": "=OFFSET(\"Data!B2\", -1, -1)",
+          "expected_value": "Value_A1",
+          "expected_type": "text",
+          "description": "OFFSET negative movement"
+        },
+        {
+          "cell": "C4",
+          "formula": "=OFFSET(\"Data!A1\", 2, 0)",
+          "expected_value": "Value_A3",
+          "expected_type": "text",
+          "description": "OFFSET row movement"
+        },
+        {
+          "cell": "C5",
+          "formula": "=OFFSET(\"Data!A1\", 0, 2)",
+          "expected_value": "Value_C1",
+          "expected_type": "text",
+          "description": "OFFSET column movement"
+        }
+      ]
+    },
+    {
+      "level": "3A",
+      "title": "Reference Parsing Errors",
+      "description": "Error handling for invalid references",
+      "cell_range": "D1:D5",
+      "category": "reference_errors",
+      "test_cases": [
+        {
+          "cell": "D1",
+          "formula": "=ROW(\"InvalidRef\")",
+          "expected_value": null,
+          "expected_type": "ref_error",
+          "description": "ROW with invalid reference"
+        },
+        {
+          "cell": "D2",
+          "formula": "=ROW(\"\")",
+          "expected_value": null,
+          "expected_type": "ref_error",
+          "description": "ROW with empty string"
+        },
+        {
+          "cell": "D3",
+          "formula": "=COLUMN(\"A\")",
+          "expected_value": null,
+          "expected_type": "ref_error",
+          "description": "COLUMN with incomplete reference"
+        },
+        {
+          "cell": "D4",
+          "formula": "=OFFSET(\"Data!A1\", -1, 0)",
+          "expected_value": null,
+          "expected_type": "ref_error",
+          "description": "OFFSET out of bounds"
+        },
+        {
+          "cell": "D5",
+          "formula": "=OFFSET(\"Data!A1\", 0, 0, 0, 1)",
+          "expected_value": null,
+          "expected_type": "value_error",
+          "description": "OFFSET with zero height"
+        }
+      ]
+    }
+  ]
+}

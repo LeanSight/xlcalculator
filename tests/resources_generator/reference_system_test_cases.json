@@ -1,0 +1,532 @@
+{
+  "metadata": {
+    "title": "Reference System",
+    "description": "Complete test suite for Reference Object System with faithful Excel behavior",
+    "total_cases": 67,
+    "source": "REFERENCE_OBJECTS_DESIGN.md",
+    "levels": {
+      "1": "CASOS ESTRUCTURALES (Comportamiento Core)",
+      "2": "CASOS INTERMEDIOS (Integración con Funciones)", 
+      "3": "CASOS AVANZADOS (Contexto y Evaluación)",
+      "4": "CASOS DE ERROR (Manejo de Errores Excel)",
+      "5": "CASOS ESPECIALES (Edge Cases)"
+    }
+  },
+  "generation_config": {
+    "class_name": "ReferenceSystemComprehensiveTest",
+    "test_description": "Comprehensive integration tests for reference system",
+    "class_docstring": "These tests validate FAITHFUL Excel behavior of reference objects and string reference parsing",
+    "excel_filename": "reference_system.xlsx",
+    "label_row": 20,
+    "integrity_method_name": "test_data_integrity",
+    "integrity_method_description": "Verify test data integrity",
+    "consistency_method_name": "test_type_consistency", 
+    "consistency_method_description": "Verify data type consistency across test cases"
+  },
+  "data_sheet": {
+    "name": "Data",
+    "headers": ["Value_A", "Value_B", "Value_C"],
+    "rows": [
+      ["Value_A1", "Value_B1", "Value_C1"],
+      ["Value_A2", "Value_B2", "Value_C2"],
+      ["Value_A3", "Value_B3", "Value_C3"]
+    ]
+  },
+  "auxiliary_data": {
+    "Z1": "Value_Z1",
+    "Value_Large": "Large_Value"
+  },
+  "levels": [
+    {
+      "level": "NIVEL 1: CASOS ESTRUCTURALES - CellReference Parsing Básico",
+      "cases": [
+        {
+          "id": "CR01",
+          "description": "Referencia básica A1",
+          "cell": "Tests!A1",
+          "formula": "=ROW(\"A1\")",
+          "expected_value": 1,
+          "test_type": "fundamental"
+        },
+        {
+          "id": "CR02",
+          "description": "Columna Z",
+          "cell": "Tests!A2",
+          "formula": "=COLUMN(\"Z1\")",
+          "expected_value": 26,
+          "test_type": "fundamental"
+        },
+        {
+          "id": "CR03",
+          "description": "Columna doble letra AA",
+          "cell": "Tests!A3",
+          "formula": "=COLUMN(\"AA1\")",
+          "expected_value": 27,
+          "test_type": "fundamental"
+        },
+        {
+          "id": "CR04",
+          "description": "Fila alta",
+          "cell": "Tests!A4",
+          "formula": "=ROW(\"A100\")",
+          "expected_value": 100,
+          "test_type": "fundamental"
+        },
+        {
+          "id": "CR05",
+          "description": "Referencia absoluta",
+          "cell": "Tests!A5",
+          "formula": "=ROW(\"$A$1\")",
+          "expected_value": 1,
+          "test_type": "fundamental"
+        }
+      ]
+    },
+    {
+      "level": "NIVEL 1: CASOS ESTRUCTURALES - Referencias con Hoja",
+      "cases": [
+        {
+          "id": "CR06",
+          "description": "Referencia con hoja",
+          "cell": "Tests!A6",
+          "formula": "=ROW(\"Data!A1\")",
+          "expected_value": 1,
+          "test_type": "fundamental"
+        },
+        {
+          "id": "CR07",
+          "description": "Hoja con espacios",
+          "cell": "Tests!A7",
+          "formula": "=ROW(\"'Sheet 2'!A1\")",
+          "expected_value": 1,
+          "test_type": "fundamental"
+        },
+        {
+          "id": "CR08",
+          "description": "Hoja + referencia absoluta",
+          "cell": "Tests!A8",
+          "formula": "=COLUMN(\"Data!$B$5\")",
+          "expected_value": 2,
+          "test_type": "fundamental"
+        }
+      ]
+    },
+    {
+      "level": "NIVEL 1: CASOS ESTRUCTURALES - Aritmética de Referencias OFFSET",
+      "cases": [
+        {
+          "id": "CR09",
+          "description": "Offset básico",
+          "cell": "Tests!A9",
+          "formula": "=OFFSET(\"Data!A1\", 1, 1)",
+          "expected_value": "Value_B2",
+          "test_type": "fundamental"
+        },
+        {
+          "id": "CR10",
+          "description": "Sin offset",
+          "cell": "Tests!A10",
+          "formula": "=OFFSET(\"Data!A1\", 0, 0)",
+          "expected_value": "Value_A1",
+          "test_type": "fundamental"
+        },
+        {
+          "id": "CR11",
+          "description": "Offset negativo",
+          "cell": "Tests!A11",
+          "formula": "=OFFSET(\"Data!B2\", -1, -1)",
+          "expected_value": "Value_A1",
+          "test_type": "fundamental"
+        },
+        {
+          "id": "CR12",
+          "description": "Offset columna Z",
+          "cell": "Tests!A12",
+          "formula": "=OFFSET(\"Data!A1\", 0, 25)",
+          "expected_value": "Value_Z1",
+          "test_type": "fundamental"
+        }
+      ]
+    },
+    {
+      "level": "NIVEL 2: CASOS INTERMEDIOS - ROW Function Referencias de Cadena",
+      "cases": [
+        {
+          "id": "RF01",
+          "description": "ROW cadena de referencia",
+          "cell": "Tests!B1",
+          "formula": "=ROW(\"A1\")",
+          "expected_value": 1,
+          "test_type": "intermediate"
+        },
+        {
+          "id": "RF02",
+          "description": "ROW fila alta",
+          "cell": "Tests!B2",
+          "formula": "=ROW(\"A100\")",
+          "expected_value": 100,
+          "test_type": "intermediate"
+        },
+        {
+          "id": "RF03",
+          "description": "ROW con hoja",
+          "cell": "Tests!B3",
+          "formula": "=ROW(\"Data!A5\")",
+          "expected_value": 5,
+          "test_type": "intermediate"
+        },
+        {
+          "id": "RF04",
+          "description": "ROW columna Z",
+          "cell": "Tests!B4",
+          "formula": "=ROW(\"Z1\")",
+          "expected_value": 1,
+          "test_type": "intermediate"
+        }
+      ]
+    },
+    {
+      "level": "NIVEL 2: CASOS INTERMEDIOS - COLUMN Function Referencias de Cadena",
+      "cases": [
+        {
+          "id": "CF01",
+          "description": "COLUMN cadena de referencia",
+          "cell": "Tests!B5",
+          "formula": "=COLUMN(\"A1\")",
+          "expected_value": 1,
+          "test_type": "intermediate"
+        },
+        {
+          "id": "CF02",
+          "description": "COLUMN columna Z",
+          "cell": "Tests!B6",
+          "formula": "=COLUMN(\"Z1\")",
+          "expected_value": 26,
+          "test_type": "intermediate"
+        },
+        {
+          "id": "CF03",
+          "description": "COLUMN columna doble",
+          "cell": "Tests!B7",
+          "formula": "=COLUMN(\"AA1\")",
+          "expected_value": 27,
+          "test_type": "intermediate"
+        },
+        {
+          "id": "CF04",
+          "description": "COLUMN con hoja",
+          "cell": "Tests!B8",
+          "formula": "=COLUMN(\"Data!B1\")",
+          "expected_value": 2,
+          "test_type": "intermediate"
+        }
+      ]
+    },
+    {
+      "level": "NIVEL 2: CASOS INTERMEDIOS - OFFSET Function Aritmética",
+      "cases": [
+        {
+          "id": "OF01",
+          "description": "OFFSET básico",
+          "cell": "Tests!B9",
+          "formula": "=OFFSET(\"Data!A1\", 1, 1)",
+          "expected_value": "Value_B2",
+          "test_type": "intermediate"
+        },
+        {
+          "id": "OF02",
+          "description": "OFFSET negativo",
+          "cell": "Tests!B10",
+          "formula": "=OFFSET(\"Data!B2\", -1, -1)",
+          "expected_value": "Value_A1",
+          "test_type": "intermediate"
+        },
+        {
+          "id": "OF03",
+          "description": "OFFSET con dimensiones",
+          "cell": "Tests!B11",
+          "formula": "=SUM(OFFSET(\"Data!A1\", 0, 0, 2, 2))",
+          "expected_value": 10,
+          "test_type": "intermediate"
+        },
+        {
+          "id": "OF04",
+          "description": "OFFSET con hoja",
+          "cell": "Tests!B12",
+          "formula": "=OFFSET(\"Data!A1\", 1, 0)",
+          "expected_value": "Value_A2",
+          "test_type": "intermediate"
+        }
+      ]
+    },
+    {
+      "level": "NIVEL 2: CASOS INTERMEDIOS - INDIRECT Function Referencias Dinámicas",
+      "cases": [
+        {
+          "id": "IF01",
+          "description": "INDIRECT referencia directa",
+          "cell": "Tests!C1",
+          "formula": "=INDIRECT(\"Data!A1\")",
+          "expected_value": "Value_A1",
+          "test_type": "intermediate"
+        },
+        {
+          "id": "IF02",
+          "description": "INDIRECT referencia calculada",
+          "cell": "Tests!C2",
+          "formula": "=INDIRECT(\"Data!A\" & \"1\")",
+          "expected_value": "Value_A1",
+          "test_type": "intermediate"
+        },
+        {
+          "id": "IF03",
+          "description": "INDIRECT con hoja",
+          "cell": "Tests!C3",
+          "formula": "=INDIRECT(\"Data!A1\")",
+          "expected_value": "Value_A1",
+          "test_type": "intermediate"
+        },
+        {
+          "id": "IF04",
+          "description": "INDIRECT rango dinámico",
+          "cell": "Tests!C4",
+          "formula": "=SUM(INDIRECT(\"Data!A1:B2\"))",
+          "expected_value": 10,
+          "test_type": "intermediate"
+        }
+      ]
+    },
+    {
+      "level": "NIVEL 3: CASOS AVANZADOS - Context-Aware Functions",
+      "cases": [
+        {
+          "id": "CA01",
+          "description": "ROW sin parámetro",
+          "cell": "Tests!C5",
+          "formula": "=ROW()",
+          "expected_value": 5,
+          "test_type": "advanced"
+        },
+        {
+          "id": "CA02",
+          "description": "ROW sin parámetro fila 10",
+          "cell": "Tests!C10",
+          "formula": "=ROW()",
+          "expected_value": 10,
+          "test_type": "advanced"
+        },
+        {
+          "id": "CA03",
+          "description": "COLUMN sin parámetro",
+          "cell": "Tests!C6",
+          "formula": "=COLUMN()",
+          "expected_value": 3,
+          "test_type": "advanced"
+        },
+        {
+          "id": "CA04",
+          "description": "COLUMN sin parámetro columna Z",
+          "cell": "Tests!Z7",
+          "formula": "=COLUMN()",
+          "expected_value": 26,
+          "test_type": "advanced"
+        }
+      ]
+    },
+    {
+      "level": "NIVEL 3: CASOS AVANZADOS - Range References",
+      "cases": [
+        {
+          "id": "RR01",
+          "description": "ROW con rango",
+          "cell": "Tests!D1",
+          "formula": "=ROW(\"Data!A1:A3\")",
+          "expected_value": 1,
+          "test_type": "advanced",
+          "note": "Returns first row of range"
+        },
+        {
+          "id": "RR02",
+          "description": "COLUMN con rango",
+          "cell": "Tests!D2",
+          "formula": "=COLUMN(\"Data!A1:C1\")",
+          "expected_value": 1,
+          "test_type": "advanced",
+          "note": "Returns first column of range"
+        },
+        {
+          "id": "RR03",
+          "description": "OFFSET rango completo",
+          "cell": "Tests!D3",
+          "formula": "=SUM(OFFSET(\"Data!A1\", 0, 0, 3, 3))",
+          "expected_value": 45,
+          "test_type": "advanced"
+        },
+        {
+          "id": "RR04",
+          "description": "INDIRECT rango",
+          "cell": "Tests!D4",
+          "formula": "=COUNT(INDIRECT(\"Data!A1:C3\"))",
+          "expected_value": 9,
+          "test_type": "advanced"
+        }
+      ]
+    },
+    {
+      "level": "NIVEL 4: CASOS DE ERROR - Reference Parsing Errors",
+      "cases": [
+        {
+          "id": "PE01",
+          "description": "Referencia inválida",
+          "cell": "Tests!E1",
+          "formula": "=ROW(\"InvalidRef\")",
+          "expected_value": "#REF!",
+          "test_type": "error"
+        },
+        {
+          "id": "PE02",
+          "description": "Cadena vacía",
+          "cell": "Tests!E2",
+          "formula": "=ROW(\"\")",
+          "expected_value": "#REF!",
+          "test_type": "error"
+        },
+        {
+          "id": "PE03",
+          "description": "Referencia incompleta",
+          "cell": "Tests!E3",
+          "formula": "=ROW(\"A\")",
+          "expected_value": "#REF!",
+          "test_type": "error"
+        },
+        {
+          "id": "PE04",
+          "description": "Formato incorrecto",
+          "cell": "Tests!E4",
+          "formula": "=ROW(\"1A\")",
+          "expected_value": "#REF!",
+          "test_type": "error"
+        }
+      ]
+    },
+    {
+      "level": "NIVEL 4: CASOS DE ERROR - Bounds Checking Errors",
+      "cases": [
+        {
+          "id": "BE01",
+          "description": "OFFSET fila fuera de límites",
+          "cell": "Tests!E5",
+          "formula": "=OFFSET(\"Data!A1\", -1, 0)",
+          "expected_value": "#REF!",
+          "test_type": "error"
+        },
+        {
+          "id": "BE02",
+          "description": "OFFSET columna fuera de límites",
+          "cell": "Tests!E6",
+          "formula": "=OFFSET(\"Data!A1\", 0, -1)",
+          "expected_value": "#REF!",
+          "test_type": "error"
+        },
+        {
+          "id": "BE03",
+          "description": "OFFSET fila máxima excedida",
+          "cell": "Tests!E7",
+          "formula": "=OFFSET(\"Data!A1\", 1048576, 0)",
+          "expected_value": "#REF!",
+          "test_type": "error"
+        },
+        {
+          "id": "BE04",
+          "description": "OFFSET columna máxima excedida",
+          "cell": "Tests!E8",
+          "formula": "=OFFSET(\"Data!A1\", 0, 16384)",
+          "expected_value": "#REF!",
+          "test_type": "error"
+        }
+      ]
+    },
+    {
+      "level": "NIVEL 4: CASOS DE ERROR - Function Parameter Errors",
+      "cases": [
+        {
+          "id": "FE01",
+          "description": "OFFSET height = 0",
+          "cell": "Tests!E9",
+          "formula": "=OFFSET(\"Data!A1\", 0, 0, 0, 1)",
+          "expected_value": "#VALUE!",
+          "test_type": "error"
+        },
+        {
+          "id": "FE02",
+          "description": "OFFSET width = 0",
+          "cell": "Tests!E10",
+          "formula": "=OFFSET(\"Data!A1\", 0, 0, 1, 0)",
+          "expected_value": "#VALUE!",
+          "test_type": "error"
+        },
+        {
+          "id": "FE03",
+          "description": "INDIRECT hoja inexistente",
+          "cell": "Tests!E11",
+          "formula": "=INDIRECT(\"Sheet99!A1\")",
+          "expected_value": "#REF!",
+          "test_type": "error"
+        },
+        {
+          "id": "FE04",
+          "description": "ROW referencia inválida",
+          "cell": "Tests!E12",
+          "formula": "=ROW(\"InvalidRef\")",
+          "expected_value": "#REF!",
+          "test_type": "error"
+        }
+      ]
+    },
+    {
+      "level": "NIVEL 5: CASOS ESPECIALES - Edge Cases",
+      "cases": [
+        {
+          "id": "EC01",
+          "description": "Referencia con espacios",
+          "cell": "Tests!F1",
+          "formula": "=ROW(\"'Sheet 2'!A1\")",
+          "expected_value": 1,
+          "test_type": "edge"
+        },
+        {
+          "id": "EC02",
+          "description": "Referencia case insensitive",
+          "cell": "Tests!F2",
+          "formula": "=ROW(\"a1\")",
+          "expected_value": 1,
+          "test_type": "edge"
+        },
+        {
+          "id": "EC03",
+          "description": "OFFSET con valores grandes",
+          "cell": "Tests!F3",
+          "formula": "=OFFSET(\"Data!A1\", 1000, 100)",
+          "expected_value": "Value_Large",
+          "test_type": "edge"
+        },
+        {
+          "id": "EC04",
+          "description": "INDIRECT con concatenación compleja",
+          "cell": "Tests!F4",
+          "formula": "=INDIRECT(\"Data!\" & \"A\" & (1+0))",
+          "expected_value": "Value_A1",
+          "test_type": "edge"
+        },
+        {
+          "id": "EC05",
+          "description": "Múltiples niveles OFFSET",
+          "cell": "Tests!F5",
+          "formula": "=OFFSET(OFFSET(\"Data!A1\", 1, 0), 0, 1)",
+          "expected_value": "Value_B2",
+          "test_type": "edge"
+        }
+      ]
+    }
+  ]
+}

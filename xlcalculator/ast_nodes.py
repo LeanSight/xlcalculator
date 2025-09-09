@@ -233,21 +233,34 @@ class FunctionNode(ASTNode):
         super().__init__(token)
         self.args = None
 
-    def _eval_parameter_with_excel_fallback(self, pitem, context):
+    def _eval_parameter_with_excel_fallback(self, pitem, context, func_name=None, param_index=0):
         """
-        Evaluate parameter with fallback to Excel's pre-calculated values.
+        Evaluate parameter with support for reference strings and Excel fallback.
         
-        This method ensures xlcalculator behavior matches Excel by using Excel's own
-        calculated values when our evaluation fails or returns BLANK for cell references.
+        This method handles both reference-aware functions (that need string references)
+        and normal functions (that need evaluated values).
         
         Args:
             pitem: Parameter AST node to evaluate
             context: Evaluation context
+            func_name: Name of the function being called
+            param_index: Index of the parameter (0-based)
             
         Returns:
-            Evaluated parameter value, falling back to Excel's stored value if needed
+            Evaluated parameter value or string reference as appropriate
         """
-        # Try normal evaluation first
+        from .reference_aware_functions import is_string_reference_parameter
+        
+        # Check if this parameter should be passed as a string reference
+        if func_name and is_string_reference_parameter(pitem, func_name, param_index):
+            # Return the string value directly for reference-aware functions
+            if (hasattr(pitem, 'tvalue') and 
+                hasattr(pitem, 'ttype') and 
+                pitem.ttype == 'operand' and
+                isinstance(pitem.tvalue, str)):
+                return pitem.tvalue
+        
+        # Normal parameter evaluation
         try:
             result = pitem.eval(context)
             
@@ -295,6 +308,7 @@ class FunctionNode(ASTNode):
         sig = inspect.signature(func)
         bound = sig.bind(*self.args)
         args = []
+        param_index = 0
         for pname, pvalue in list(bound.arguments.items()):
             param = sig.parameters[pname]
             ptype = param.annotation
@@ -312,10 +326,13 @@ class FunctionNode(ASTNode):
                 ])
             elif (param.kind == param.VAR_POSITIONAL):
                 args.extend([
-                    self._eval_parameter_with_excel_fallback(pitem, context) for pitem in pvalue
+                    self._eval_parameter_with_excel_fallback(pitem, context, func_name, param_index + i) 
+                    for i, pitem in enumerate(pvalue)
                 ])
+                param_index += len(pvalue)
             else:
-                args.append(self._eval_parameter_with_excel_fallback(pvalue, context))
+                args.append(self._eval_parameter_with_excel_fallback(pvalue, context, func_name, param_index))
+                param_index += 1
         # 4. Inject context if function needs it, then run function and return result.
         from .context import needs_context_by_name, create_context_cached
         
