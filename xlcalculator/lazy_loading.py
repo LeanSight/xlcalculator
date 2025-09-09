@@ -32,23 +32,25 @@ class ExcelCompliantLazyRange:
     
     def _check_if_full_range(self, address_str):
         """Check if this is a full column/row reference that needs lazy loading."""
-        if ':' in address_str:
-            parts = address_str.split(':')
-            if len(parts) == 2:
-                left, right = parts
-                # Remove sheet prefix for comparison
-                if '!' in left:
-                    left = left.split('!')[-1]
-                if '!' in right:
-                    right = right.split('!')[-1]
-                
-                # Check for full column (A:A, B:B)
-                if left.isalpha() and right.isalpha() and left == right:
-                    return True
-                
-                # Check for full row (1:1, 2:2)
-                if left.isdigit() and right.isdigit() and left == right:
-                    return True
+        from xlcalculator.utils import parse_sheet_and_address
+        
+        try:
+            sheet, range_part = parse_sheet_and_address(address_str)
+            
+            if ':' in range_part:
+                parts = range_part.split(':')
+                if len(parts) == 2:
+                    left, right = parts
+                    
+                    # Check for full column (A:A, B:B)
+                    if left.isalpha() and right.isalpha() and left == right:
+                        return True
+                    
+                    # Check for full row (1:1, 2:2)
+                    if left.isdigit() and right.isdigit() and left == right:
+                        return True
+        except Exception:
+            pass
         
         return False
     
@@ -158,19 +160,25 @@ class ExcelCompliantLazyRange:
         max_row = 0
         
         # Scan all cells in the model for this sheet and column
+        from xlcalculator.utils import parse_sheet_and_address
+        from openpyxl.utils.cell import COORD_RE
+        
         for cell_address in self.model.cells:
-            if cell_address.startswith(f"{sheet_name}!{column}"):
-                # Extract row number
-                try:
-                    row_part = cell_address.split(f"{sheet_name}!{column}")[1]
-                    if row_part.isdigit():
-                        row_num = int(row_part)
-                        # Check if cell has actual data (not empty/zero)
-                        cell_value = self.model.cells[cell_address].value
-                        if cell_value is not None and cell_value != 0 and cell_value != '':
-                            max_row = max(max_row, row_num)
-                except:
-                    continue
+            try:
+                parsed_sheet, address_part = parse_sheet_and_address(cell_address)
+                if parsed_sheet == sheet_name:
+                    # Use openpyxl's COORD_RE to parse the address
+                    coord_match = COORD_RE.split(address_part)
+                    if len(coord_match) >= 3:
+                        col, row = coord_match[1:3]
+                        if col == column and row.isdigit():
+                            row_num = int(row)
+                            # Check if cell has actual data (not empty/zero)
+                            cell_value = self.model.cells[cell_address].value
+                            if cell_value is not None and cell_value != 0 and cell_value != '':
+                                max_row = max(max_row, row_num)
+            except:
+                continue
         
         return max_row
     
@@ -185,19 +193,25 @@ class ExcelCompliantLazyRange:
         max_col = 0
         
         # Scan all cells in the model for this sheet and row
+        from xlcalculator.utils import parse_sheet_and_address
+        from openpyxl.utils.cell import COORD_RE, column_index_from_string
+        
         for cell_address in self.model.cells:
-            if cell_address.startswith(f"{sheet_name}!") and cell_address.endswith(row):
-                # Extract column letter
-                try:
-                    col_part = cell_address.split(f"{sheet_name}!")[1].replace(row, '')
-                    if col_part.isalpha():
-                        col_num = ord(col_part) - ord('A') + 1
-                        # Check if cell has actual data
-                        cell_value = self.model.cells[cell_address].value
-                        if cell_value is not None and cell_value != 0 and cell_value != '':
-                            max_col = max(max_col, col_num)
-                except:
-                    continue
+            try:
+                parsed_sheet, address_part = parse_sheet_and_address(cell_address)
+                if parsed_sheet == sheet_name:
+                    # Use openpyxl's COORD_RE to parse the address
+                    coord_match = COORD_RE.split(address_part)
+                    if len(coord_match) >= 3:
+                        col, cell_row = coord_match[1:3]
+                        if cell_row == row:
+                            col_num = column_index_from_string(col)
+                            # Check if cell has actual data
+                            cell_value = self.model.cells[cell_address].value
+                            if cell_value is not None and cell_value != 0 and cell_value != '':
+                                max_col = max(max_col, col_num)
+            except:
+                continue
         
         return max_col
     
@@ -214,13 +228,8 @@ class ExcelCompliantLazyRange:
     
     def _parse_range(self):
         """Parse range to extract sheet name and range part."""
-        if '!' in self.address_str:
-            sheet_name, range_part = self.address_str.split('!', 1)
-        else:
-            sheet_name = 'Sheet1'  # Default sheet
-            range_part = self.address_str
-        
-        return sheet_name, range_part
+        from xlcalculator.utils import parse_sheet_and_address
+        return parse_sheet_and_address(self.address_str)
     
     @property
     def address(self):
@@ -284,23 +293,25 @@ def patch_evaluator_with_lazy_loading(evaluator):
 
 def is_full_range(range_str):
     """Check if a range reference is a full column/row that needs lazy loading."""
-    if ':' in range_str:
-        parts = range_str.split(':')
-        if len(parts) == 2:
-            left, right = parts
-            # Remove sheet prefix for comparison
-            if '!' in left:
-                left = left.split('!')[-1]
-            if '!' in right:
-                right = right.split('!')[-1]
-            
-            # Check for full column (A:A, B:B)
-            if left.isalpha() and right.isalpha() and left == right:
-                return True
-            
-            # Check for full row (1:1, 2:2)
-            if left.isdigit() and right.isdigit() and left == right:
-                return True
+    from xlcalculator.utils import parse_sheet_and_address
+    
+    try:
+        sheet, range_part = parse_sheet_and_address(range_str)
+        
+        if ':' in range_part:
+            parts = range_part.split(':')
+            if len(parts) == 2:
+                left, right = parts
+                
+                # Check for full column (A:A, B:B)
+                if left.isalpha() and right.isalpha() and left == right:
+                    return True
+                
+                # Check for full row (1:1, 2:2)
+                if left.isdigit() and right.isdigit() and left == right:
+                    return True
+    except Exception:
+        pass
     
     return False
 

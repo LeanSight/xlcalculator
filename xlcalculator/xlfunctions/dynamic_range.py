@@ -955,11 +955,24 @@ def ROW(reference: func_xltypes.XlAnything = None) -> func_xltypes.XlAnything:
         row_numbers = [[i + 1] for i in range(num_rows)]
         return func_xltypes.Array(row_numbers)
     
-    # Handle string references
+    # Handle string references using existing parsing logic
     ref_string = str(reference)
     if ':' in ref_string:
-        # Range reference like A1:A3
-        # Extract start and end row numbers
+        # Range reference like A1:A3 - use openpyxl's range_boundaries
+        from openpyxl.utils.cell import range_boundaries
+        from xlcalculator.utils import parse_sheet_and_address
+        
+        try:
+            sheet, range_part = parse_sheet_and_address(ref_string)
+            min_col, min_row, max_col, max_row = range_boundaries(range_part)
+            
+            if min_row and max_row:
+                row_numbers = [[i] for i in range(min_row, max_row + 1)]
+                return func_xltypes.Array(row_numbers)
+        except Exception:
+            pass  # Fall back to regex if openpyxl parsing fails
+        
+        # Fallback regex for edge cases
         match = re.search(r'([A-Z]+)(\d+):([A-Z]+)(\d+)', ref_string)
         if match:
             start_row = int(match.group(2))
@@ -967,7 +980,20 @@ def ROW(reference: func_xltypes.XlAnything = None) -> func_xltypes.XlAnything:
             row_numbers = [[i] for i in range(start_row, end_row + 1)]
             return func_xltypes.Array(row_numbers)
     else:
-        # Single cell reference
+        # Single cell reference - use openpyxl's COORD_RE
+        from openpyxl.utils.cell import COORD_RE
+        from xlcalculator.utils import parse_sheet_and_address
+        
+        try:
+            sheet, address_part = parse_sheet_and_address(ref_string)
+            coord_match = COORD_RE.split(address_part)
+            if len(coord_match) >= 3:
+                col, row = coord_match[1:3]
+                return int(row)
+        except Exception:
+            pass  # Fall back to regex if openpyxl parsing fails
+        
+        # Fallback regex for edge cases
         match = re.search(r'([A-Z]+)(\d+)', ref_string)
         if match:
             return int(match.group(2))
