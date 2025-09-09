@@ -211,11 +211,10 @@ class ModelCompiler:
         # Group cells by sheet
         sheet_cells = {}
         for item, value in input_dict.items():
-            if "!" in item:
-                sheet_name, cell_address = item.split("!", 1)
-            else:
-                sheet_name = default_sheet
-                cell_address = item
+            from .range import CellReference
+            cell_ref = CellReference.parse(item, current_sheet=default_sheet)
+            sheet_name = cell_ref.sheet
+            cell_address = cell_ref.address
             
             if sheet_name not in sheet_cells:
                 sheet_cells[sheet_name] = {}
@@ -240,25 +239,8 @@ class ModelCompiler:
         Args:
             workbook: Workbook instance to build code for
         """
-        from . import parser
-        
-        # Collect defined names for parser
-        defined_names = {}
-        for name, obj in workbook.defined_names.items():
-            if hasattr(obj, 'full_address'):
-                defined_names[name] = obj.full_address
-            elif hasattr(obj, 'address'):
-                defined_names[name] = obj.address
-        
-        # Build AST for all formulas
-        for worksheet in workbook.worksheets.values():
-            for cell in worksheet.cells.values():
-                if cell.formula is not None:
-                    try:
-                        cell.formula.ast = parser.FormulaParser().parse(
-                            cell.formula.formula, defined_names)
-                    except Exception as e:
-                        logging.warning(f"Failed to parse formula in {cell.full_address}: {e}")
+        # Use the workbook's built-in AST building capability
+        workbook.build_all_formula_ast()
     
     def parse_archive_hierarchical(self, archive, ignore_sheets=[], ignore_hidden=False):
         """Parse archive into hierarchical model structure.
@@ -282,11 +264,10 @@ class ModelCompiler:
         # Group cells by sheet
         sheet_cells = {}
         for full_address, cell in cells.items():
-            if '!' in full_address:
-                sheet_name, cell_address = full_address.split('!', 1)
-            else:
-                sheet_name = "Sheet1"
-                cell_address = full_address
+            from .range import CellReference
+            cell_ref = CellReference.parse(full_address, current_sheet="Sheet1")
+            sheet_name = cell_ref.sheet
+            cell_address = cell_ref.address
             
             if sheet_name not in sheet_cells:
                 sheet_cells[sheet_name] = {}
@@ -419,11 +400,10 @@ class ModelCompiler:
         # Group cells by sheet
         sheet_cells = {}
         for item, value in input_dict.items():
-            if "!" in item:
-                sheet_name, cell_address = item.split("!", 1)
-            else:
-                sheet_name = default_sheet
-                cell_address = item
+            from .range import CellReference
+            cell_ref = CellReference.parse(item, current_sheet=default_sheet)
+            sheet_name = cell_ref.sheet
+            cell_address = cell_ref.address
             
             if sheet_name not in sheet_cells:
                 sheet_cells[sheet_name] = {}
@@ -448,25 +428,8 @@ class ModelCompiler:
         Args:
             workbook: Workbook instance to build code for
         """
-        from . import parser
-        
-        # Collect defined names for parser
-        defined_names = {}
-        for name, obj in workbook.defined_names.items():
-            if hasattr(obj, 'full_address'):
-                defined_names[name] = obj.full_address
-            elif hasattr(obj, 'address'):
-                defined_names[name] = obj.address
-        
-        # Build AST for all formulas
-        for worksheet in workbook.worksheets.values():
-            for cell in worksheet.cells.values():
-                if cell.formula is not None:
-                    try:
-                        cell.formula.ast = parser.FormulaParser().parse(
-                            cell.formula.formula, defined_names)
-                    except Exception as e:
-                        logging.warning(f"Failed to parse formula in {cell.full_address}: {e}")
+        # Use the workbook's built-in AST building capability
+        workbook.build_all_formula_ast()
     
     def parse_archive_hierarchical(self, archive, ignore_sheets=[], ignore_hidden=False):
         """Parse archive into hierarchical model structure.
@@ -490,11 +453,10 @@ class ModelCompiler:
         # Group cells by sheet
         sheet_cells = {}
         for full_address, cell in cells.items():
-            if '!' in full_address:
-                sheet_name, cell_address = full_address.split('!', 1)
-            else:
-                sheet_name = "Sheet1"
-                cell_address = full_address
+            from .range import CellReference
+            cell_ref = CellReference.parse(full_address, current_sheet="Sheet1")
+            sheet_name = cell_ref.sheet
+            cell_address = cell_ref.address
             
             if sheet_name not in sheet_cells:
                 sheet_cells[sheet_name] = {}

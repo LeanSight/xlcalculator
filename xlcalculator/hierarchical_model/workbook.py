@@ -142,6 +142,9 @@ class Workbook:
             # Cell reference
             cell = self.get_cell(reference)
             self.defined_names[name] = cell
+        
+        # Rebuild AST for all formulas since defined names context changed
+        self.build_all_formula_ast()
     
     def get_cell_by_name(self, name: str) -> Cell:
         """Get cell by defined name.
@@ -241,6 +244,15 @@ class Workbook:
         if '!' not in address:
             raise ValueError(f"Invalid address format: '{address}'. Expected 'Sheet!Cell' format")
         
+        try:
+            from ..range import CellReference
+            # Try parsing as cell reference first
+            cell_ref = CellReference.parse(address, current_sheet='Sheet1')
+            return cell_ref.sheet, cell_ref.address
+        except Exception:
+            # If that fails, use manual parsing for ranges
+            pass
+        
         parts = address.split('!', 1)
         if len(parts) != 2:
             raise ValueError(f"Invalid address format: '{address}'. Expected 'Sheet!Cell' format")
@@ -251,6 +263,11 @@ class Workbook:
             raise ValueError(f"Invalid address format: '{address}'. Sheet name and cell address cannot be empty")
         
         return sheet_name, cell_address
+    
+    def build_all_formula_ast(self):
+        """Build AST for all formulas in all worksheets."""
+        for worksheet in self.worksheets.values():
+            worksheet.build_all_formula_ast()
     
     def __eq__(self, other) -> bool:
         """Compare workbooks for equality."""

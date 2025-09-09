@@ -53,6 +53,10 @@ class Worksheet:
         if isinstance(value, str) and value.startswith('='):
             from ..xltypes import XLFormula
             formula = XLFormula(value, sheet_name=self.name)
+            
+            # Build AST automatically for immediate evaluation capability
+            self._build_formula_ast(formula)
+            
             cell.formula = formula
             cell.value = None  # Formula cells have no direct value
         else:
@@ -70,6 +74,39 @@ class Worksheet:
         """
         cell = self.get_cell(address)
         return cell.value
+    
+    def _build_formula_ast(self, formula):
+        """Build AST for a formula with current workbook context.
+        
+        Args:
+            formula: XLFormula instance to build AST for
+        """
+        try:
+            from .. import parser
+            
+            # Collect defined names from workbook for parser context
+            defined_names = {}
+            if hasattr(self, 'workbook') and self.workbook:
+                for name, obj in self.workbook.defined_names.items():
+                    if hasattr(obj, 'full_address'):
+                        defined_names[name] = obj.full_address
+                    elif hasattr(obj, 'address'):
+                        defined_names[name] = f"{self.name}!{obj.address}"
+            
+            # Build the AST - avoid variable name conflict
+            formula_text = formula.formula
+            formula.ast = parser.FormulaParser().parse(formula_text, defined_names)
+            
+        except Exception as e:
+            import logging
+            logging.warning(f"Failed to parse formula '{formula.formula}' in {self.name}: {e}")
+            # Leave AST as None - formula will still exist but won't be evaluable
+    
+    def build_all_formula_ast(self):
+        """Build AST for all formulas in this worksheet."""
+        for cell in self.cells.values():
+            if cell.formula and not cell.formula.ast:
+                self._build_formula_ast(cell.formula)
     
     def get_range(self, address: str) -> Range:
         """Get range by local address, creating if it doesn't exist.
