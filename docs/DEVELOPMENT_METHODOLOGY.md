@@ -1,13 +1,16 @@
 # Development Methodology & Problem Resolution Framework
 
-This document captures the development methodology, problem resolution approach, and rules extracted from the Excel compliance project conversation.
+This document captures the universal development methodology, problem resolution approach, and coding standards for software development projects.
+
+**Related Documents**: 
+- [Excel Compliance Project Goals](PROJECT_GOALS_EXCEL_COMPLIANCE.md) - Excel-specific implementation guidelines and project objectives
 
 ## 🎯 Core Development Principles
 
 ### ATDD (Acceptance Test Driven Development) Compliance
-- **Primary Rule**: Implementation must follow Excel behavior exactly as defined by tests
-- **No Fallbacks**: Avoid fallbacks that violate Excel behavior
-- **Return Actual Data**: Return actual Excel data or proper Excel errors
+- **Primary Rule**: Implementation must follow expected behavior exactly as defined by tests
+- **No Fallbacks**: Avoid fallbacks that violate expected behavior
+- **Return Actual Data**: Return actual data or proper error responses
 - **No Hardcoded Data**: Performance optimization without compromising compatibility
 - **Test-First**: Tests define the expected behavior, implementation follows
 
@@ -170,13 +173,13 @@ todo_reset ["Read existing code to understand current structure", "Check depende
 **❌ NOT Permitted**:
 - Hardcoding specific values for test cases
 - Changing tests to match incorrect implementation
-- Modifying data to make formulas work
+- Modifying data to make calculations work
 - Fallbacks that mask expected errors
 
 **✅ Permitted**:
 - Correcting implementation if there's a real bug
 - Implementing missing functionality from reference specification
-- Documenting limitations for incorrect formula design
+- Documenting limitations for incorrect calculation design
 - Using reference implementation's pre-calculated values for compatibility
 
 ### Problem Resolution Approach
@@ -207,7 +210,7 @@ todo_reset ["Read existing code to understand current structure", "Check depende
 
 ### Code Analysis Framework
 1. **Search for Patterns**: Identify all instances of problematic patterns
-2. **Categorize by Legitimacy**: Distinguish between Excel-compliant and ATDD violations
+2. **Categorize by Legitimacy**: Distinguish between specification-compliant and ATDD violations
 3. **Evidence-Based Verification**: Use official documentation to confirm legitimacy
 4. **Document with Context**: Provide clear explanations and recommendations
 5. **Prioritize by Impact**: Focus on architectural changes over individual fixes
@@ -251,7 +254,7 @@ todo_reset ["Read existing code to understand current structure", "Check depende
 - **Measurable Criteria**: Specific, testable success conditions
 - **Functional Success**: Core functionality working correctly
 - **Code Quality Success**: Maintainable, self-documenting changes
-- **Compatibility Success**: Excel behavior matching
+- **Compatibility Success**: Reference behavior matching
 
 ### Risk Management Approach
 - **Technical Risks**: Backward compatibility, performance, integration
@@ -270,17 +273,17 @@ todo_reset ["Read existing code to understand current structure", "Check depende
 from .. import testing
 
 class FunctionNameTest(testing.FunctionalTestCase):
-    filename = "FUNCTION_NAME.xlsx"
+    filename = "FUNCTION_NAME.testfile"
     
     def test_evaluation_cellref(self):
-        excel_value = self.evaluator.get_cell_value('Sheet1!A1')
+        reference_value = self.evaluator.get_cell_value('Sheet1!A1')
         value = self.evaluator.evaluate('Sheet1!A1')
-        self.assertEqual(excel_value, value)
+        self.assertEqual(reference_value, value)
 ```
 
 ### Reference File Requirements
-1. **Formula Cells**: Contain formulas to be tested
-2. **Data Cells**: Provide input data for formulas
+1. **Calculation Cells**: Contain calculations to be tested
+2. **Data Cells**: Provide input data for calculations
 3. **Result Storage**: Reference implementation calculates and stores expected results
 4. **Multiple Scenarios**: Cover edge cases, data types, error conditions
 
@@ -302,7 +305,7 @@ class FunctionNameTest(testing.FunctionalTestCase):
 - Error inputs testing
 - Type conversion validation
 
-### Excel File Design Patterns
+### Reference File Design Patterns
 
 #### Pattern 1: Basic Function Testing
 ```
@@ -358,10 +361,10 @@ A5: =FUNCTION(large_number)    → Boundary testing
 @xl.register()
 @xl.validate_args
 def FUNCTION_NAME(param1: func_xltypes.XlType, param2: func_xltypes.XlType = None) -> func_xltypes.XlType:
-    """Function description with Excel documentation link."""
+    """Function description with reference documentation link."""
     # Validation logic
     # Core implementation
-    # Return proper Excel type
+    # Return proper type
 ```
 
 #### Pattern 2: Context-Aware Function Implementation
@@ -395,13 +398,13 @@ def FUNCTION_WITH_ERRORS(param):
 #### Pattern 1: Parameter Evaluation with Fallback
 ```python
 def _eval_with_fallback(self, pitem, context):
-    """Evaluate parameter with fallback to stored cell values."""
+    """Evaluate parameter with fallback to stored data values."""
     result = pitem.eval(context)
     
     # If evaluation returns BLANK, try fallback strategies
     if isinstance(result, Blank) and hasattr(pitem, 'tvalue'):
-        # Strategy 1: Try to get stored cell value
-        cell_addr = pitem.tvalue
+        # Strategy 1: Try to get stored data value
+        data_addr = pitem.tvalue
         if hasattr(context, 'evaluator') and cell_addr in context.evaluator.model.cells:
             cell = context.evaluator.model.cells[cell_addr]
             if cell.value and str(cell.value) != 'EMPTY':
@@ -412,13 +415,13 @@ def _eval_with_fallback(self, pitem, context):
 
 #### Pattern 2: Context Propagation
 ```python
-def _get_context(self, ref, formula_sheet=None):
+def _get_context(self, ref, data_sheet=None):
     """Create context with proper sheet information."""
-    return EvaluatorContext(self, ref, formula_sheet)
+    return EvaluatorContext(self, ref, data_sheet)
 
-def __init__(self, evaluator, ref, formula_sheet=None):
-    """Initialize context with formula sheet context."""
-    super().__init__(evaluator.namespace, ref, formula_sheet)
+def __init__(self, evaluator, ref, data_sheet=None):
+    """Initialize context with data sheet context."""
+    super().__init__(evaluator.namespace, ref, data_sheet)
     self.evaluator = evaluator
 ```
 
@@ -427,7 +430,7 @@ def __init__(self, evaluator, ref, formula_sheet=None):
 def evaluate(self, addr, context=None):
     """Enhanced evaluation with proper error handling."""
     try:
-        value = cell.formula.ast.eval(context)
+        value = cell.expression.ast.eval(context)
         
         # Enhanced error handling
         if isinstance(value, StandardError):

@@ -64,6 +64,27 @@
 - ✅ Foundation ready for additional Excel functions
 - ✅ Documentation complete and accurate
 
+## 📋 Excel Compliance Strategy
+
+### Core Principles
+1. **Test-Driven Compliance**: All Excel behavior must be verified through tests
+2. **No Assumptions**: Never assume Excel behavior without testing
+3. **Exact Replication**: Match Excel's exact output, including error types and edge cases
+4. **Documentation**: Document any Excel quirks or non-intuitive behaviors discovered
+
+### Implementation Guidelines
+- Use ATDD (Acceptance Test Driven Development) for all Excel function implementations
+- Write tests that compare xlcalculator output directly with Excel output
+- Handle Excel's specific error types (#VALUE!, #REF!, #NAME?, etc.)
+- Maintain Excel's precedence rules and calculation order
+- Preserve Excel's handling of edge cases and boundary conditions
+
+### Testing Strategy
+- Create comprehensive test suites that cover normal cases, edge cases, and error conditions
+- Use actual Excel files and formulas for validation
+- Test against multiple Excel versions when behavior differs
+- Document any version-specific behaviors or limitations
+
 ## 🔧 Excel-Specific Implementation Patterns
 
 ### Context-Aware Excel Function Pattern
@@ -200,4 +221,4 @@ def EXCEL_FUNCTION(param):
 **Document Version**: 1.0  
 **Last Updated**: 2025-01-09  
 **Project Owner**: Development Team  
-**Related Documents**: [Excel Compliance Strategy](EXCEL_COMPLIANCE_STRATEGY.md), [Development Methodology](DEVELOPMENT_METHODOLOGY.md)
+**Related Documents**: [Development Methodology](DEVELOPMENT_METHODOLOGY.md) - Universal development principles and problem resolution framework
