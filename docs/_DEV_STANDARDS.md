@@ -54,7 +54,7 @@
 
 ### NEVER MOVE FORWARD TO A NEW ACCEPTANCE TEST WITHOUT ALL TESTS IN GREEN
 
-### ELIMINATE ALL MAGIC VALUES, HARDCODED MAPPINGS, AND NON-EXCEL FALLBACKS
+### ELIMINATE (AND ALWAYD AVOID TO CREATE) ALL MAGIC VALUES, HARDCODED MAPPINGS, AND NON-EXCEL FALLBACKS
 
 **Code must eliminate and never use:**
 - **Magic Values**: Arbitrary numbers, thresholds, or limits not documented in Excel specification
