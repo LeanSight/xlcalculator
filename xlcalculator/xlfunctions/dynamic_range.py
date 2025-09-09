@@ -670,6 +670,7 @@ def _handle_offset_array_result(reference, rows_int, cols_int, height_int, width
 # 4. COMMIT: Save progress
 
 @xl.register()
+@xl.validate_args
 def INDEX(array, row_num, col_num=1, area_num=1):
     """Returns value at intersection of row/column in array.
     
@@ -684,9 +685,8 @@ def INDEX(array, row_num, col_num=1, area_num=1):
     try:
         evaluator = _get_evaluator_context()
     except RuntimeError as e:
-        # Context not available - return blank for now
-        # This should not happen in normal operation
-        return func_xltypes.Blank()
+        # Context not available - this is a critical error
+        raise xlerrors.ValueExcelError("INDEX function requires evaluator context")
     
     # Handle Reference form with multiple areas
     # Check if array is a tuple/list of areas (multiple ranges)
@@ -824,7 +824,29 @@ def OFFSET(reference, rows, cols, height=None, width=None):
     
     # print(f"OFFSET ref_string: {ref_string}")
     
-    # Convert numeric parameters using shared utility
+    # Handle array parameters for dynamic arrays (like ROW(A1:A2))
+    if isinstance(rows, func_xltypes.Array):
+        # Rows parameter is an array - return array of results
+        results = []
+        for row_data in rows.values:
+            if isinstance(row_data, list) and len(row_data) > 0:
+                row_val = row_data[0]
+                if isinstance(cols, func_xltypes.Array):
+                    # Both rows and cols are arrays - not implemented yet
+                    raise xlerrors.ValueExcelError("Multiple array parameters not supported")
+                else:
+                    cols_int = _convert_to_python_int(cols)
+                    # Get single result for this row offset
+                    if height is None and width is None:
+                        single_result = _handle_offset_array_result(ref_string, int(row_val), cols_int, 1, 1, evaluator)
+                    else:
+                        height_int = _convert_to_python_int(height) if height is not None else 1
+                        width_int = _convert_to_python_int(width) if width is not None else 1
+                        single_result = _handle_offset_array_result(ref_string, int(row_val), cols_int, height_int, width_int, evaluator)
+                    results.append([single_result])
+        return func_xltypes.Array(results)
+    
+    # Convert numeric parameters using shared utility (normal case)
     rows_int = _convert_to_python_int(rows)
     cols_int = _convert_to_python_int(cols)
     

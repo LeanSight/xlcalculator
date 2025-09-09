@@ -13,7 +13,7 @@ class ComplexCombinationsTest(testing.FunctionalTestCase):
     """
     Combinaciones Complejas integration tests.
     
-    Tests: 3 cases across 1 levels
+    Tests: 4 cases across 1 levels
     Category: complex_combinations
     Source: DYNAMIC_RANGES_DESIGN.md
     """
@@ -32,10 +32,15 @@ class ComplexCombinationsTest(testing.FunctionalTestCase):
         self.assertEqual(30, value, "=OFFSET(INDEX(Data!A1:E6, 2, 1), 1, 1) should return 30")
         self.assertIsInstance(value, (int, float, Number), "Should be number")
 
-        # Referencia dinámica compleja
+        # Referencia dinámica - concatenación simple
         value = self.evaluator.evaluate('Tests!N3')
-        self.assertEqual('Alice', value, "=INDIRECT(\"Data!\" & \"A\" & INDEX(Data!B1:B6, 2, 1)) should return 'Alice'")
+        self.assertEqual('Alice', value, "=INDIRECT(\"Data!A\" & 2) should return 'Alice'")
         self.assertIsInstance(value, (str, Text), "Should be text")
+
+        # Referencia dinámica - CHAR function
+        value = self.evaluator.evaluate('Tests!N4')
+        self.assertEqual(25, value, "=INDIRECT(\"Data!\" & CHAR(66) & \"2\") should return 25")
+        self.assertIsInstance(value, (int, float, Number), "Should be number")
 
     def test_data_integrity(self):
         """Verify test data integrity."""

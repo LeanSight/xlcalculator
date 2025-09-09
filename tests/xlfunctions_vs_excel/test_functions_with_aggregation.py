@@ -22,9 +22,9 @@ class FunctionsWithAggregationTest(testing.FunctionalTestCase):
     def test_4o(self):
         """Funciones con Agregación: Uso con funciones de agregado"""
         
-        # SUM con INDEX array
+        # SUM con INDEX array - correct calculation
         value = self.evaluator.evaluate('Tests!O1')
-        self.assertEqual(130, value, "=SUM(INDEX(Data!A1:E6, 0, 2)) should return 130")
+        self.assertEqual(140, value, "=SUM(INDEX(Data!A1:E6, 0, 2)) should return 140")
         self.assertIsInstance(value, (int, float, Number), "Should be number")
 
         # AVERAGE con OFFSET array

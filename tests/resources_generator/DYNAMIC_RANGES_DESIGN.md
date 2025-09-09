@@ -16,7 +16,7 @@ Crear un Excel que capture FIELMENTE el comportamiento de Excel para todas las f
 6   Eve     22      Boston  88      FALSE   Average
 ```
 
-### Hoja 2: "Tests" - Casos de Prueba Organizados (75 Test Cases)
+### Hoja 2: "Tests" - Casos de Prueba Organizados (76 Test Cases)
 
 ## NIVEL 1: CASOS ESTRUCTURALES (Comportamiento Core) - 14 Cases
 
@@ -134,18 +134,19 @@ M2: =OFFSET(INDIRECT("Data!B2"), 1, 1)      → "LA"
 M3: =OFFSET(INDIRECT("Data!A1"), 1, 1, 2, 2) → Array 2x2
 ```
 
-### 3N. Combinaciones Complejas - 3 Cases
+### 3N. Combinaciones Complejas - 4 Cases
 ```
-N1: =INDEX(OFFSET(Data!A1, 0, 0, 3, 3), 2, 2)     → 25
-N2: =OFFSET(INDEX(Data!A1:E6, 2, 1), 1, 1)        → 30
-N3: =INDIRECT("Data!" & "A" & INDEX(Data!B1:B6, 2, 1)) → "Alice"
+N1: =INDEX(OFFSET(Data!A1, 0, 0, 3, 3), 2, 2)     → 25 (INDEX+OFFSET)
+N2: =OFFSET(INDEX(Data!A1:E6, 2, 1), 1, 1)        → 30 (OFFSET+INDEX)
+N3: =INDIRECT("Data!A" & 2)                       → "Alice" (Dynamic reference)
+N4: =INDIRECT("Data!" & CHAR(66) & "2")           → 25 (CHAR-based reference)
 ```
 
 ## NIVEL 4: CASOS DE CONTEXTO (Uso con Otras Funciones) - 7 Cases
 
 ### 4O. Funciones con Agregación - 4 Cases
 ```
-O1: =SUM(INDEX(Data!A1:E6, 0, 2))            → 130 (suma columna Age)
+O1: =SUM(INDEX(Data!A1:E6, 0, 2))            → 140 (SUM+INDEX array - correct sum)
 O2: =AVERAGE(OFFSET(Data!B1, 1, 0, 5, 1))    → 28 (promedio de edades)
 O3: =COUNT(INDIRECT("Data!B:B"))              → 5 (contar números en col B)
 O4: =MAX(INDEX(Data!A1:E6, 0, 4))            → 95 (máximo de scores)

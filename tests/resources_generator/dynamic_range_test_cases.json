@@ -2,7 +2,7 @@
   "metadata": {
     "title": "Dynamic Ranges",
     "description": "Complete test suite for INDEX, OFFSET, INDIRECT functions with faithful Excel behavior",
-    "total_cases": 66,
+    "total_cases": 67,
     "source": "DYNAMIC_RANGES_DESIGN.md",
     "levels": {
       "1": "CASOS ESTRUCTURALES (Comportamiento Core)",
@@ -577,7 +577,7 @@
       "level": "3N",
       "title": "Combinaciones Complejas",
       "description": "Funciones anidadas complejas",
-      "cell_range": "N1:N3",
+      "cell_range": "N1:N4",
       "category": "complex_combinations",
       "test_cases": [
         {
@@ -599,7 +599,14 @@
           "formula": "=INDIRECT(\"Data!A\" & 2)",
           "expected_value": "Alice",
           "expected_type": "text",
-          "description": "Referencia dinámica compleja"
+          "description": "Referencia dinámica - concatenación simple"
+        },
+        {
+          "cell": "N4",
+          "formula": "=INDIRECT(\"Data!\" & CHAR(66) & \"2\")",
+          "expected_value": 25,
+          "expected_type": "number",
+          "description": "Referencia dinámica - CHAR function"
         }
       ]
     },
@@ -615,7 +622,7 @@
           "formula": "=SUM(INDEX(Data!A1:E6, 0, 2))",
           "expected_value": 140,
           "expected_type": "number",
-          "description": "SUM con INDEX array"
+          "description": "SUM con INDEX array - correct calculation"
         },
         {
           "cell": "O2",
