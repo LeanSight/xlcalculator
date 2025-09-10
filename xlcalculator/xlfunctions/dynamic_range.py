@@ -645,7 +645,7 @@ def _resolve_indirect_reference(ref_string, evaluator):
             raise xlerrors.RefExcelError(f"Invalid range reference: {ref_string}")
     
     # Use reference processing utility for consistent handling
-    from ..utils.references import parse_excel_reference
+    from ..utils.reference_parsing import parse_excel_reference
     try:
         result = parse_excel_reference(ref_string, _context, allow_single_value=True)
         

@@ -45,7 +45,7 @@ from .arrays import ArrayProcessor
 
 from .types import ExcelTypeConverter
 
-from .references import (
+from .reference_parsing import (
     parse_excel_reference,
     extract_reference_data,
     validate_reference_dimensions,

@@ -143,3 +143,25 @@ class ExcelTypeConverter:
         
         # Fall back to strings
         return [ExcelTypeConverter.to_string(v) for v in values]
+    
+    @staticmethod
+    def is_numeric(value):
+        """Check if value is numeric (int, float, or numeric string).
+        
+        Args:
+            value: Value to check
+            
+        Returns:
+            bool: True if value is numeric
+        """
+        if isinstance(value, (int, float)):
+            return True
+        
+        if isinstance(value, str):
+            try:
+                float(value)
+                return True
+            except ValueError:
+                return False
+        
+        return False
