@@ -833,6 +833,77 @@ def INDEX(array, row_num, col_num=1, area_num=1, *, _context=None):
         return result_value
 
 
+def _handle_offset_array_parameters(start_ref, rows, cols, height, width, evaluator):
+    """Handle OFFSET when rows or cols parameters are arrays."""
+    from ..reference_objects import CellReference
+    
+    # Convert arrays to lists for easier processing
+    def flatten_array_param(param):
+        if isinstance(param, func_xltypes.Array):
+            if hasattr(param, 'values'):
+                # Flatten the 2D array structure
+                result = []
+                for row in param.values:
+                    if isinstance(row, list):
+                        result.extend(row)
+                    else:
+                        result.append(row)
+                return result
+            else:
+                # Handle direct array iteration
+                result = []
+                for item in param:
+                    if isinstance(item, list):
+                        result.extend(item)
+                    else:
+                        result.append(item)
+                return result
+        elif isinstance(param, list):
+            return param
+        else:
+            return [param]
+    
+    rows_list = flatten_array_param(rows)
+    cols_list = flatten_array_param(cols)
+    
+    # Process each combination of row and column offsets
+    results = []
+    for row_offset in rows_list:
+        for col_offset in cols_list:
+            try:
+                # Convert to integers - handle numpy arrays
+                if hasattr(row_offset, 'item'):
+                    row_int = int(row_offset.item())
+                else:
+                    row_int = int(row_offset)
+                    
+                if hasattr(col_offset, 'item'):
+                    col_int = int(col_offset.item())
+                else:
+                    col_int = int(col_offset)
+                
+                # Calculate offset reference
+                offset_ref = start_ref.offset(row_int, col_int)
+                
+                # Get the value at the offset reference
+                cell_address = offset_ref.address
+                cell_value = evaluator.get_cell_value(cell_address)
+                results.append(cell_value)
+                
+            except (ValueError, TypeError):
+                results.append(xlerrors.ValueExcelError("Row and column offsets must be numbers"))
+            except xlerrors.RefExcelError:
+                results.append(xlerrors.RefExcelError("Offset results in invalid reference"))
+            except Exception:
+                results.append(xlerrors.ValueExcelError("Error calculating offset"))
+    
+    # Return as Array - reshape based on input dimensions
+    if len(rows_list) == 1:
+        return func_xltypes.Array([results])  # Row array
+    else:
+        return func_xltypes.Array([[result] for result in results])  # Column array
+
+
 @xl.register()
 @require_context
 def OFFSET(reference, rows, cols, height=None, width=None, *, _context=None):
@@ -904,6 +975,10 @@ def OFFSET(reference, rows, cols, height=None, width=None, *, _context=None):
         raise
     except Exception as e:
         raise xlerrors.RefExcelError(f"Invalid reference: {reference}")
+    
+    # Check for array parameters and handle them
+    if isinstance(rows, (func_xltypes.Array, list)) or isinstance(cols, (func_xltypes.Array, list)):
+        return _handle_offset_array_parameters(start_ref, rows, cols, height, width, evaluator)
     
     # Convert offset parameters to integers
     try:
