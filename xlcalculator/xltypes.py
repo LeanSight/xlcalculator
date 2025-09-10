@@ -4,7 +4,8 @@ from dataclasses import dataclass, field
 from openpyxl.utils.cell import column_index_from_string
 from typing import List
 
-from . import ast_nodes, tokenizer, utils
+from . import ast_nodes, tokenizer
+from . import range as range_utils
 from .tokenizer import ExcelParserTokens
 
 

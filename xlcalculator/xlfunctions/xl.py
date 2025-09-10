@@ -3,9 +3,10 @@ import inspect
 import typing
 
 from . import func_xltypes, xlerrors
+from ..constants import EXCEL_CELL_CHARACTER_LIMIT
 
 COMPATIBILITY = 'EXCEL'
-CELL_CHARACTER_LIMIT = 32767
+CELL_CHARACTER_LIMIT = EXCEL_CELL_CHARACTER_LIMIT
 
 TYPE_TO_CAST = {
     func_xltypes.XlNumber: func_xltypes.Number.cast,

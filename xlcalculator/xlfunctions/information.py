@@ -30,6 +30,18 @@ def ISERROR(value: func_xltypes.XlAnything) -> func_xltypes.Boolean:
     return isinstance(value, xlerrors.ExcelError)
 
 
+def _check_even_odd(num: func_xltypes.XlNumber, check_even: bool = True) -> func_xltypes.Boolean:
+    """Helper function to check if a number is even or odd.
+    
+    Args:
+        num: Number to check
+        check_even: If True, returns True for even numbers. If False, returns True for odd numbers.
+    """
+    int_num = int(num)
+    is_even = (int_num % 2) == 0
+    return is_even if check_even else not is_even
+
+
 @xl.register()
 @xl.validate_args
 def ISEVEN(num: func_xltypes.XlNumber) -> func_xltypes.Boolean:
@@ -38,15 +50,7 @@ def ISEVEN(num: func_xltypes.XlNumber) -> func_xltypes.Boolean:
     https://support.microsoft.com/en-us/office/
         iseven-function-aa15929a-d77b-4fbb-92f4-2f479af55356
     """
-
-    if int(num) == 1:
-        return False
-
-    elif (int(num) % 2) == 0:
-        return True
-
-    else:
-        return False
+    return _check_even_odd(num, check_even=True)
 
 
 @xl.register()
@@ -90,12 +94,4 @@ def ISODD(num: func_xltypes.XlNumber) -> func_xltypes.Boolean:
     https://support.microsoft.com/en-us/office/
         isodd-function-1208a56d-4f10-4f44-a5fc-648cafd6c07a
     """
-
-    if int(num) == 1:
-        return True
-
-    elif (int(num) % 2) == 0:
-        return False
-
-    else:
-        return True
+    return _check_even_odd(num, check_even=False)
