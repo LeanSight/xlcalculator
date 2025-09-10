@@ -1036,7 +1036,12 @@ def INDIRECT(
         else:
             # Single cell reference - use evaluator.evaluate for single cells
             try:
-                return evaluator.evaluate(ref_string)
+                result = evaluator.evaluate(ref_string)
+                # MINIMUM FIX: Handle empty cells according to Excel behavior
+                # Excel typically returns 0 for empty cells in numeric contexts
+                if result is None or result == '':
+                    return 0
+                return result
             except Exception:
                 raise xlerrors.RefExcelError(f"Invalid cell reference: {ref_string}")
     except Exception as e:
