@@ -1,12 +1,12 @@
 """
 Unit tests for reference objects.
 
-Tests the CellReference, RangeReference, and NamedReference classes
+Tests the CellReference and RangeReference classes
 for Excel-compatible behavior.
 """
 
 import unittest
-from xlcalculator.reference_objects import CellReference, RangeReference, NamedReference
+from xlcalculator.references import CellReference, RangeReference
 from xlcalculator.xlfunctions import xlerrors
 
 

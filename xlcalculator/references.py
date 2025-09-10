@@ -2,14 +2,14 @@
 Unified Reference Objects for Excel-compatible cell and range references.
 
 This module provides the unified implementation of CellReference and RangeReference
-that combines the best features from both range.py and reference_objects.py.
+that combines the best features from range.py and the previous reference_objects.py.
 
 Replaces the duplicate implementations with a single, comprehensive solution.
 """
 
 import re
 from dataclasses import dataclass
-from typing import Any, Optional, Union, TYPE_CHECKING
+from typing import Any, TYPE_CHECKING
 
 from .xlfunctions import xlerrors
 from .constants import EXCEL_MAX_ROWS, EXCEL_MAX_COLUMNS
@@ -50,8 +50,8 @@ class CellReference:
             raise xlerrors.RefExcelError(f"Column {self.column} is out of Excel bounds (1-{EXCEL_MAX_COLUMNS})")
     
     @property
-    def address(self) -> str:
-        """Get Excel-style address (e.g., 'A1' or '$A$1')."""
+    def cell_address(self) -> str:
+        """Get Excel-style cell address (e.g., 'A1' or '$A$1')."""
         col_letter = self._column_to_letter(self.column)
         row_prefix = '$' if self.absolute_row else ''
         col_prefix = '$' if self.absolute_column else ''
@@ -59,17 +59,22 @@ class CellReference:
         return f"{col_prefix}{col_letter}{row_prefix}{self.row}"
     
     @property
-    def full_address(self) -> str:
-        """Get full sheet!address format."""
+    def address(self) -> str:
+        """Get Excel-style address (e.g., 'Sheet1!A1' or 'A1')."""
         if self.sheet:
             # Handle sheet names with spaces or special characters
             if ' ' in self.sheet or "'" in self.sheet:
                 sheet_part = f"'{self.sheet}'"
             else:
                 sheet_part = self.sheet
-            return f"{sheet_part}!{self.address}"
+            return f"{sheet_part}!{self.cell_address}"
         else:
-            return self.address
+            return self.cell_address
+    
+    @property
+    def full_address(self) -> str:
+        """Get full sheet!address format (alias for address)."""
+        return self.address
     
     @property
     def coordinate(self) -> tuple:
@@ -77,7 +82,7 @@ class CellReference:
         return (self.row, self.column)
     
     @classmethod
-    def parse(cls, ref: str, current_sheet: str = None) -> 'CellReference':
+    def parse(cls, ref: str, current_sheet: str | None = None) -> 'CellReference':
         """
         Parse reference string with comprehensive support.
         
@@ -171,7 +176,7 @@ class CellReference:
         """Check if reference is in the same sheet as given context."""
         return self.sheet == context_sheet
     
-    def to_tuple(self) -> tuple:
+    def to_tuple(self) -> tuple[str, str]:
         """Convert to tuple format for backward compatibility."""
         return (self.sheet, self.address)
     
@@ -209,7 +214,7 @@ class CellReference:
         return sheet_str
     
     @staticmethod
-    def _parse_cell_address(cell_part: str) -> tuple:
+    def _parse_cell_address(cell_part: str) -> tuple[int, int, bool, bool]:
         """
         Parse cell address part (e.g., A1, $A$1) into components.
         
@@ -266,19 +271,19 @@ class RangeReference:
                 sheet_part = f"'{self.start_cell.sheet}'"
             else:
                 sheet_part = self.start_cell.sheet
-            return f"{sheet_part}!{self.start_cell.address}:{self.end_cell.address}"
+            return f"{sheet_part}!{self.start_cell.cell_address}:{self.end_cell.cell_address}"
         else:
-            return f"{self.start_cell.address}:{self.end_cell.address}"
+            return f"{self.start_cell.cell_address}:{self.end_cell.cell_address}"
     
     @property
-    def dimensions(self) -> tuple:
+    def dimensions(self) -> tuple[int, int]:
         """Get (rows, columns) dimensions of the range."""
         rows = self.end_cell.row - self.start_cell.row + 1
         cols = self.end_cell.column - self.start_cell.column + 1
         return (rows, cols)
     
     @classmethod
-    def parse(cls, ref: str, current_sheet: str = None) -> 'RangeReference':
+    def parse(cls, ref: str, current_sheet: str | None = None) -> 'RangeReference':
         """
         Parse range reference string.
         
@@ -292,7 +297,9 @@ class RangeReference:
             RangeReference object with parsed start and end cells
         """
         if ':' not in ref:
-            raise xlerrors.RefExcelError("Range reference must contain ':'")
+            # Single cell treated as 1x1 range
+            cell_ref = CellReference.parse(ref, current_sheet)
+            return cls(start_cell=cell_ref, end_cell=cell_ref)
         
         # Handle sheet references
         if '!' in ref:
