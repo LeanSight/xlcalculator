@@ -104,53 +104,47 @@ xlcalculator is a modernization of the `koala2 <https://github.com/vallettea/koa
 
 ``xlcalculator`` currently supports:
 
-* Loading an Excel file into a Python compatible state
-* Saving Python compatible state
-* Loading Python compatible state
-* Ignore worksheets
-* Extracting sub-portions of a model. "focussing" on provided cell addresses
-  or defined names
-* Evaluating
+* **Loading an Excel file into a Python compatible state** - `Example <examples/common_use_case/>`_
+* **Saving Python compatible state** - `Example <examples/common_use_case/>`_
+* **Loading Python compatible state** - `Example <examples/common_use_case/>`_
+* **Ignore worksheets** - `Example <examples/ignore_worksheets/>`_
+* **Extracting sub-portions of a model** - `Example <examples/model_focusing/>`_ - "focussing" on provided cell addresses or defined names
+* **Evaluating:**
 
-    * Individual cells
-    * Defined Names (a "named cell" or range)
-    * Ranges
-    * Shared formulas `not an Array Formula <https://stackoverflow.com/questions/1256359/what-is-the-difference-between-a-shared-formula-and-an-array-formula>`_
-
-      * Operands (+, -, /, \\*, ==, <>, <=, >=)
-      * on cells only
-
-    * Set cell value
-    * Get cell value
-    * `Parsing a dict into the Model object <https://stackoverflow.com/questions/31260686/excel-formula-evaluation-in-pandas/61586912#61586912>`_
-
-        * Code is in examples\\\\third_party_datastructure
+    * **Individual cells** - `Example <examples/common_use_case/>`_
+    * **Defined Names** (a "named cell" or range) - `Example <examples/common_use_case/>`_
+    * **Ranges** - Basic range support available
+    * **Shared formulas** - `not an Array Formula <https://stackoverflow.com/questions/1256359/what-is-the-difference-between-a-shared-formula-and-an-array-formula>`_
+    * **Operands** (+, -, /, \\*, ==, <>, <=, >=) - Basic arithmetic and comparison operators
+    * **Set cell value** - `Example <examples/common_use_case/>`_
+    * **Get cell value** - `Example <examples/common_use_case/>`_
+    * **Parsing a dict into the Model object** - `Example <examples/third_party_datastructure/>`_
 
 Enhanced Excel Function Support
 ===============================
 
 This fork includes enhanced support for:
 
-**Dynamic Range Functions:**
-    * INDEX - with column/row references (A:A, 1:1)
-    * OFFSET - with array parameters and error handling
-    * INDIRECT - with dynamic reference construction
+**Dynamic Range Functions:** - Basic support available
+    * INDEX - Basic implementation with standard references
+    * OFFSET - Basic implementation available
+    * INDIRECT - Basic implementation available
 
-**Reference Types:**
+**Reference Types:** - Standard Excel reference support
     * Column references: A:A, B:B, $A:$A
     * Row references: 1:1, 2:2, $1:$1  
     * Range references: A1:B5, $A$1:$B$5
-    * Dynamic construction: INDIRECT("Data!" & CHAR(65+COLUMN()) & "1")
+    * Dynamic construction: Basic INDIRECT support
 
-**Error Handling:**
-    * Excel-compatible error propagation
-    * ISERROR/IFERROR integration
-    * Proper bounds checking
+**Error Handling:** - Basic error handling available
+    * Standard error propagation
+    * ISERROR/IFERROR basic support
+    * Standard bounds checking
 
-**Mathematical Functions:**
+**Mathematical Functions:** - Core mathematical functions available
     * LN - Python Math.log() differs from Excel LN. Currently returning Math.log()
     * VLOOKUP - Exact match only
-    * YEARFRAC - All daycount methods supported via LeanSight fork
+    * YEARFRAC - Basic implementation available
 
 Not currently supported:
 
@@ -192,6 +186,25 @@ Usage Example
     
     # Evaluate with column references
     column_result = model.evaluate("Sheet1!A:A")
+
+Examples
+========
+
+Working examples are available in the `examples/ <examples/>`_ directory:
+
+**Core Functionality:**
+    * `Basic Usage <examples/common_use_case/>`_ - Loading, saving, evaluating Excel files
+    * `Third-party Data <examples/third_party_datastructure/>`_ - Working with Python dictionaries
+    * `Rounding Operations <examples/rounding_example/>`_ - Precision handling and floating-point behavior
+
+**Performance & Optimization:**
+    * `Model Focusing <examples/model_focusing/>`_ - Focus on specific model portions using ignore_sheets
+    * `Ignore Worksheets <examples/ignore_worksheets/>`_ - Selective sheet loading for performance optimization
+
+Each example includes:
+    * **Working Code** - Fully functional demonstrations with real Excel files
+    * **ATDD Tests** - Test-driven development approach with comprehensive test cases (where applicable)
+    * **Documentation** - Clear explanations of functionality and usage patterns
 
 Run Tests
 ---------

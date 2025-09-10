@@ -22,7 +22,7 @@ EXCEL_GENERATION_REQUIRE = [
 
 setuptools.setup(
     name="xlcalculator-numpy2",
-    version='0.5.1.post2+numpy1.24-2.x.python312',
+    version='0.5.2.post0+numpy1.24-2.x.python312',
     author="Bradley van Ree (Original), LeanSight (numpy 2.0 fork)",
     author_email="brads@bradbase.net",
     description="Converts MS Excel formulas to Python and evaluates them. [numpy 2.0 compatible fork]",
