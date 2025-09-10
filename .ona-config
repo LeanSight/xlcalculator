@@ -1,0 +1,19 @@
+# ONA Agent Configuration
+# This file is automatically read by ONA agent
+
+[atdd]
+config_file = "ONA_ATDD_CONFIG.md"
+protocol_file = "ONA_DECISION_PROTOCOL.md" 
+system_prompt_file = "ONA_SYSTEM_PROMPT_ATDD.md"
+examples_file = "ONA_ATDD_EXAMPLES.md"
+
+[behavior]
+strict_atdd = true
+auto_validate_tests = true
+block_new_tests_on_failure = true
+require_excel_validation = true
+
+[alerts]
+atdd_violation_alert = true
+test_creation_block = true
+implementation_fix_required = true

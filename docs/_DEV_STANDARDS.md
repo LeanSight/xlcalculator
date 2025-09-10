@@ -19,12 +19,21 @@
 
 ## 🔄 ATDD Methodology Framework
 
+### 🚨 CONFIGURACIÓN CRÍTICA PARA AGENTE ONA
+
+**CONSULTAR OBLIGATORIAMENTE:**
+- `ONA_ATDD_CONFIG.md` - Reglas absolutas y protocolo obligatorio
+- `ONA_DECISION_PROTOCOL.md` - Árbol de decisión para tests fallando
+- `ONA_SYSTEM_PROMPT_ATDD.md` - Configuración de comportamiento del agente
+- `ONA_ATDD_EXAMPLES.md` - Casos de estudio de comportamiento correcto vs incorrecto
+
 ### Double Nested Cycle Approach
 
 #### **🔄 Outer Cycle (ATDD) - Outside-In**
 - **Primary Rule**: Implementation must follow expected behavior exactly as defined by acceptance tests
 - **Test-First**: Acceptance tests define business behavior, implementation follows
 - **No Test Bypassing**: Never implement functionality that circumvents acceptance test expectations
+- **🚨 CRITICAL**: When test fails → Validate test → Fix implementation → Test passes → Commit
 
 #### **🔄 Inner Cycle (TDD) - Inside-Out**
 - **Unit-Level TDD**: For each acceptance test failure, decompose into unit tests following Red-Green-Refactor
