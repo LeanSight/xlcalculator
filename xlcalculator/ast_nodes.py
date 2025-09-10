@@ -268,8 +268,12 @@ class FunctionNode(ASTNode):
             if not isinstance(result, func_xltypes.Blank):
                 return result
                 
-        except Exception:
-            # Evaluation failed, will try fallback
+        except xlerrors.ExcelError as e:
+            # Excel errors should be propagated to error-handling functions
+            # Don't use fallback for Excel errors - they need to reach ISERROR, IFERROR, etc.
+            return e
+        except Exception as e:
+            # Other evaluation failures will try fallback
             pass
         
         # Fallback: Use Excel's pre-calculated value for cell references
