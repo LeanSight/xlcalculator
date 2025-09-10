@@ -22,18 +22,18 @@ EXCEL_GENERATION_REQUIRE = [
 
 setuptools.setup(
     name="xlcalculator-numpy2",
-    version='0.5.1.post1+numpy2.python313',
+    version='0.5.1.post2+numpy1.24-2.x.python312',
     author="Bradley van Ree (Original), LeanSight (numpy 2.0 fork)",
     author_email="brads@bradbase.net",
     description="Converts MS Excel formulas to Python and evaluates them. [numpy 2.0 compatible fork]",
     long_description=(
         "# xlcalculator (numpy 2.0 compatible fork)\n\n"
-        "This is an unofficial fork of xlcalculator that adds compatibility with numpy 2.0+ and Python 3.13.\n\n"
+        "This is an unofficial fork of xlcalculator that adds compatibility with modern NumPy and Python versions.\n\n"
         "## Changes from Original:\n"
-        "- ✅ Compatible with numpy 2.0+ (was restricted to <2.0)\n"
-        "- ✅ Requires Python 3.13 (validated platform)\n"
-        "- ✅ Uses numpy 2.0 compatible yearfrac fork\n"
-        "- ✅ All tests pass with numpy 2.3.2\n\n"
+        "- ✅ Compatible with NumPy 1.24+ and 2.x (tested with 1.26.4 and 2.3.3)\n"
+        "- ✅ Requires Python 3.12+ (validated on 3.12.1)\n"
+        "- ✅ Uses NumPy-compatible yearfrac fork\n"
+        "- ✅ All tests pass with NumPy 1.26.4 and 2.3.3\n\n"
         "Original repository: https://github.com/bradbase/xlcalculator\n"
         "This fork: https://github.com/LeanSight/xlcalculator\n\n"
         "---\n\n"
@@ -100,7 +100,7 @@ setuptools.setup(
     ],
     install_requires=[
         'jsonpickle',
-        'numpy>=2.1.0',
+        'numpy>=1.24.0',
         'pandas>=2.3.0',
         'openpyxl',
         'numpy-financial',
@@ -117,7 +117,7 @@ setuptools.setup(
         ],
         excel_generation=EXCEL_GENERATION_REQUIRE,
     ),
-    python_requires='>=3.12',  # Allow 3.12 for development, validated on 3.13
+    python_requires='>=3.12',  # Validated on 3.12.1, compatible with 3.13+
     tests_require=TESTS_REQUIRE,
     include_package_data=True,
     zip_safe=False,
