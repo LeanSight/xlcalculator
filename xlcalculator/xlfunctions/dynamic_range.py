@@ -16,6 +16,7 @@ Architecture:
 """
 
 from . import xl, xlerrors, func_xltypes
+from ..utils.decorators import require_context
 
 # TEST: Simple function to verify registration works
 @xl.register()
@@ -137,10 +138,8 @@ def _validate_array_bounds(array_data, row_idx, col_idx):
     Used by: INDEX error handling
     Returns: None if valid, raises RefExcelError if out of bounds
     """
-    if row_idx < 0 or row_idx >= len(array_data):
-        raise xlerrors.RefExcelError("Row index out of range")
-    if col_idx < 0 or col_idx >= len(array_data[0]):
-        raise xlerrors.RefExcelError("Column index out of range")
+    from ..utils.validation import validate_array_bounds
+    validate_array_bounds(array_data, row_idx, col_idx)
 
 
 def _validate_index_parameters(row_num, col_num):
@@ -226,7 +225,11 @@ def _validate_offset_bounds(reference_value, rows_offset, cols_offset):
     new_row = row_num + rows_offset
     
     # Check bounds (Excel sheets start at row 1, column 1)
-    if new_row < 1 or new_col < 1:
+    from ..utils.validation import validate_positive_integer
+    try:
+        validate_positive_integer(new_row, "row number")
+        validate_positive_integer(new_col, "column number")
+    except xlerrors.ValueExcelError:
         raise xlerrors.RefExcelError("Reference before sheet start")
     
     # Check Excel's actual bounds (documented limits)
@@ -241,10 +244,11 @@ def _validate_offset_dimensions(height, width):
     Used by: OFFSET parameter validation
     Returns: None if valid, raises ValueExcelError for invalid dimensions
     """
-    if height is not None and height <= 0:
-        raise xlerrors.ValueExcelError("Height must be positive")
-    if width is not None and width <= 0:
-        raise xlerrors.ValueExcelError("Width must be positive")
+    from ..utils.validation import validate_dimension_parameter
+    if height is not None:
+        validate_dimension_parameter(height, "height")
+    if width is not None:
+        validate_dimension_parameter(width, "width")
 
 
 def _build_offset_range(ref_string, rows_offset, cols_offset, height, width):
@@ -298,7 +302,11 @@ def _build_offset_range(ref_string, rows_offset, cols_offset, height, width):
     target_row_num = base_row_num + rows_offset
     
     # Validate bounds
-    if target_row_num < 1 or target_col_num < 1:
+    from ..utils.validation import validate_positive_integer
+    try:
+        validate_positive_integer(target_row_num, "row number")
+        validate_positive_integer(target_col_num, "column number")
+    except xlerrors.ValueExcelError:
         raise xlerrors.RefExcelError("Reference before sheet start")
     
     # Check Excel's actual bounds (documented limits)
@@ -546,26 +554,24 @@ def _get_index_single_value(array_data, row_num, col_num):
         # Return entire column as Array
         col_idx = col_num - 1  # Convert to 0-based index
         # Validate column bounds
-        if col_idx < 0 or col_idx >= len(array_data[0]):
-            raise xlerrors.RefExcelError("Column index out of range")
+        from ..utils.validation import validate_array_bounds
+        validate_array_bounds(array_data, 0, col_idx, col_name="column")
         column_data = [row[col_idx] for row in array_data]
         return func_xltypes.Array(column_data)
     elif col_num == 0:
         # Return entire row as Array
         row_idx = row_num - 1  # Convert to 0-based index
         # Validate row bounds
-        if row_idx < 0 or row_idx >= len(array_data):
-            raise xlerrors.RefExcelError("Row index out of range")
+        from ..utils.validation import validate_array_bounds
+        validate_array_bounds(array_data, row_idx, 0, row_name="row")
         row_data = array_data[row_idx]
         return func_xltypes.Array(row_data)
     else:
         # Return single value with bounds validation
         row_idx = row_num - 1  # Convert to 0-based index
         col_idx = col_num - 1  # Convert to 0-based index
-        if row_idx < 0 or row_idx >= len(array_data):
-            raise xlerrors.RefExcelError("Row index out of range")
-        if col_idx < 0 or col_idx >= len(array_data[0]):
-            raise xlerrors.RefExcelError("Column index out of range")
+        from ..utils.validation import validate_array_bounds
+        validate_array_bounds(array_data, row_idx, col_idx)
         return array_data[row_idx][col_idx]
 
 
@@ -664,9 +670,10 @@ def _resolve_indirect_reference(ref_string, evaluator):
             # traceback.print_exc()
             raise xlerrors.RefExcelError(f"Invalid range reference: {ref_string}")
     
+    # Use reference processing utility for consistent handling
+    from ..utils.references import parse_excel_reference
     try:
-        # Try to evaluate the reference directly for single cells
-        result = evaluator.evaluate(ref_string)
+        result = parse_excel_reference(ref_string, _context, allow_single_value=True)
         
         # Excel behavior: INDIRECT to empty cell returns 0, not BLANK
         if isinstance(result, func_xltypes.Blank):
@@ -674,18 +681,8 @@ def _resolve_indirect_reference(ref_string, evaluator):
         
         return result
     except Exception:
-        # If evaluation fails, try as cell reference
-        try:
-            result = evaluator.get_cell_value(ref_string)
-            
-            # Excel behavior: INDIRECT to empty cell returns 0, not BLANK
-            if isinstance(result, func_xltypes.Blank):
-                return 0
-                
-            return result
-        except Exception:
-            # If both fail, raise RefExcelError for invalid reference
-            raise xlerrors.RefExcelError(f"Invalid reference: {ref_string}")
+        # If parsing fails, raise RefExcelError for invalid reference
+        raise xlerrors.RefExcelError(f"Invalid reference: {ref_string}")
 
 
 def _handle_offset_array_result(reference, rows_int, cols_int, height_int, width_int, evaluator):
@@ -728,6 +725,7 @@ def _handle_offset_array_result(reference, rows_int, cols_int, height_int, width
 # 4. COMMIT: Save progress
 
 @xl.register()
+@require_context
 def INDEX(array, row_num, col_num=1, area_num=1, *, _context=None):
     """Returns value at intersection of row/column in array.
     
@@ -739,9 +737,7 @@ def INDEX(array, row_num, col_num=1, area_num=1, *, _context=None):
     CICLO 3.1: INDEX(Data!A1:E6, 0, 2) = Array (full column)
     Reference form: INDEX((Data!A1:A5, Data!C1:C5), 2, 1, 1) = Alice
     """
-    if _context is None:
-        # Context not available - this is a critical error
-        raise xlerrors.ValueExcelError("INDEX function requires evaluator context")
+    # Context validation handled by @require_context decorator
     
     evaluator = _context.evaluator
     
@@ -755,36 +751,25 @@ def INDEX(array, row_num, col_num=1, area_num=1, *, _context=None):
         areas = array  # Keep as tuple
         
         # Validate area_num
-        area_num_int = int(area_num)
-        if area_num_int < 1 or area_num_int > len(areas):
-            raise xlerrors.RefExcelError("Area number out of range")
+        from ..utils.validation import validate_area_number
+        area_num_int = validate_area_number(area_num, len(areas))
         
         # Select the specified area (1-based index)
         selected_area = areas[area_num_int - 1]
         
         # Get data for the selected area
-        if hasattr(selected_area, 'values'):
-            # It's a pandas DataFrame from OP_UNION evaluation
-            array_data = selected_area.values.tolist()
-        else:
-            # It's a string reference, use get_range_values
-            array_data = evaluator.get_range_values(str(selected_area))
+        # Extract array data from selected area using utility
+        from ..utils.arrays import ArrayProcessor
+        array_data = ArrayProcessor.extract_array_data(selected_area, evaluator)
     else:
         # Handle single area (Array form, single reference, or 2D list data)
         
-        # Get array data
-        if hasattr(array, 'values'):
-            # It's a pandas DataFrame from xlcalculator
-            array_data = array.values.tolist()
-        elif isinstance(array, list) and len(array) > 0 and isinstance(array[0], list):
-            # It's already a 2D list of data (from get_range_values)
-            array_data = array
-        else:
-            # It's a string reference, use get_range_values
-            array_data = evaluator.get_range_values(str(array))
-            
-            if not array_data:
-                raise xlerrors.ValueExcelError(f"No data found for range: {array}")
+        # Get array data using utility
+        from ..utils.arrays import ArrayProcessor
+        array_data = ArrayProcessor.extract_array_data(array, evaluator)
+        
+        if not array_data:
+            raise xlerrors.ValueExcelError(f"No data found for range: {array}")
     
     # Handle array parameters for dynamic arrays
     if isinstance(row_num, func_xltypes.Array):
@@ -818,16 +803,16 @@ def INDEX(array, row_num, col_num=1, area_num=1, *, _context=None):
         # Return entire column as Array
         col_idx = col_num_int - 1  # Convert to 0-based index
         # Validate column bounds
-        if col_idx < 0 or col_idx >= len(array_data[0]):
-            raise xlerrors.RefExcelError("Column index out of range")
+        from ..utils.validation import validate_array_bounds
+        validate_array_bounds(array_data, 0, col_idx, col_name="column")
         column_data = [row[col_idx] for row in array_data]
         return func_xltypes.Array(column_data)
     elif col_num_int == 0:
         # Return entire row as Array
         row_idx = row_num_int - 1  # Convert to 0-based index
         # Validate row bounds
-        if row_idx < 0 or row_idx >= len(array_data):
-            raise xlerrors.RefExcelError("Row index out of range")
+        from ..utils.validation import validate_array_bounds
+        validate_array_bounds(array_data, row_idx, 0, row_name="row")
         row_data = array_data[row_idx]
         return func_xltypes.Array(row_data)
     else:
@@ -836,10 +821,8 @@ def INDEX(array, row_num, col_num=1, area_num=1, *, _context=None):
         col_idx = col_num_int - 1  # Convert to 0-based index
         
         # Validate bounds
-        if row_idx < 0 or row_idx >= len(array_data):
-            raise xlerrors.RefExcelError(f"Row index {row_num_int} out of range (1-{len(array_data)})")
-        if col_idx < 0 or col_idx >= len(array_data[0]):
-            raise xlerrors.RefExcelError(f"Column index {col_num_int} out of range (1-{len(array_data[0])})")
+        from ..utils.validation import validate_array_bounds
+        validate_array_bounds(array_data, row_idx, col_idx)
         
         # Get the actual value
         result_value = array_data[row_idx][col_idx]
@@ -851,6 +834,7 @@ def INDEX(array, row_num, col_num=1, area_num=1, *, _context=None):
 
 
 @xl.register()
+@require_context
 def OFFSET(reference, rows, cols, height=None, width=None, *, _context=None):
     """Returns reference offset from starting reference.
     
@@ -861,8 +845,7 @@ def OFFSET(reference, rows, cols, height=None, width=None, *, _context=None):
     """
     from ..reference_objects import CellReference, RangeReference
     
-    if _context is None:
-        raise xlerrors.ValueExcelError("OFFSET function requires evaluator context")
+    # Context validation handled by @require_context decorator
     
     evaluator = _context.evaluator
     
@@ -949,8 +932,9 @@ def OFFSET(reference, rows, cols, height=None, width=None, *, _context=None):
         except (ValueError, TypeError):
             raise xlerrors.ValueExcelError("Height and width must be numbers")
         
-        if height_int <= 0 or width_int <= 0:
-            raise xlerrors.ValueExcelError("Height and width must be positive")
+        from ..utils.validation import validate_dimension_parameter
+        validate_dimension_parameter(height_int, "height")
+        validate_dimension_parameter(width_int, "width")
         
         # Create range reference
         try:
@@ -978,6 +962,7 @@ def OFFSET(reference, rows, cols, height=None, width=None, *, _context=None):
 
 
 @xl.register()
+@require_context
 def INDIRECT(
     ref_text: func_xltypes.XlAnything,
     a1: func_xltypes.XlAnything = True,
@@ -993,8 +978,7 @@ def INDIRECT(
     """
     from ..reference_objects import CellReference, RangeReference
     
-    if _context is None:
-        raise xlerrors.ValueExcelError("INDIRECT function requires evaluator context")
+    # Context validation handled by @require_context decorator
     
     evaluator = _context.evaluator
     
@@ -1042,17 +1026,14 @@ def INDIRECT(
             if _is_full_column_or_row_reference(ref_string):
                 return _handle_full_column_row_reference(ref_string, evaluator)
             else:
-                # Regular range reference
-                range_ref = RangeReference.parse(ref_string)
-                range_values = range_ref.resolve(evaluator)
+                # Use reference processing utility for consistent handling
+                from ..utils.references import parse_excel_reference
+                result = parse_excel_reference(ref_string, _context, allow_single_value=False)
+                
                 # Ensure we return Array type for ranges
-                if isinstance(range_values, list):
-                    return func_xltypes.Array(range_values)
-                return range_values
-        else:
-            # Single cell reference
-            cell_ref = CellReference.parse(ref_string)
-            return cell_ref.resolve(evaluator)
+                if isinstance(result, list):
+                    return func_xltypes.Array(result)
+                return result
     except Exception as e:
         raise xlerrors.RefExcelError(f"Invalid reference text: {ref_string}")
 
