@@ -117,6 +117,26 @@ class ParsedAddress:
         sheet_str, addr_str = addr.split('!', 1)
         sheet = resolve_sheet(sheet_str)
         
+        # Check for column reference (A:A)
+        if ':' in addr_str and re.match(r'^[A-Z]+:[A-Z]+$', addr_str):
+            # Column reference like A:A
+            col_parts = addr_str.split(':')
+            if col_parts[0] == col_parts[1]:
+                # Single column reference
+                return cls(sheet=sheet, column=col_parts[0], row=1, full_address=addr)
+            else:
+                raise ValueError(f"Multi-column ranges not supported yet: {addr_str}")
+        
+        # Check for row reference (1:1)
+        if ':' in addr_str and re.match(r'^\d+:\d+$', addr_str):
+            # Row reference like 1:1
+            row_parts = addr_str.split(':')
+            if row_parts[0] == row_parts[1]:
+                # Single row reference
+                return cls(sheet=sheet, column='A', row=int(row_parts[0]), full_address=addr)
+            else:
+                raise ValueError(f"Multi-row ranges not supported yet: {addr_str}")
+        
         coord_match = COORD_RE.split(addr_str)
         if len(coord_match) < 3:
             raise ValueError(f"Invalid address format: {addr_str}")

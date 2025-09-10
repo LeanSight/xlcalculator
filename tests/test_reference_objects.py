@@ -26,11 +26,13 @@ class TestCellReference(unittest.TestCase):
         """Test address property formatting."""
         # Basic reference
         ref = CellReference(sheet="Sheet1", row=1, column=1)
-        self.assertEqual(ref.address, "Sheet1!A1")
+        self.assertEqual(ref.address, "A1")
+        self.assertEqual(ref.full_address, "Sheet1!A1")
         
         # Absolute reference
         ref = CellReference(sheet="Sheet1", row=1, column=1, absolute_row=True, absolute_column=True)
-        self.assertEqual(ref.address, "Sheet1!$A$1")
+        self.assertEqual(ref.address, "$A$1")
+        self.assertEqual(ref.full_address, "Sheet1!$A$1")
         
         # No sheet
         ref = CellReference(sheet="", row=5, column=26)
@@ -38,7 +40,8 @@ class TestCellReference(unittest.TestCase):
         
         # Sheet with spaces
         ref = CellReference(sheet="Sheet 2", row=1, column=1)
-        self.assertEqual(ref.address, "'Sheet 2'!A1")
+        self.assertEqual(ref.address, "A1")
+        self.assertEqual(ref.full_address, "'Sheet 2'!A1")
     
     def test_coordinate_property(self):
         """Test coordinate property."""

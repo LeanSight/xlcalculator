@@ -36,31 +36,53 @@ class CellReference:
     """
     
     sheet: str
-    row: int
-    column: int
+    row: int = None  # None for column references like A:A
+    column: int = None  # None for row references like 1:1
     absolute_row: bool = False
     absolute_column: bool = False
     is_sheet_explicit: bool = True
+    is_column_reference: bool = False  # True for A:A type references
+    is_row_reference: bool = False  # True for 1:1 type references
+    is_range_reference: bool = False  # True for A1:B5 type references
+    original_range: str = None  # Store original range string for range references
     
     def __post_init__(self):
         """Validate Excel bounds after initialization."""
-        if self.row < 1 or self.row > EXCEL_MAX_ROWS:
+        if self.row is not None and (self.row < 1 or self.row > EXCEL_MAX_ROWS):
             raise xlerrors.RefExcelError(f"Row {self.row} is out of Excel bounds (1-{EXCEL_MAX_ROWS})")
-        if self.column < 1 or self.column > EXCEL_MAX_COLUMNS:
+        if self.column is not None and (self.column < 1 or self.column > EXCEL_MAX_COLUMNS):
             raise xlerrors.RefExcelError(f"Column {self.column} is out of Excel bounds (1-{EXCEL_MAX_COLUMNS})")
     
     @property
     def cell_address(self) -> str:
-        """Get Excel-style cell address (e.g., 'A1' or '$A$1')."""
-        col_letter = self._column_to_letter(self.column)
-        row_prefix = '$' if self.absolute_row else ''
-        col_prefix = '$' if self.absolute_column else ''
-        
-        return f"{col_prefix}{col_letter}{row_prefix}{self.row}"
+        """Get Excel-style cell address (e.g., 'A1', '$A$1', 'A:A')."""
+        if self.is_range_reference and self.original_range:
+            # Range reference like A1:B5
+            return self.original_range
+        elif self.is_column_reference:
+            # Column reference like A:A
+            col_letter = self._column_to_letter(self.column)
+            col_prefix = '$' if self.absolute_column else ''
+            return f"{col_prefix}{col_letter}:{col_prefix}{col_letter}"
+        elif self.is_row_reference:
+            # Row reference like 1:1
+            row_prefix = '$' if self.absolute_row else ''
+            return f"{row_prefix}{self.row}:{row_prefix}{self.row}"
+        else:
+            # Regular cell reference
+            col_letter = self._column_to_letter(self.column)
+            row_prefix = '$' if self.absolute_row else ''
+            col_prefix = '$' if self.absolute_column else ''
+            return f"{col_prefix}{col_letter}{row_prefix}{self.row}"
     
     @property
     def address(self) -> str:
-        """Get Excel-style address (e.g., 'Sheet1!A1' or 'A1')."""
+        """Get cell address part only (e.g., 'A1', 'A1:B5')."""
+        return self.cell_address
+    
+    @property
+    def full_address(self) -> str:
+        """Get full sheet!address format (e.g., 'Sheet1!A1')."""
         if self.sheet:
             # Handle sheet names with spaces or special characters
             if ' ' in self.sheet or "'" in self.sheet:
@@ -70,11 +92,6 @@ class CellReference:
             return f"{sheet_part}!{self.cell_address}"
         else:
             return self.cell_address
-    
-    @property
-    def full_address(self) -> str:
-        """Get full sheet!address format (alias for address)."""
-        return self.address
     
     @property
     def coordinate(self) -> tuple:
@@ -116,8 +133,8 @@ class CellReference:
             sheet = current_sheet or ""
             is_explicit = False
         
-        # Parse cell part (e.g., A1, $A$1)
-        row, column, absolute_row, absolute_col = cls._parse_cell_address(cell_part)
+        # Parse cell part (e.g., A1, $A$1, A:A)
+        row, column, absolute_row, absolute_col, is_column_ref, is_row_ref, is_range_ref, original_range = cls._parse_cell_address(cell_part)
         
         return cls(
             sheet=sheet,
@@ -125,7 +142,11 @@ class CellReference:
             column=column,
             absolute_row=absolute_row,
             absolute_column=absolute_col,
-            is_sheet_explicit=is_explicit
+            is_sheet_explicit=is_explicit,
+            is_column_reference=is_column_ref,
+            is_row_reference=is_row_ref,
+            is_range_reference=is_range_ref,
+            original_range=original_range
         )
     
     def offset(self, rows: int, cols: int) -> 'CellReference':
@@ -214,31 +235,82 @@ class CellReference:
         return sheet_str
     
     @staticmethod
-    def _parse_cell_address(cell_part: str) -> tuple[int, int, bool, bool]:
+    def _parse_cell_address(cell_part: str) -> tuple[int, int, bool, bool, bool, bool, bool, str]:
         """
-        Parse cell address part (e.g., A1, $A$1) into components.
+        Parse cell address part (e.g., A1, $A$1, A:A) into components.
         
         Returns:
-            tuple: (row, column, absolute_row, absolute_column)
+            tuple: (row, column, absolute_row, absolute_column, is_column_ref, is_row_ref, is_range_ref, original_range)
         """
         if not cell_part:
             raise xlerrors.RefExcelError("Empty cell address")
         
+        # Check for column reference (A:A, $A:$A, etc.)
+        column_pattern = r'^(\$?)([A-Z]+):(\$?)([A-Z]+)$'
+        column_match = re.match(column_pattern, cell_part.upper())
+        
+        if column_match:
+            # Column reference like A:A
+            col1_absolute = bool(column_match.group(1))
+            col1_letters = column_match.group(2)
+            col2_absolute = bool(column_match.group(3))
+            col2_letters = column_match.group(4)
+            
+            # For now, handle single column references (A:A)
+            if col1_letters == col2_letters:
+                column = CellReference._letter_to_column(col1_letters)
+                return None, column, False, col1_absolute, True, False, False, None
+            else:
+                raise xlerrors.RefExcelError(f"Multi-column ranges not supported yet: {cell_part}")
+        
+        # Check for row reference (1:1, $1:$1, etc.)
+        row_pattern = r'^(\$?)(\d+):(\$?)(\d+)$'
+        row_match = re.match(row_pattern, cell_part.upper())
+        
+        if row_match:
+            # Row reference like 1:1
+            row1_absolute = bool(row_match.group(1))
+            row1_num = int(row_match.group(2))
+            row2_absolute = bool(row_match.group(3))
+            row2_num = int(row_match.group(4))
+            
+            # For now, handle single row references (1:1)
+            if row1_num == row2_num:
+                return row1_num, None, row1_absolute, False, False, True, False, None
+            else:
+                raise xlerrors.RefExcelError(f"Multi-row ranges not supported yet: {cell_part}")
+        
+        # Check for cell range (A1:B5, $A$1:$B$5, etc.)
+        range_pattern = r'^(\$?)([A-Z]+)(\$?)(\d+):(\$?)([A-Z]+)(\$?)(\d+)$'
+        range_match = re.match(range_pattern, cell_part.upper())
+        
+        if range_match:
+            # Cell range like A1:B5
+            # For compatibility, return the first cell of the range
+            col_absolute = bool(range_match.group(1))  # $ before column
+            col_letters = range_match.group(2)
+            row_absolute = bool(range_match.group(3))  # $ before row
+            row_num = int(range_match.group(4))
+            
+            column = CellReference._letter_to_column(col_letters)
+            
+            return row_num, column, row_absolute, col_absolute, False, False, True, cell_part
+        
         # Pattern to match cell addresses like A1, $A$1, $A1, A$1
-        pattern = r'^(\$?)([A-Z]+)(\$?)(\d+)$'
-        match = re.match(pattern, cell_part.upper())
+        cell_pattern = r'^(\$?)([A-Z]+)(\$?)(\d+)$'
+        cell_match = re.match(cell_pattern, cell_part.upper())
         
-        if not match:
-            raise xlerrors.RefExcelError(f"Invalid cell address: {cell_part}")
+        if cell_match:
+            col_absolute = bool(cell_match.group(1))  # $ before column
+            col_letters = cell_match.group(2)
+            row_absolute = bool(cell_match.group(3))  # $ before row
+            row_num = int(cell_match.group(4))
+            
+            column = CellReference._letter_to_column(col_letters)
+            
+            return row_num, column, row_absolute, col_absolute, False, False, False, None
         
-        col_absolute = bool(match.group(1))  # $ before column
-        col_letters = match.group(2)
-        row_absolute = bool(match.group(3))  # $ before row
-        row_num = int(match.group(4))
-        
-        column = CellReference._letter_to_column(col_letters)
-        
-        return row_num, column, row_absolute, col_absolute
+        raise xlerrors.RefExcelError(f"Invalid cell address: {cell_part}")
 
 
 @dataclass
