@@ -202,7 +202,7 @@ class ExcelCompliantLazyRange:
     
     def _parse_range(self):
         """Parse range to extract sheet name and range part."""
-        from xlcalculator.range import CellReference
+        from xlcalculator.references import CellReference
         cell_ref = CellReference.parse(self.address_str)
         return cell_ref.to_tuple()
     

@@ -49,7 +49,7 @@ def _find_cell_address_for_value(value, evaluator, search_range=None):
     if search_range:
         # Search within specific range (more efficient)
         try:
-            from ..reference_objects import RangeReference
+            from ..references import RangeReference
             range_ref = RangeReference.parse(search_range)
             
             # Iterate through range cells
@@ -197,7 +197,7 @@ def _parse_cell_coordinates(cell_address):
     Used by: OFFSET utilities
     Returns: Tuple of (sheet, col_letter, row_num)
     """
-    from ..range import CellReference
+    from ..references import CellReference
     # Parse cell address without assuming default sheet
     cell_ref = CellReference.parse(cell_address)
     col_letter = ''.join(c for c in cell_ref.address if c.isalpha())
@@ -382,7 +382,7 @@ def _validate_sheet_exists(ref_string, evaluator):
     Returns:
         RefExcelError if sheet doesn't exist, None if valid
     """
-    from ..range import CellReference
+    from ..references import CellReference
     # Parse reference without assuming default sheet
     ref_obj = CellReference.parse(ref_string)
     sheet_name = ref_obj.sheet
@@ -485,7 +485,7 @@ def _parse_full_reference_to_cell(ref_string):
         CellReference object for the starting cell
     """
     import re
-    from ..reference_objects import CellReference
+    from ..references import CellReference
     
     # Parse sheet and reference parts
     if '!' in ref_string:
@@ -809,7 +809,7 @@ def INDEX(array, row_num, col_num=1, area_num=1, *, _context=None):
 
 def _handle_offset_array_parameters(start_ref, rows, cols, height, width, evaluator):
     """Handle OFFSET when rows or cols parameters are arrays."""
-    from ..reference_objects import CellReference
+    from ..references import CellReference
     
     # Convert arrays to lists for easier processing
     def flatten_array_param(param):
@@ -888,7 +888,7 @@ def OFFSET(reference, rows, cols, height=None, width=None, *, _context=None):
     https://support.microsoft.com/en-us/office/
         offset-function-c8de19ae-dd79-4b9b-a14e-b4d906d11b66
     """
-    from ..reference_objects import CellReference, RangeReference
+    from ..references import CellReference, RangeReference
     
     # Context validation handled by @require_context decorator
     
@@ -1015,7 +1015,7 @@ def INDIRECT(
     https://support.microsoft.com/en-us/office/
         indirect-function-474b3a3a-8a26-4f44-b491-92b6306fa261
     """
-    from ..reference_objects import CellReference, RangeReference
+    from ..references import CellReference, RangeReference
     
     # Context validation handled by @require_context decorator
     
@@ -1155,7 +1155,7 @@ def ROW(reference: func_xltypes.XlAnything = None, *, _context=None) -> func_xlt
     https://support.microsoft.com/en-us/office/
         row-function-3a63b74a-c4d0-4093-b49a-e76eb49a6d8d
     """
-    from ..reference_objects import CellReference, RangeReference
+    from ..references import CellReference, RangeReference
     
     
     if reference is None:
@@ -1233,7 +1233,7 @@ def COLUMN(reference: func_xltypes.XlAnything = None, *, _context=None) -> func_
     # Handle string references (this is the key fix for COLUMN("A1"))
     # Note: @xl.validate_args converts strings to func_xltypes.Text
     if isinstance(reference, (str, func_xltypes.Text)):
-        from ..reference_objects import CellReference, RangeReference
+        from ..references import CellReference, RangeReference
         ref_string = str(reference)  # Convert Text to string
         try:
             if ':' in ref_string:

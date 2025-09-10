@@ -52,7 +52,7 @@ class EvalContext:
         self.seen = seen if seen is not None else []
         self.namespace = namespace if namespace is not None else xl.FUNCTIONS
         self.ref = ref
-        from .range import CellReference
+        from .references import CellReference
         # Extract current sheet from ref for proper context
         if '!' in ref:
             current_sheet = ref.split('!')[0]
