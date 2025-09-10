@@ -221,34 +221,20 @@ def _validate_offset_bounds(reference_value, rows_offset, cols_offset):
     
     # Calculate target position
     base_col = ord(col_letter) - ord('A') + 1
-    new_col = base_col + cols_offset
-    new_row = row_num + rows_offset
     
-    # Check bounds (Excel sheets start at row 1, column 1)
-    from ..utils.validation import validate_positive_integer
-    try:
-        validate_positive_integer(new_row, "row number")
-        validate_positive_integer(new_col, "column number")
-    except xlerrors.ValueExcelError:
-        raise xlerrors.RefExcelError("Reference before sheet start")
-    
-    # Check Excel's actual bounds (documented limits)
-    # Excel 2007+: 1,048,576 rows × 16,384 columns
-    if new_row > 1048576 or new_col > 16384:
-        raise xlerrors.RefExcelError("Reference beyond Excel sheet limits")
+    # Use standardized validation
+    from ..utils.validation import validate_offset_bounds
+    validate_offset_bounds(row_num, base_col, rows_offset, cols_offset)
 
 
 def _validate_offset_dimensions(height, width):
     """Validate OFFSET height/width parameters.
     
     Used by: OFFSET parameter validation
-    Returns: None if valid, raises ValueExcelError for invalid dimensions
+    Returns: (height_int, width_int) with validated values
     """
-    from ..utils.validation import validate_dimension_parameter
-    if height is not None:
-        validate_dimension_parameter(height, "height")
-    if width is not None:
-        validate_dimension_parameter(width, "width")
+    from ..utils.validation import validate_range_dimensions
+    return validate_range_dimensions(height, width)
 
 
 def _build_offset_range(ref_string, rows_offset, cols_offset, height, width):
@@ -298,21 +284,9 @@ def _build_offset_range(ref_string, rows_offset, cols_offset, height, width):
     
     # Calculate target coordinates
     base_col_num = _column_letter_to_number(base_col_letter)
-    target_col_num = base_col_num + cols_offset
-    target_row_num = base_row_num + rows_offset
-    
-    # Validate bounds
-    from ..utils.validation import validate_positive_integer
-    try:
-        validate_positive_integer(target_row_num, "row number")
-        validate_positive_integer(target_col_num, "column number")
-    except xlerrors.ValueExcelError:
-        raise xlerrors.RefExcelError("Reference before sheet start")
-    
-    # Check Excel's actual bounds (documented limits)
-    # Excel 2007+: 1,048,576 rows × 16,384 columns
-    if target_row_num > 1048576 or target_col_num > 16384:
-        raise xlerrors.RefExcelError("Reference beyond Excel sheet limits")
+    # Use standardized validation for bounds checking
+    from ..utils.validation import validate_offset_bounds
+    validate_offset_bounds(base_row_num, base_col_num, rows_offset, cols_offset)
     
     # Build target range
     target_col_letter = _number_to_column_letter(target_col_num)
@@ -980,12 +954,9 @@ def OFFSET(reference, rows, cols, height=None, width=None, *, _context=None):
     if isinstance(rows, (func_xltypes.Array, list)) or isinstance(cols, (func_xltypes.Array, list)):
         return _handle_offset_array_parameters(start_ref, rows, cols, height, width, evaluator)
     
-    # Convert offset parameters to integers
-    try:
-        rows_int = int(rows)
-        cols_int = int(cols)
-    except (ValueError, TypeError):
-        raise xlerrors.ValueExcelError("Row and column offsets must be numbers")
+    # Convert offset parameters to integers using standardized validation
+    from ..utils.validation import validate_offset_parameters
+    rows_int, cols_int = validate_offset_parameters(rows, cols)
     
     # Calculate the offset reference
     try:
@@ -1000,16 +971,9 @@ def OFFSET(reference, rows, cols, height=None, width=None, *, _context=None):
     
     # Handle height and width parameters for range results
     if height is not None or width is not None:
-        # Validate height and width
-        try:
-            height_int = int(height) if height is not None else 1
-            width_int = int(width) if width is not None else 1
-        except (ValueError, TypeError):
-            raise xlerrors.ValueExcelError("Height and width must be numbers")
-        
-        from ..utils.validation import validate_dimension_parameter
-        validate_dimension_parameter(height_int, "height")
-        validate_dimension_parameter(width_int, "width")
+        # Validate height and width using standardized validation
+        from ..utils.validation import validate_range_dimensions
+        height_int, width_int = validate_range_dimensions(height, width)
         
         # Create range reference
         try:
