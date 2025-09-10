@@ -1,17 +1,19 @@
 #!/usr/bin/env python3
 """
-ATDD Test for ArrayProcessor.extract_array_data() Bug Fix
+ATDD Tests for Excel Reference Normalization
 
-RED PHASE: Create failing acceptance tests that demonstrate the expected behavior
-for array data extraction that is currently broken.
+Tests the critical infrastructure that normalizes different Excel reference types
+(strings, DataFrames, Range objects, arrays) into uniform 2D array format for 
+use by Excel functions like INDEX, OFFSET, and INDIRECT.
 
-Test Cases Based on Failure Analysis:
+Test Cases:
 1. String range references should extract actual 2D array data
 2. pandas DataFrames should be converted to 2D lists
 3. Direct arrays should be preserved as 2D format
 4. Range objects should be evaluated to 2D arrays
+5. Edge cases and error handling
 
-Expected Behavior (from original working code):
+Expected Behavior:
 - 'Data!A1:E6' → [[1,2,3,4,5], [6,7,8,9,10], ...] (actual cell values)
 - pandas DataFrame → 2D list via .values.tolist()
 - [1,2,3] → [[1,2,3]] (ensure 2D format)
@@ -20,17 +22,12 @@ Expected Behavior (from original working code):
 
 import unittest
 from unittest.mock import Mock, MagicMock
-import sys
-import os
-
-# Add project root to path
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from xlcalculator.utils.arrays import ArrayProcessor
 
 
-class ArrayProcessorATDDTest(unittest.TestCase):
-    """ATDD tests for ArrayProcessor.extract_array_data() bug fix."""
+class ReferenceNormalizationTest(unittest.TestCase):
+    """ATDD tests for Excel reference normalization functionality."""
     
     def setUp(self):
         """Set up test fixtures."""
@@ -331,8 +328,8 @@ class ArrayProcessorATDDTest(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    print("🟢 GREEN PHASE: Running acceptance tests for ArrayProcessor.extract_array_data()")
-    print("Expected: All tests should PASS after implementing fixes")
+    print("🟢 Running ATDD tests for Excel reference normalization")
+    print("Testing ArrayProcessor.extract_array_data() functionality")
     print()
     
     unittest.main(verbosity=2)
