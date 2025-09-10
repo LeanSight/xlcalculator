@@ -1,5 +1,6 @@
 """Array processing utilities for Excel functions."""
 
+from typing import Any, List, Union, Tuple
 from ..xlfunctions import xlerrors
 
 
@@ -7,31 +8,87 @@ class ArrayProcessor:
     """Utility class for common array operations in Excel functions."""
     
     @staticmethod
-    def extract_array_data(reference, evaluator):
+    def extract_array_data(reference: Any, evaluator: Any) -> List[List[Any]]:
         """Extract array data from various reference types.
         
+        This method provides a unified interface for extracting 2D array data
+        from different Excel reference types, ensuring consistent data format
+        for all Excel functions.
+        
         Args:
-            reference: Reference to extract data from (range, cell, or value)
-            evaluator: Excel evaluator instance
+            reference: Reference to extract data from. Can be:
+                      - pandas DataFrame (has .values attribute)
+                      - Range object (has .address attribute)  
+                      - String range reference (e.g., 'Data!A1:E6')
+                      - Direct array data (list/tuple)
+                      - Single scalar value
+            evaluator: Excel evaluator instance for range resolution
             
         Returns:
-            2D array of values
+            list: 2D array of values (list of lists)
+            
+        Examples:
+            >>> # String range reference
+            >>> extract_array_data('Data!A1:C2', evaluator)
+            [[1, 2, 3], [4, 5, 6]]
+            
+            >>> # pandas DataFrame
+            >>> extract_array_data(dataframe, evaluator)
+            [['Alice', 25], ['Bob', 30]]
+            
+            >>> # Direct array
+            >>> extract_array_data([1, 2, 3], evaluator)
+            [[1, 2, 3]]
+            
+            >>> # Single value
+            >>> extract_array_data(42, evaluator)
+            [[42]]
         """
-        if hasattr(reference, 'value'):
-            # Handle range objects with value attribute
-            return evaluator.evaluate(reference)
-        elif hasattr(reference, 'address'):
-            # Handle range objects with address attribute
-            return evaluator.evaluate(reference)
+        # Priority order is important: most specific to most general
+        
+        if ArrayProcessor._is_pandas_dataframe(reference):
+            return ArrayProcessor._extract_from_dataframe(reference)
+            
+        elif ArrayProcessor._is_range_object(reference):
+            return ArrayProcessor._extract_from_range_object(reference, evaluator)
+            
+        elif isinstance(reference, str):
+            return ArrayProcessor._extract_from_string_reference(reference, evaluator)
+            
         elif isinstance(reference, (list, tuple)):
-            # Handle direct array data
             return ArrayProcessor.ensure_2d_array(reference)
+            
         else:
-            # Handle single values
+            # Single scalar value: wrap as 2D array
             return [[reference]]
     
     @staticmethod
-    def ensure_2d_array(data):
+    def _is_pandas_dataframe(reference: Any) -> bool:
+        """Check if reference is a pandas DataFrame."""
+        return hasattr(reference, 'values')
+    
+    @staticmethod
+    def _is_range_object(reference: Any) -> bool:
+        """Check if reference is a range object."""
+        return hasattr(reference, 'address')
+    
+    @staticmethod
+    def _extract_from_dataframe(dataframe: Any) -> List[List[Any]]:
+        """Extract 2D array from pandas DataFrame."""
+        return dataframe.values.tolist()
+    
+    @staticmethod
+    def _extract_from_range_object(range_obj: Any, evaluator: Any) -> List[List[Any]]:
+        """Extract 2D array from range object."""
+        return evaluator.evaluate(range_obj)
+    
+    @staticmethod
+    def _extract_from_string_reference(reference: str, evaluator: Any) -> List[List[Any]]:
+        """Extract 2D array from string range reference."""
+        return evaluator.get_range_values(reference)
+    
+    @staticmethod
+    def ensure_2d_array(data: Any) -> List[List[Any]]:
         """Ensure data is a 2D array.
         
         Args:
@@ -54,7 +111,7 @@ class ArrayProcessor:
         return [data]
     
     @staticmethod
-    def get_array_dimensions(array_data):
+    def get_array_dimensions(array_data: List[List[Any]]) -> Tuple[int, int]:
         """Get dimensions of 2D array.
         
         Args:
@@ -71,7 +128,7 @@ class ArrayProcessor:
         return rows, cols
     
     @staticmethod
-    def is_single_value(data):
+    def is_single_value(data: Any) -> bool:
         """Check if data represents a single value.
         
         Args:
@@ -89,7 +146,7 @@ class ArrayProcessor:
         return False
     
     @staticmethod
-    def get_single_value(data):
+    def get_single_value(data: Any) -> Any:
         """Extract single value from array data.
         
         Args:
@@ -110,7 +167,7 @@ class ArrayProcessor:
         return data[0][0]
     
     @staticmethod
-    def flatten_array(array_data):
+    def flatten_array(array_data: List[List[Any]]) -> List[Any]:
         """Flatten 2D array to 1D list.
         
         Args:
@@ -132,7 +189,7 @@ class ArrayProcessor:
         return result
     
     @staticmethod
-    def validate_array_not_empty(array_data, param_name="array"):
+    def validate_array_not_empty(array_data: List[List[Any]], param_name: str = "array") -> None:
         """Validate that array is not empty.
         
         Args:
