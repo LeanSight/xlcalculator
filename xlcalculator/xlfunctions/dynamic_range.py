@@ -1026,14 +1026,19 @@ def INDIRECT(
             if _is_full_column_or_row_reference(ref_string):
                 return _handle_full_column_row_reference(ref_string, evaluator)
             else:
-                # Use reference processing utility for consistent handling
-                from ..utils.references import parse_excel_reference
-                result = parse_excel_reference(ref_string, _context, allow_single_value=False)
+                # MINIMUM FIX: Use ArrayProcessor.extract_array_data for range references
+                # This fixes the "bounds checking" issue by ensuring INDIRECT returns proper array data
+                from ..utils.arrays import ArrayProcessor
+                array_data = ArrayProcessor.extract_array_data(ref_string, evaluator)
                 
-                # Ensure we return Array type for ranges
-                if isinstance(result, list):
-                    return func_xltypes.Array(result)
-                return result
+                # Return as Array type for INDEX function compatibility
+                return func_xltypes.Array(array_data)
+        else:
+            # Single cell reference - use evaluator.evaluate for single cells
+            try:
+                return evaluator.evaluate(ref_string)
+            except Exception:
+                raise xlerrors.RefExcelError(f"Invalid cell reference: {ref_string}")
     except Exception as e:
         raise xlerrors.RefExcelError(f"Invalid reference text: {ref_string}")
 
