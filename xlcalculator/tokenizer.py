@@ -114,8 +114,7 @@ class f_token:
         repr=True)
 
     def __repr__(self):
-        return "<{} tvalue: {} ttype: {} tsubtype: {}>".format(
-            self.__class__.__name__, self.tvalue, self.ttype, self.tsubtype)
+        return f"<{self.__class__.__name__} tvalue: {self.tvalue} ttype: {self.ttype} tsubtype: {self.tsubtype}>"
 
     def __str__(self):
         return self.__repr__()

@@ -43,7 +43,7 @@ def excel_function(func):
         except Exception as e:
             # Preserve Excel error types, convert others to ValueExcelError
             if not isinstance(e, (xlerrors.ExcelError,)):
-                raise xlerrors.ValueExcelError(f"Error in {func.__name__}: {str(e)}")
+                raise xlerrors.ValueExcelError(f"Error in {func.__name__}: {e}")
             raise
     return wrapper
 

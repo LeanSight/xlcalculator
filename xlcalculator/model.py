@@ -224,7 +224,7 @@ class ModelCompiler:
             if "!" in item:
                 cell_address = item
             else:
-                cell_address = "{}!{}".format(default_sheet, item)
+                cell_address = f"{default_sheet}!{item}"
 
             if (
                     not isinstance(input_dict[item], (float, int))
@@ -299,7 +299,7 @@ class ModelCompiler:
                                 name)
                 else:
                     # programmer error
-                    message = "This isn't a dim2 array. {}".format(name)
+                    message = f"This isn't a dim2 array. {name}"
                     logging.error(message)
                     raise Exception(message)
             else:
@@ -318,7 +318,7 @@ class ModelCompiler:
             for range in self.model.formulae[formula].terms:
                 if ":" in range:
                     if "!" not in range:
-                        range = "{}!{}".format(default_sheet, range)
+                        range = f"{default_sheet}!{range}"
                     
                     # Use Excel-compliant lazy loading for full ranges
                     if is_full_range(range):
