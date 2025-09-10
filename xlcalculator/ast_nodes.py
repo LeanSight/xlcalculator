@@ -9,7 +9,7 @@ from xlcalculator.xlfunctions import (
     func_xltypes
 )
 
-from . import utils
+from .range import resolve_ranges
 
 PREFIX_OP_TO_FUNC = {
     '-': operator.OP_NEG,
@@ -142,7 +142,7 @@ class RangeNode(OperandNode):
     """Represents a spreadsheet cell, range, named_range."""
 
     def get_cells(self):
-        cells = utils.resolve_ranges(self.tvalue, default_sheet='')[1]
+        cells = resolve_ranges(self.tvalue, default_sheet='')[1]
         return cells[0] if len(cells) == 1 else cells
 
     @property

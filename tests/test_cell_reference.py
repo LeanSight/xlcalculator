@@ -5,7 +5,7 @@ Este test define el comportamiento esperado del nuevo CellReference
 que debe reemplazar las tuplas (sheet, address) en todo el código.
 """
 import unittest
-from xlcalculator.utils import CellReference
+from xlcalculator.reference_objects import CellReference
 
 
 class CellReferenceTest(unittest.TestCase):
