@@ -38,7 +38,7 @@ def _find_cell_address_for_value(value, evaluator, search_range=None):
     Args:
         value: The value to search for
         evaluator: Evaluator instance
-        search_range: Optional range to limit search (e.g., "Data!A1:E6")
+        search_range: Optional range to limit search (e.g., "Sheet!A1:E6")
         
     Returns:
         Cell address string if found, None if not found
@@ -154,41 +154,14 @@ def _validate_index_parameters(row_num, col_num):
         raise xlerrors.ValueExcelError("Row and column numbers must be positive")
 
 
-def _resolve_offset_reference(reference_value, rows_offset, cols_offset):
-    """Resolve OFFSET reference based on reference cell value and offsets.
-    
-    Used by: OFFSET function
-    Returns: Target cell address string
-    
-    Note: This is a temporary implementation that maps known reference values
-    to their corresponding cell addresses. A proper implementation would need
-    access to the original cell reference, not just its value.
-    """
-    value_to_cell_map = _get_reference_cell_map()
-    
-    if reference_value not in value_to_cell_map:
-        return None
-        
-    base_cell = value_to_cell_map[reference_value]
-    sheet, col_letter, row_num = _parse_cell_coordinates(base_cell)
-    
-    # Calculate offset position
-    base_col = ord(col_letter) - ord('A') + 1
-    new_col = base_col + cols_offset
-    new_row = row_num + rows_offset
-    
-    # Build target cell reference
-    new_col_letter = chr(ord('A') + new_col - 1)
-    return f'{sheet}!{new_col_letter}{new_row}'
+# REMOVED: _resolve_offset_reference() function eliminated
+# This function used hardcoded test mappings that violated ATDD principles.
+# OFFSET function now uses proper reference context instead of value mappings.
 
 
-def _get_reference_cell_map():
-    """DEPRECATED: Hardcoded test mappings violate ATDD principles.
-    
-    This function contains hardcoded test data that should be eliminated.
-    Excel functions must work with any data, not specific test values.
-    """
-    raise NotImplementedError("Hardcoded test mappings are not Excel-compliant")
+# REMOVED: _get_reference_cell_map() function eliminated
+# This function contained hardcoded test mappings that violated ATDD principles.
+# Excel functions must work with any data, not specific test values.
 
 
 def _parse_cell_coordinates(cell_address):
@@ -205,26 +178,9 @@ def _parse_cell_coordinates(cell_address):
     return cell_ref.sheet, col_letter, row_num
 
 
-def _validate_offset_bounds(reference_value, rows_offset, cols_offset):
-    """Validate OFFSET bounds to prevent references outside sheet limits.
-    
-    Used by: OFFSET error handling
-    Returns: None if valid, raises RefExcelError if out of bounds
-    """
-    value_to_cell_map = _get_reference_cell_map()
-    
-    if reference_value not in value_to_cell_map:
-        return  # Can't validate unknown references
-        
-    base_cell = value_to_cell_map[reference_value]
-    sheet, col_letter, row_num = _parse_cell_coordinates(base_cell)
-    
-    # Calculate target position
-    base_col = ord(col_letter) - ord('A') + 1
-    
-    # Use standardized validation
-    from ..utils.validation import validate_offset_bounds
-    validate_offset_bounds(row_num, base_col, rows_offset, cols_offset)
+# REMOVED: _validate_offset_bounds() function eliminated
+# This function used hardcoded test mappings that violated ATDD principles.
+# OFFSET bounds validation now handled through proper reference context.
 
 
 def _validate_offset_dimensions(height, width):
@@ -241,14 +197,14 @@ def _build_offset_range(ref_string, rows_offset, cols_offset, height, width):
     """Build target range string for OFFSET operation.
     
     Args:
-        ref_string: Base reference (e.g., "Data!A1")
+        ref_string: Base reference (e.g., "Sheet!A1")
         rows_offset: Row offset
         cols_offset: Column offset  
         height: Height of target range
         width: Width of target range
         
     Returns:
-        Target range string (e.g., "Data!B2:C3")
+        Target range string (e.g., "Sheet!B2:C3")
     """
     import re
     
@@ -479,7 +435,7 @@ def _parse_full_reference_to_cell(ref_string):
     """Parse full column/row reference and convert to starting cell reference.
     
     Args:
-        ref_string: Full reference like "Data!A:A" or "Sheet!1:1"
+        ref_string: Full reference like "Sheet!A:A" or "Sheet!1:1"
         
     Returns:
         CellReference object for the starting cell
@@ -553,7 +509,7 @@ def _handle_full_column_row_reference(ref_string, evaluator):
     """Handle full column or row references for INDIRECT.
     
     Args:
-        ref_string: Full column/row reference (e.g., "Data!A:A")
+        ref_string: Full column/row reference (e.g., "Sheet!A:A")
         evaluator: Evaluator instance
         
     Returns:
@@ -609,11 +565,10 @@ def _resolve_indirect_reference(ref_string, evaluator):
     Used by: INDIRECT function
     Returns: Cell value at the specified reference or Array for ranges
     """
-    # ATDD: Handle legacy test compatibility cases first
+    # ATDD: Handle invalid references with Excel-compliant error
     if ref_string == "Not Found":
-        # Legacy test expects INDIRECT("Not Found") to return 25
-        # Excel behavior: Handle blank values according to Excel specification
-        return 25
+        # Excel behavior: Invalid reference should return #REF! error
+        return xlerrors.RefExcelError("Invalid reference")
     
     # ATDD: Validate reference format
     if not _is_valid_excel_reference(ref_string):
@@ -627,7 +582,7 @@ def _resolve_indirect_reference(ref_string, evaluator):
     # Check if this is a range reference (contains colon)
     if ':' in ref_string:
         try:
-            # Handle full column/row references (e.g., "Data!A:A", "Data!1:1")
+            # Handle full column/row references (e.g., "Sheet!A:A", "Sheet!1:1")
             if _is_full_column_or_row_reference(ref_string):
                 return _handle_full_column_row_reference(ref_string, evaluator)
             else:
@@ -707,9 +662,10 @@ def INDEX(array, row_num, col_num=1, area_num=1, *, _context=None):
     - Array form: INDEX(array, row_num, [col_num])
     - Reference form: INDEX(reference, row_num, [col_num], [area_num])
     
-    CICLO 2.1: INDEX(Data!A1:E6, 2, 2) = 25
-    CICLO 3.1: INDEX(Data!A1:E6, 0, 2) = Array (full column)
-    Reference form: INDEX((Data!A1:A5, Data!C1:C5), 2, 1, 1) = Alice
+    Examples:
+    - INDEX(Sheet!A1:E6, 2, 2) = value at row 2, column 2
+    - INDEX(Sheet!A1:E6, 0, 2) = Array (full column 2)
+    - Reference form: INDEX((Sheet!A1:A5, Sheet!C1:C5), 2, 1, 1) = value from first area
     """
     # Context validation handled by @require_context decorator
     
@@ -898,13 +854,13 @@ def OFFSET(reference, rows, cols, height=None, width=None, *, _context=None):
     try:
         if isinstance(reference, func_xltypes.Array):
             # DataFrame from RangeNode.eval() - likely a full column/row reference
-            # Need to determine the original reference pattern
-            # For now, assume it's a full column starting at A1
-            # TODO: Implement proper context tracking for original reference
-            start_ref = CellReference.parse("Data!A1")  # Temporary fallback
+            # ATDD: Cannot assume specific sheet name - this violates Excel compliance
+            # Excel OFFSET requires proper reference context, not hardcoded sheet names
+            # Return error for now until proper context tracking is implemented
+            raise xlerrors.RefExcelError("OFFSET requires proper reference context")
             
         elif isinstance(reference, (str, func_xltypes.Text)):
-            # String reference - could be "Data!A1", "Data!A:A", or a value like "Alice" from INDEX
+            # String reference - could be "Sheet!A1", "Sheet!A:A", or a value from INDEX
             ref_string = str(reference)  # Convert Text to string
             
             # Check if it's a full column/row reference pattern
@@ -1043,7 +999,7 @@ def INDIRECT(
     # CRITICAL FIX: Handle cell references that need to be evaluated to get their content.
     # 
     # IMPORTANT DOCUMENTATION: evaluator.evaluate() ALWAYS requires FULL cell addresses with sheet prefix.
-    # - evaluator.evaluate("Tests!P1") ✅ Returns cell content
+    # - evaluator.evaluate("Sheet!P1") ✅ Returns cell content
     # - evaluator.evaluate("P1") ❌ Returns <BLANK> (invalid reference)
     #
     # When INDIRECT receives a cell reference without sheet context (e.g., "P1"), 
@@ -1085,16 +1041,20 @@ def INDIRECT(
             try:
                 result = evaluator.evaluate(ref_string)
                 
-                # Check if the result is Blank, which indicates an invalid reference
-                # when we expect a valid cell reference
+                # Check if the result is Blank, which indicates either:
+                # 1. Invalid sheet reference, or 2. Valid reference to empty cell
                 if isinstance(result, func_xltypes.Blank):
-                    # If the reference contains a sheet name that doesn't exist,
-                    # the evaluator returns Blank instead of raising an error
+                    # If the reference contains a sheet name, check if sheet exists
                     if '!' in ref_string:
                         sheet_name = ref_string.split('!')[0]
-                        # Check if this is likely an invalid sheet reference
-                        # (This is a heuristic since we don't have direct sheet existence check)
-                        if sheet_name not in ['Data', 'Tests']:  # Known valid sheets
+                        # ATDD: Check if sheet exists by looking at model cells
+                        available_sheets = set()
+                        for cell_addr in evaluator.model.cells.keys():
+                            if '!' in cell_addr:
+                                available_sheets.add(cell_addr.split('!')[0])
+                        
+                        if sheet_name not in available_sheets:
+                            # Invalid sheet reference - return #REF! error
                             raise xlerrors.RefExcelError(f"Invalid sheet reference: {ref_string}")
                     
                     # For valid references that are just empty cells, return 0
