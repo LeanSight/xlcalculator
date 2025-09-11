@@ -188,6 +188,80 @@ class RangeNode(OperandNode):
         return value
 
 
+class FullReferenceNode(OperandNode):
+    """Represents a full column or row reference (A:A, 1:1)."""
+
+    @property
+    def address(self):
+        return self.tvalue
+
+    def full_address(self, context):
+        addr = self.address
+        if '!' not in addr:
+            addr = f'{context.sheet}!{addr}'
+        return addr
+
+    def eval(self, context):
+        """Evaluate full column/row reference with lazy loading."""
+
+        import re
+        
+        addr = self.full_address(context)
+        
+        # Parse the reference to determine if it's column or row
+        if '!' in addr:
+            sheet_part, ref_part = addr.split('!', 1)
+        else:
+            sheet_part = context.sheet
+            ref_part = addr
+        
+        # Check if it's a column reference (A:A, B:B) or row reference (1:1, 2:2)
+        if (re.match(r'^[A-Z]+:[A-Z]+$', ref_part) or 
+            re.match(r'^[0-9]+:[0-9]+$', ref_part)):
+            try:
+                # Use evaluator's get_range_values for full references
+                range_data = context.evaluator.get_range_values(addr)
+                return func_xltypes.Array(range_data)
+            except Exception:
+                # Fallback to regular range handling
+                return self._fallback_eval(context, addr)
+        
+        else:
+            # Not a recognized full reference pattern, fallback
+            return self._fallback_eval(context, addr)
+    
+    def _fallback_eval(self, context, addr):
+        """Fallback to regular range evaluation."""
+        if addr in context.ranges:
+            empty_row = 0
+            empty_col = 0
+            range_cells = []
+            for range_row in context.ranges[addr].cells:
+                row_cells = []
+                for col_addr in range_row:
+                    cell = context.eval_cell(col_addr)
+                    if cell.value == '' or cell.value is None:
+                        empty_col += 1
+                        if empty_col > MAX_EMPTY:
+                            break
+                    else:
+                        empty_col = 0
+                    row_cells.append(cell)
+                if not row_cells:
+                    empty_row += 1
+                    if empty_row > MAX_EMPTY:
+                        break
+                else:
+                    empty_row = 0
+                range_cells.append(row_cells)
+            context.ranges[addr].value = data = func_xltypes.Array(range_cells)
+            return data
+
+        value = context.eval_cell(addr)
+        context.set_sheet()
+        return value
+
+
 class OperatorNode(ASTNode):
 
     def __init__(self, token):

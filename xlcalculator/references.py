@@ -452,3 +452,386 @@ class RangeReference:
     def __str__(self) -> str:
         """Return range address string."""
         return self.address
+
+
+@dataclass
+class FullColumnReference:
+    """
+    Excel-compatible full column reference (A:A, B:B, etc.).
+    
+    Represents an entire column from row 1 to the maximum Excel row.
+    Provides specialized handling for column-based operations and lazy evaluation.
+    
+    Attributes:
+        sheet: Sheet name (empty string for current sheet)
+        column: 1-based column index (Excel convention)
+        absolute_column: True if column has $ prefix ($A:$A)
+        is_sheet_explicit: True if sheet was explicitly specified
+    """
+    
+    sheet: str
+    column: int
+    absolute_column: bool = False
+    is_sheet_explicit: bool = True
+    
+    def __post_init__(self):
+        """Validate Excel bounds after initialization."""
+        if self.column < 1 or self.column > EXCEL_MAX_COLUMNS:
+            raise xlerrors.RefExcelError(f"Column {self.column} is out of Excel bounds (1-{EXCEL_MAX_COLUMNS})")
+    
+    @property
+    def address(self) -> str:
+        """Get Excel-style column address (e.g., 'A:A', '$A:$A')."""
+        col_letter = self._column_to_letter(self.column)
+        col_prefix = '$' if self.absolute_column else ''
+        return f"{col_prefix}{col_letter}:{col_prefix}{col_letter}"
+    
+    @property
+    def full_address(self) -> str:
+        """Get full sheet!address format (e.g., 'Sheet1!A:A')."""
+        if self.sheet:
+            # Handle sheet names with spaces or special characters
+            if ' ' in self.sheet or "'" in self.sheet:
+                sheet_part = f"'{self.sheet}'"
+            else:
+                sheet_part = self.sheet
+            return f"{sheet_part}!{self.address}"
+        else:
+            return self.address
+    
+    @property
+    def start_cell(self) -> CellReference:
+        """Get starting cell reference (column, row 1)."""
+        return CellReference(
+            sheet=self.sheet,
+            row=1,
+            column=self.column,
+            absolute_row=False,
+            absolute_column=self.absolute_column,
+            is_sheet_explicit=self.is_sheet_explicit
+        )
+    
+    @property
+    def end_cell(self) -> CellReference:
+        """Get ending cell reference (column, max row)."""
+        return CellReference(
+            sheet=self.sheet,
+            row=EXCEL_MAX_ROWS,
+            column=self.column,
+            absolute_row=False,
+            absolute_column=self.absolute_column,
+            is_sheet_explicit=self.is_sheet_explicit
+        )
+    
+    @classmethod
+    def parse(cls, ref: str, current_sheet: str | None = None) -> 'FullColumnReference':
+        """
+        Parse full column reference string.
+        
+        Supports formats like: A:A, $A:$A, Sheet1!A:A, 'Sheet Name'!$A:$A
+        
+        Args:
+            ref: Column reference string to parse
+            current_sheet: Current sheet context for implicit references
+            
+        Returns:
+            FullColumnReference object
+            
+        Raises:
+            RefExcelError: If reference format is invalid or not a column reference
+        """
+        if not ref or not isinstance(ref, str):
+            raise xlerrors.RefExcelError("Invalid reference string")
+        
+        ref = ref.strip()
+        
+        # Handle sheet references
+        if '!' in ref:
+            sheet_part, col_part = ref.split('!', 1)
+            sheet = CellReference._resolve_sheet_name(sheet_part)
+            is_explicit = True
+        else:
+            col_part = ref
+            sheet = current_sheet or ""
+            is_explicit = False
+        
+        # Parse column part (e.g., A:A, $A:$A)
+        column_pattern = r'^(\$?)([A-Z]+):(\$?)([A-Z]+)$'
+        column_match = re.match(column_pattern, col_part.upper())
+        
+        if not column_match:
+            raise xlerrors.RefExcelError(f"Invalid column reference format: {ref}")
+        
+        col1_absolute = bool(column_match.group(1))
+        col1_letters = column_match.group(2)
+        col2_absolute = bool(column_match.group(3))
+        col2_letters = column_match.group(4)
+        
+        # Validate it's a single column reference (A:A, not A:B)
+        if col1_letters != col2_letters:
+            raise xlerrors.RefExcelError(f"Multi-column ranges not supported: {ref}")
+        
+        # Validate absolute markers match
+        if col1_absolute != col2_absolute:
+            raise xlerrors.RefExcelError(f"Inconsistent absolute markers in column reference: {ref}")
+        
+        column = CellReference._letter_to_column(col1_letters)
+        
+        return cls(
+            sheet=sheet,
+            column=column,
+            absolute_column=col1_absolute,
+            is_sheet_explicit=is_explicit
+        )
+    
+    def get_cell_at_row(self, row: int) -> CellReference:
+        """
+        Get cell reference at specific row in this column.
+        
+        Args:
+            row: 1-based row number
+            
+        Returns:
+            CellReference for the specified row in this column
+        """
+        if row < 1 or row > EXCEL_MAX_ROWS:
+            raise xlerrors.RefExcelError(f"Row {row} is out of Excel bounds")
+        
+        return CellReference(
+            sheet=self.sheet,
+            row=row,
+            column=self.column,
+            absolute_row=False,
+            absolute_column=self.absolute_column,
+            is_sheet_explicit=self.is_sheet_explicit
+        )
+    
+    def to_range_reference(self, start_row: int = 1, end_row: int = None) -> RangeReference:
+        """
+        Convert to RangeReference with specified row bounds.
+        
+        Args:
+            start_row: Starting row (default: 1)
+            end_row: Ending row (default: EXCEL_MAX_ROWS)
+            
+        Returns:
+            RangeReference covering the specified rows in this column
+        """
+        if end_row is None:
+            end_row = EXCEL_MAX_ROWS
+        
+        start_cell = self.get_cell_at_row(start_row)
+        end_cell = self.get_cell_at_row(end_row)
+        
+        return RangeReference(start_cell=start_cell, end_cell=end_cell)
+    
+    def resolve(self, evaluator: 'Evaluator') -> list:
+        """
+        Get actual column values through evaluator with lazy loading.
+        
+        Args:
+            evaluator: Evaluator instance to resolve column values
+            
+        Returns:
+            List of non-empty cell values in the column
+        """
+        return evaluator.get_range_values(self.full_address)
+    
+    def __str__(self) -> str:
+        """Return full sheet!address format."""
+        return self.full_address
+    
+    @staticmethod
+    def _column_to_letter(col_num: int) -> str:
+        """Convert column number to Excel letter(s)."""
+        result = ""
+        while col_num > 0:
+            col_num -= 1  # Make it 0-based
+            result = chr(65 + (col_num % 26)) + result
+            col_num //= 26
+        return result
+
+
+@dataclass
+class FullRowReference:
+    """
+    Excel-compatible full row reference (1:1, 2:2, etc.).
+    
+    Represents an entire row from column A to the maximum Excel column.
+    Provides specialized handling for row-based operations and lazy evaluation.
+    
+    Attributes:
+        sheet: Sheet name (empty string for current sheet)
+        row: 1-based row index (Excel convention)
+        absolute_row: True if row has $ prefix ($1:$1)
+        is_sheet_explicit: True if sheet was explicitly specified
+    """
+    
+    sheet: str
+    row: int
+    absolute_row: bool = False
+    is_sheet_explicit: bool = True
+    
+    def __post_init__(self):
+        """Validate Excel bounds after initialization."""
+        if self.row < 1 or self.row > EXCEL_MAX_ROWS:
+            raise xlerrors.RefExcelError(f"Row {self.row} is out of Excel bounds (1-{EXCEL_MAX_ROWS})")
+    
+    @property
+    def address(self) -> str:
+        """Get Excel-style row address (e.g., '1:1', '$1:$1')."""
+        row_prefix = '$' if self.absolute_row else ''
+        return f"{row_prefix}{self.row}:{row_prefix}{self.row}"
+    
+    @property
+    def full_address(self) -> str:
+        """Get full sheet!address format (e.g., 'Sheet1!1:1')."""
+        if self.sheet:
+            # Handle sheet names with spaces or special characters
+            if ' ' in self.sheet or "'" in self.sheet:
+                sheet_part = f"'{self.sheet}'"
+            else:
+                sheet_part = self.sheet
+            return f"{sheet_part}!{self.address}"
+        else:
+            return self.address
+    
+    @property
+    def start_cell(self) -> CellReference:
+        """Get starting cell reference (column A, this row)."""
+        return CellReference(
+            sheet=self.sheet,
+            row=self.row,
+            column=1,  # Column A
+            absolute_row=self.absolute_row,
+            absolute_column=False,
+            is_sheet_explicit=self.is_sheet_explicit
+        )
+    
+    @property
+    def end_cell(self) -> CellReference:
+        """Get ending cell reference (max column, this row)."""
+        return CellReference(
+            sheet=self.sheet,
+            row=self.row,
+            column=EXCEL_MAX_COLUMNS,
+            absolute_row=self.absolute_row,
+            absolute_column=False,
+            is_sheet_explicit=self.is_sheet_explicit
+        )
+    
+    @classmethod
+    def parse(cls, ref: str, current_sheet: str | None = None) -> 'FullRowReference':
+        """
+        Parse full row reference string.
+        
+        Supports formats like: 1:1, $1:$1, Sheet1!1:1, 'Sheet Name'!$1:$1
+        
+        Args:
+            ref: Row reference string to parse
+            current_sheet: Current sheet context for implicit references
+            
+        Returns:
+            FullRowReference object
+            
+        Raises:
+            RefExcelError: If reference format is invalid or not a row reference
+        """
+        if not ref or not isinstance(ref, str):
+            raise xlerrors.RefExcelError("Invalid reference string")
+        
+        ref = ref.strip()
+        
+        # Handle sheet references
+        if '!' in ref:
+            sheet_part, row_part = ref.split('!', 1)
+            sheet = CellReference._resolve_sheet_name(sheet_part)
+            is_explicit = True
+        else:
+            row_part = ref
+            sheet = current_sheet or ""
+            is_explicit = False
+        
+        # Parse row part (e.g., 1:1, $1:$1)
+        row_pattern = r'^(\$?)(\d+):(\$?)(\d+)$'
+        row_match = re.match(row_pattern, row_part)
+        
+        if not row_match:
+            raise xlerrors.RefExcelError(f"Invalid row reference format: {ref}")
+        
+        row1_absolute = bool(row_match.group(1))
+        row1_num = int(row_match.group(2))
+        row2_absolute = bool(row_match.group(3))
+        row2_num = int(row_match.group(4))
+        
+        # Validate it's a single row reference (1:1, not 1:2)
+        if row1_num != row2_num:
+            raise xlerrors.RefExcelError(f"Multi-row ranges not supported: {ref}")
+        
+        # Validate absolute markers match
+        if row1_absolute != row2_absolute:
+            raise xlerrors.RefExcelError(f"Inconsistent absolute markers in row reference: {ref}")
+        
+        return cls(
+            sheet=sheet,
+            row=row1_num,
+            absolute_row=row1_absolute,
+            is_sheet_explicit=is_explicit
+        )
+    
+    def get_cell_at_column(self, column: int) -> CellReference:
+        """
+        Get cell reference at specific column in this row.
+        
+        Args:
+            column: 1-based column number
+            
+        Returns:
+            CellReference for the specified column in this row
+        """
+        if column < 1 or column > EXCEL_MAX_COLUMNS:
+            raise xlerrors.RefExcelError(f"Column {column} is out of Excel bounds")
+        
+        return CellReference(
+            sheet=self.sheet,
+            row=self.row,
+            column=column,
+            absolute_row=self.absolute_row,
+            absolute_column=False,
+            is_sheet_explicit=self.is_sheet_explicit
+        )
+    
+    def to_range_reference(self, start_col: int = 1, end_col: int = None) -> RangeReference:
+        """
+        Convert to RangeReference with specified column bounds.
+        
+        Args:
+            start_col: Starting column (default: 1)
+            end_col: Ending column (default: EXCEL_MAX_COLUMNS)
+            
+        Returns:
+            RangeReference covering the specified columns in this row
+        """
+        if end_col is None:
+            end_col = EXCEL_MAX_COLUMNS
+        
+        start_cell = self.get_cell_at_column(start_col)
+        end_cell = self.get_cell_at_column(end_col)
+        
+        return RangeReference(start_cell=start_cell, end_cell=end_cell)
+    
+    def resolve(self, evaluator: 'Evaluator') -> list:
+        """
+        Get actual row values through evaluator with lazy loading.
+        
+        Args:
+            evaluator: Evaluator instance to resolve row values
+            
+        Returns:
+            List of non-empty cell values in the row
+        """
+        return evaluator.get_range_values(self.full_address)
+    
+    def __str__(self) -> str:
+        """Return full sheet!address format."""
+        return self.full_address

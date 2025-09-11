@@ -291,18 +291,48 @@ class FormulaParser:
     def create_node(self, token):
         if token.ttype == "operand":
             if token.tsubtype in ["range", "pointer"]:
-                return ast_nodes.RangeNode(token)
+                # Check if this is a full column/row reference
+                if self._is_full_column_or_row_reference(token.tvalue):
+                    return ast_nodes.FullReferenceNode(token)
+                else:
+                    return ast_nodes.RangeNode(token)
             else:
                 return ast_nodes.OperandNode(token)
 
         elif token.ttype == "function":
             return ast_nodes.FunctionNode(token)
-
+        
         elif token.ttype.startswith("operator"):
             return ast_nodes.OperatorNode(token)
 
         else:
             raise ValueError('Unknown token type: ' + token.ttype)
+    
+    def _is_full_column_or_row_reference(self, ref_string):
+        """Check if reference is a full column or row reference.
+        
+        Args:
+            ref_string: Reference string to check
+            
+        Returns:
+            True if it's a full column (A:A) or row (1:1) reference
+        """
+        import re
+        
+        # Full column patterns: A:A, Sheet!A:A
+        column_patterns = [
+            r'^[A-Z]+:[A-Z]+$',                    # A:A, B:B
+            r'^[^!]+![A-Z]+:[A-Z]+$',             # Sheet!A:A
+        ]
+        
+        # Full row patterns: 1:1, Sheet!1:1  
+        row_patterns = [
+            r'^[0-9]+:[0-9]+$',                   # 1:1, 2:2
+            r'^[^!]+![0-9]+:[0-9]+$',            # Sheet!1:1
+        ]
+        
+        all_patterns = column_patterns + row_patterns
+        return any(re.match(pattern, ref_string) for pattern in all_patterns)
 
     def build_ast(self, nodes):
         """Update AST nodes to build a proper parse tree.

@@ -138,28 +138,67 @@ class Evaluator:
         # Parse range part
         start_ref, end_ref = range_part.split(':')
         
-        # Simple parsing for basic ranges (A1:B2 format)
-        # Extract column and row from start reference
-        start_col_letter = ''.join(c for c in start_ref if c.isalpha())
-        start_row = int(''.join(c for c in start_ref if c.isdigit()))
-        start_col = ord(start_col_letter) - ord('A') + 1
+        # Check for full column references (A:A)
+        if start_ref == end_ref and start_ref.isalpha():
+            # Full column reference like A:A
+            col_letter = start_ref
+            values = []
+            # Get all cells in this column that exist in the model
+            for cell_addr, cell in self.model.cells.items():
+                if cell_addr.startswith(f'{sheet_prefix}{col_letter}'):
+                    # Extract row number
+                    row_part = cell_addr[len(f'{sheet_prefix}{col_letter}'):]
+                    if row_part.isdigit():
+                        row_num = int(row_part)
+                        # Ensure we have enough rows in values
+                        while len(values) < row_num:
+                            values.append([None])
+                        values[row_num - 1] = [cell.value]
+            
+            # Filter out None entries and return
+            return [[item[0]] for item in values if item[0] is not None]
         
-        # Extract column and row from end reference  
-        end_col_letter = ''.join(c for c in end_ref if c.isalpha())
-        end_row = int(''.join(c for c in end_ref if c.isdigit()))
-        end_col = ord(end_col_letter) - ord('A') + 1
+        # Check for full row references (1:1)
+        elif start_ref == end_ref and start_ref.isdigit():
+            # Full row reference like 1:1
+            row_num = start_ref
+            values = []
+            # Get all cells in this row that exist in the model
+            for cell_addr, cell in self.model.cells.items():
+                if cell_addr.startswith(f'{sheet_prefix}') and cell_addr.endswith(row_num):
+                    values.append(cell.value)
+            
+            return [values] if values else [[]]
         
-        values = []
-        for row in range(start_row, end_row + 1):
-            row_values = []
-            for col in range(start_col, end_col + 1):
-                col_letter = chr(ord('A') + col - 1)
-                cell_ref = f'{sheet_prefix}{col_letter}{row}'
-                value = self.get_cell_value(cell_ref)
-                row_values.append(value)
-            values.append(row_values)
-        
-        return values
+        # Regular range parsing for A1:B2 format
+        else:
+            # Extract column and row from start reference
+            start_col_letter = ''.join(c for c in start_ref if c.isalpha())
+            start_row_digits = ''.join(c for c in start_ref if c.isdigit())
+            if not start_row_digits:
+                raise ValueError(f"Invalid range format: {range_ref}")
+            start_row = int(start_row_digits)
+            start_col = ord(start_col_letter) - ord('A') + 1
+            
+            # Extract column and row from end reference  
+            end_col_letter = ''.join(c for c in end_ref if c.isalpha())
+            end_row_digits = ''.join(c for c in end_ref if c.isdigit())
+            if not end_row_digits:
+                raise ValueError(f"Invalid range format: {range_ref}")
+            end_row = int(end_row_digits)
+            end_col = ord(end_col_letter) - ord('A') + 1
+            
+            values = []
+            for row in range(start_row, end_row + 1):
+                row_values = []
+                for col in range(start_col, end_col + 1):
+                    col_letter = chr(ord('A') + col - 1)
+                    cell_ref = f'{sheet_prefix}{col_letter}{row}'
+                    value = self.get_cell_value(cell_ref)
+                    row_values.append(value)
+                values.append(row_values)
+            
+            return values
     
     def clear_context_cache(self):
         """Clear context cache to free memory after evaluation cycles."""

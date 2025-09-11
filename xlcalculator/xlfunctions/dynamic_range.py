@@ -559,6 +559,57 @@ def _handle_full_column_row_reference(ref_string, evaluator):
         return func_xltypes.Array([row_data])
 
 
+def _handle_full_column_row_reference_for_index(ref_string, evaluator):
+    """Handle full column or row references specifically for INDEX function.
+    
+    Args:
+        ref_string: Full column/row reference (e.g., "Sheet!A:A")
+        evaluator: Evaluator instance
+        
+    Returns:
+        2D array data suitable for INDEX function processing
+    """
+    import re
+    
+    # Parse sheet and reference parts
+    if '!' in ref_string:
+        sheet_name, ref_part = ref_string.split('!', 1)
+    else:
+        sheet_name = None
+        ref_part = ref_string
+    
+    # Check if it's a column reference (contains letters)
+    if re.match(r'^[A-Z]+:[A-Z]+$', ref_part):
+        # Column reference like A:A or B:B
+        from ..references import FullColumnReference
+        try:
+            full_ref = FullColumnReference.parse(ref_string)
+            # Use evaluator's get_range_values for full column references
+            range_data = evaluator.get_range_values(ref_string)
+            return range_data if range_data else [[]]
+        except Exception:
+            # Fallback to basic range handling
+            range_data = evaluator.get_range_values(ref_string)
+            return range_data if range_data else [[]]
+    
+    # Check if it's a row reference (contains only numbers)
+    elif re.match(r'^[0-9]+:[0-9]+$', ref_part):
+        # Row reference like 1:1
+        from ..references import FullRowReference
+        try:
+            full_ref = FullRowReference.parse(ref_string)
+            # Use evaluator's get_range_values for full row references
+            range_data = evaluator.get_range_values(ref_string)
+            return range_data if range_data else [[]]
+        except Exception:
+            # Fallback to basic range handling
+            range_data = evaluator.get_range_values(ref_string)
+            return range_data if range_data else [[]]
+    
+    else:
+        raise xlerrors.RefExcelError(f"Invalid full reference format: {ref_string}")
+
+
 def _resolve_indirect_reference(ref_string, evaluator):
     """Resolve INDIRECT reference string to cell value or array.
     
@@ -694,9 +745,14 @@ def INDEX(array, row_num, col_num=1, area_num=1, *, _context=None):
     else:
         # Handle single area (Array form, single reference, or 2D list data)
         
-        # Get array data using utility
-        from ..utils.arrays import ArrayProcessor
-        array_data = ArrayProcessor.extract_array_data(array, evaluator)
+        # Check if this is a full column/row reference first
+        if isinstance(array, str) and _is_full_column_or_row_reference(array):
+            # Handle full column/row references with INDEX
+            array_data = _handle_full_column_row_reference_for_index(array, evaluator)
+        else:
+            # Get array data using utility
+            from ..utils.arrays import ArrayProcessor
+            array_data = ArrayProcessor.extract_array_data(array, evaluator)
         
         if not array_data:
             raise xlerrors.ValueExcelError(f"No data found for range: {array}")

@@ -68,11 +68,12 @@ def validate_array_bounds(array_data, row_idx, col_idx, row_name="row", col_name
     if row_idx < 0 or row_idx >= len(array_data):
         raise xlerrors.RefExcelError(f"{row_name.title()} index out of range")
     
-    if not array_data[0]:
-        raise xlerrors.RefExcelError("Array row is empty")
-    
-    if col_idx < 0 or col_idx >= len(array_data[0]):
-        raise xlerrors.RefExcelError(f"{col_name.title()} index out of range")
+    if col_idx is not None:
+        if not array_data[0]:
+            raise xlerrors.RefExcelError("Array row is empty")
+        
+        if col_idx < 0 or col_idx >= len(array_data[0]):
+            raise xlerrors.RefExcelError(f"{col_name.title()} index out of range")
 
 
 def validate_dimension_parameter(value, param_name):

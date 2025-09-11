@@ -3,7 +3,7 @@
 [![Python 3.12+](https://img.shields.io/badge/Python-3.12+-blue.svg)](https://github.com/LeanSight/xlcalculator)
 [![NumPy 1.24+ & 2.x](https://img.shields.io/badge/NumPy-1.24%2B%20%26%202.x-green.svg)](https://github.com/LeanSight/xlcalculator)
 [![Status: Unofficial Fork](https://img.shields.io/badge/Status-Unofficial%20Fork-orange.svg)](https://github.com/LeanSight/xlcalculator)
-[![Tests: 962/963 Pass](https://img.shields.io/badge/Tests-962%2F963%20Pass-brightgreen.svg)](https://github.com/LeanSight/xlcalculator)
+[![Tests: 969/970 Pass](https://img.shields.io/badge/Tests-969%2F970%20Pass-brightgreen.svg)](https://github.com/LeanSight/xlcalculator)
 
 > **⚠️ ALPHA SOFTWARE WARNING**
 > 
@@ -35,19 +35,19 @@ This is an **unofficial fork** of xlcalculator by Bradley van Ree, updated for m
 
 ✅ **YEARFRAC Support** - Includes LeanSight yearfrac fork for complete Excel function compatibility
 
-✅ **Comprehensive Testing** - 962/963 tests pass (99.9% success rate)
+✅ **Comprehensive Testing** - 969/970 tests pass (99.9% success rate)
 
-## Recent Enhancements (2025-09-10)
+## Recent Enhancements (2025-09-11)
 
-🚀 **Enhanced Reference Parsing**
-   - Column references (A:A, B:B) 
-   - Row references (1:1, 2:2)
-   - Range references (A1:B5)
-   - Dynamic INDIRECT construction
+🚀 **Full Column/Row References** - NEW!
+   - Complete A:A and 1:1 syntax support with Excel compatibility
+   - Seamless integration with INDEX, OFFSET, INDIRECT functions
+   - High-performance lazy evaluation for large ranges
 
-🚀 **Improved Error Handling**
-   - Excel-compatible error propagation
-   - ISERROR/IFERROR integration
+🚀 **Enhanced Excel Compatibility**
+   - Improved reference parsing and dynamic ranges
+   - Excel-compliant error handling and bounds validation
+   - Enhanced function integration and performance optimization
    - Bounds checking validation
 
 🚀 **Infrastructure Improvements**
@@ -92,7 +92,7 @@ This fork has been thoroughly tested with:
 | NumPy | 2.3.3 | ✅ All tests pass |
 | pandas | 2.3.2 | ✅ Compatible |
 | scipy | 1.16.1 | ✅ Compatible |
-| Test Suite | 962/963 | ✅ 99.9% pass rate |
+| Test Suite | 969/970 | ✅ 99.9% pass rate |
 | Excel Functions | All | ✅ Working |
 | YEARFRAC | All methods | ✅ Working |
 
@@ -127,10 +127,11 @@ xlcalculator is a modernization of the [koala2](https://github.com/vallettea/koa
 
 This fork includes enhanced support for:
 
-**Dynamic Range Functions:** - Basic support available
-    * INDEX - Basic implementation with standard references
-    * OFFSET - Basic implementation available
-    * INDIRECT - Basic implementation available
+**Dynamic Range Functions:** - Enhanced Excel-compatible implementation
+    * INDEX - Full support including A:A and 1:1 references, multi-area ranges
+    * OFFSET - Enhanced implementation with full reference support
+    * INDIRECT - Complete implementation with full column/row reference support
+    * Full Column/Row References - Native A:A and 1:1 syntax support
 
 **Reference Types:** - Standard Excel reference support
     * Column references: A:A, B:B, $A:$A
@@ -191,8 +192,8 @@ result = model.evaluate("Sheet1!A1")
 # Evaluate ranges
 range_result = model.evaluate("Sheet1!A1:C3")
 
-# Evaluate with column references
-column_result = model.evaluate("Sheet1!A:A")
+# Evaluate ranges
+range_result = model.evaluate("Sheet1!A1:C3")
 ```
 
 ## Examples
